@@ -51,7 +51,7 @@ ZunResult SoundPlayer::InitializeDSound(HWND gameWindow)
     {
         this->unk408[i] = -1;
     }
-    for (i32 i = 0; i < SOUND_QUEUE_LENGTH; i++)
+    for (i32 i = 0; i < SFX_QUEUE_LENGTH; i++)
     {
         this->soundQueue[i] = -1;
     }
@@ -459,7 +459,7 @@ ZunResult SoundPlayer::InitSoundBuffers()
     if (this->dsoundHdl == NULL)
         return ZUN_SUCCESS;
 
-    for (i = 0; i < SOUND_QUEUE_LENGTH; i++)
+    for (i = 0; i < SFX_QUEUE_LENGTH; i++)
     {
         this->soundQueue[i] = -1;
     }
@@ -488,7 +488,7 @@ void SoundPlayer::PlaySoundByIdx(SoundIdx idx, i32 unused)
     i32 i;
 
     unk = g_SoundBufferIdxVol[idx].unk;
-    for (i = 0; i < SOUND_QUEUE_LENGTH; i++)
+    for (i = 0; i < SFX_QUEUE_LENGTH; i++)
     {
         if (this->soundQueue[i] < 0)
             break;
@@ -502,7 +502,7 @@ void SoundPlayer::PlaySoundByIdx(SoundIdx idx, i32 unused)
         }
     }
 
-    if (i >= SOUND_QUEUE_LENGTH)
+    if (i >= SFX_QUEUE_LENGTH)
         return;
 
     this->soundQueue[i] = idx;
@@ -520,7 +520,7 @@ void SoundPlayer::PlaySoundPositionedByIdx(SoundIdx idx, f32 pan)
     unk = g_SoundBufferIdxVol[idx].unk;
     panAsInt = ((pan - 192) * 1000) / 192;
 
-    for (i = 0; i < SOUND_QUEUE_LENGTH; i++)
+    for (i = 0; i < SFX_QUEUE_LENGTH; i++)
     {
         if (this->soundQueue[i] < 0)
             break;
@@ -534,7 +534,7 @@ void SoundPlayer::PlaySoundPositionedByIdx(SoundIdx idx, f32 pan)
         }
     }
 
-    if (i >= SOUND_QUEUE_LENGTH)
+    if (i >= SFX_QUEUE_LENGTH)
         return;
 
     this->soundQueue[i] = idx;
@@ -749,7 +749,7 @@ loop:
         goto loop_breakout;
     case 5:
         utils::DebugPrint("Sound : Fade Out Stage %d\r\n", commandCursor->arg1);
-        this->FadeOut(&g_SoundPlayer, commandCursor->arg1);
+        g_SoundPlayer.FadeOut(commandCursor->arg1);
         break;
     case 6:
         if (g_Supervisor.cfg.musicMode == WAV)
@@ -783,7 +783,7 @@ loop:
         goto loop_breakout;
     };
 
-    for (i = 0; i < ARRAY_SIZE_SIGNED(this->commandQueue) - 1; i++, commandCursor++)
+    for (i = 0; i < BGM_QUEUE_LENGTH; i++, commandCursor++)
     {
         if (commandCursor->opcode == 0)
         {
@@ -802,7 +802,7 @@ loop_breakout:
     {
         return this->commandQueue[0].opcode;
     }
-    for (i = 0; i < SOUND_QUEUE_LENGTH; i++)
+    for (i = 0; i < SFX_QUEUE_LENGTH; i++)
     {
         if (this->soundQueue[i] < 0)
         {
@@ -930,9 +930,9 @@ void SoundPlayer::FreePreloadedBGM(i32 idx)
     }
 }
 
-void SoundPlayer::FadeOut(SoundPlayer *player, f32 seconds)
+void SoundPlayer::FadeOut(f32 seconds)
 {
-    if (player->bgm != NULL)
+    if (this->bgm != NULL)
     {
         player->bgm->FadeOut(seconds);
     }
