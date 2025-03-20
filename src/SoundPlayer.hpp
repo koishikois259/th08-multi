@@ -69,9 +69,9 @@ struct SoundBufferIdxVolume
 
 struct SoundPlayerCommand
 {
+    i32 opcode;
     i32 arg1;
     i32 arg2;
-    i32 arg3;
     char string[256];
 };
 
@@ -92,7 +92,7 @@ class SoundPlayer
     static WAVEFORMATEX *GetWavFormatData(u8 *soundData, char *formatString, i32 *formatSize,
                                           u32 fileSizeExcludingFormat);
 
-    void QueueCommand(i32 opcode, i32 arg1, i32 arg2, char *unused);
+    void QueueCommand(i32 opcode, i32 arg, char *unused);
     i32 ProcessQueues();
     void PlaySoundByIdx(SoundIdx idx, i32 unused);
     void PlaySoundPositionedByIdx(SoundIdx idx, f32 pan);

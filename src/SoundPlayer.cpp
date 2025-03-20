@@ -169,6 +169,27 @@ i32 SoundPlayer::GetFmtIndexByName(char *name)
     return i;
 }
 
+void SoundPlayer::QueueCommand(i32 opcode, i32 arg, char *unused)
+{
+    i32 i;
+
+    for (i = 0; i < ARRAY_SIZE_SIGNED(this->commandQueue) - 1; i++)
+    {
+        if (this->commandQueue[i].opcode != 0)
+            continue;
+
+        this->commandQueue[i].opcode = opcode;
+        this->commandQueue[i].arg1 = arg;
+        strcpy(this->commandQueue[i].string, unused);
+        this->commandQueue[i].arg2 = 0;
+
+        break;
+    }
+
+    utils::DebugPrint("Sound Que Add %d\r\n", opcode);
+    return;
+}
+
 SoundPlayer::SoundPlayer()
 {
     ZeroMemory(this, sizeof(SoundPlayer));
