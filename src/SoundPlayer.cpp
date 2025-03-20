@@ -169,6 +169,52 @@ i32 SoundPlayer::GetFmtIndexByName(char *name)
     return i;
 }
 
+#pragma var_order(msg, looped, lpThreadParameterCopy, waitObj, res, stopped)
+DWORD WINAPI SoundPlayer::BGMPlayerThread(LPVOID lpThreadParameter)
+{
+    DWORD waitObj;
+    MSG msg;
+    u32 stopped;
+    u32 looped;
+    LPVOID lpThreadParameterCopy;
+    HRESULT res;
+
+    lpThreadParameterCopy = lpThreadParameter;
+    stopped = false;
+    looped = true;
+    while (!stopped)
+    {
+        waitObj =
+            MsgWaitForMultipleObjects(1, &g_SoundPlayer.bgmUpdateEvent, FALSE, INFINITE, QS_ALLEVENTS);
+        if (g_SoundPlayer.bgm == NULL)
+        {
+            stopped = true;
+        }
+        switch (waitObj)
+        {
+        case 0:
+            if (g_SoundPlayer.bgm != NULL && g_SoundPlayer.bgm->m_bIsPlaying)
+            {
+                g_SoundPlayer.bgm->m_bIsLocked = TRUE;
+                res = g_SoundPlayer.bgm->HandleWaveStreamNotification(looped);
+                g_SoundPlayer.bgm->m_bIsLocked = FALSE;
+            }
+            break;
+        case 1:
+            while (PeekMessageA(&msg, NULL, 0, 0, PM_REMOVE) != 0)
+            {
+                if (msg.message == WM_QUIT)
+                {
+                    stopped = true;
+                }
+            }
+            break;
+        }
+    }
+    utils::DebugPrint(TH_DBG_SOUNDPLAYER_BGM_THREAD_TERMINATED);
+    return 0;
+}
+
 void SoundPlayer::QueueCommand(i32 opcode, i32 arg, char *unused)
 {
     i32 i;

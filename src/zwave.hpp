@@ -95,6 +95,7 @@ class CSound
     CWaveFile *m_pWaveFile;
     DWORD m_dwNumBuffers;
 
+  public:
     // Modifications by ZUN to this class
     INT m_iCurFadeProgress;
     INT m_iTotalFade;
@@ -109,7 +110,6 @@ class CSound
 
     HRESULT RestoreBuffer(LPDIRECTSOUNDBUFFER pDSB, BOOL *pbWasRestored);
 
-  public:
     CSound(LPDIRECTSOUNDBUFFER *apDSBuffer, DWORD dwDSBufferSize, DWORD dwNumBuffers, CWaveFile *pWaveFile);
     virtual ~CSound();
 
@@ -145,12 +145,12 @@ class CStreamingSound : public CSound
     DWORD m_dwNextWriteOffset;
     BOOL m_bFillNextNotificationWithSilence;
 
+  public:
     // Modifications by ZUN to this class
     DWORD m_dwNotifySize;
     HANDLE m_hNotifyEvent;
     BOOL m_bIsLocked;
 
-  public:
     CStreamingSound(LPDIRECTSOUNDBUFFER pDSBuffer, DWORD dwDSBufferSize, CWaveFile *pWaveFile, DWORD dwNotifySize);
     ~CStreamingSound();
 
