@@ -75,6 +75,11 @@ struct GameConfiguration
 
 struct Supervisor
 {
+    u32 IsMusicPreloadEnabled()
+    {
+        return this->cfg.opts.preloadMusic;
+    }
+
     void EnterCriticalSectionWrapper(int id)
     {
         EnterCriticalSection(&criticalSections[id]);

@@ -326,6 +326,60 @@ ZunResult SoundPlayer::ReopenBGM(char *path)
     return ZUN_SUCCESS;
 }
 
+#pragma var_order(fmtIdx, numBytesRead, handle, bufferPtr)
+ZunResult SoundPlayer::PreloadBGM(i32 idx, char *path)
+{
+    HANDLE handle;
+    i32 fmtIdx;
+    LPBYTE bufferPtr;
+    DWORD numBytesRead;
+
+    if (this->unk1ec0[idx] != NULL)
+    {
+        if (strcmp(path, this->bgmFileNames[idx]) == 0)
+            return ZUN_SUCCESS;
+    }
+    strcpy(g_SoundPlayer.bgmFileNames[idx], path);
+
+    if (!g_Supervisor.IsMusicPreloadEnabled())
+        return ZUN_SUCCESS;
+
+    if (this->manager == NULL)
+        return ZUN_SUCCESS;
+
+    this->FreePreloadedBGM(idx);
+    utils::DebugPrint("Streming BGM PreLoad %d\r\n", idx);
+
+    handle = CreateFileA(this->currentBgmFileName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
+                         FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+    if (handle == INVALID_HANDLE_VALUE)
+    {
+        utils::DebugPrint("error : bgmfile is not find %s\r\n", this->currentBgmFileName);
+        return ZUN_ERROR;
+    }
+
+    fmtIdx = this->GetFmtIndexByName(path);
+    SetFilePointer(handle, this->bgmFmtData[fmtIdx].startOffset, 0, FILE_BEGIN);
+
+    bufferPtr = (u8 *)g_ZunMemory.Alloc(this->bgmFmtData[fmtIdx].preloadAllocSize,
+                                        "d:\\cygwin\\home\\zun\\prog\\th08\\global.h");
+    if (bufferPtr == NULL)
+    {
+        CloseHandle(handle);
+        utils::DebugPrint("error : bgmfile is not find %s\r\n", this->currentBgmFileName);
+        return ZUN_ERROR;
+    }
+
+    ReadFile(handle, bufferPtr, this->bgmFmtData[fmtIdx].preloadAllocSize, &numBytesRead, NULL);
+    CloseHandle(handle);
+    this->bgmPreloadFmtData[idx] = &this->bgmFmtData[fmtIdx];
+    this->unk1ec0[idx] = bufferPtr;
+    this->unk1f00[idx] = bufferPtr;
+    this->bgmPreloadAllocSizes[idx] = this->bgmPreloadFmtData[idx]->preloadAllocSize;
+
+    return ZUN_SUCCESS;
+}
+
 void SoundPlayer::PlaySoundByIdx(SoundIdx idx, i32 unused)
 {
     i32 unk;
