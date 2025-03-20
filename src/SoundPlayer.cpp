@@ -169,4 +169,12 @@ i32 SoundPlayer::GetFmtIndexByName(char *name)
     return i;
 }
 
+void SoundPlayer::FreePreloadedBGM(i32 idx)
+{
+    if (this->unk1ec0[idx] != NULL)
+    {
+        g_ZunMemory.Free(this->unk1ec0[idx]);
+        this->unk1ec0[idx] = NULL;
+    }
+}
 };
