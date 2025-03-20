@@ -133,4 +133,40 @@ ZunResult SoundPlayer::Release()
     }
     return ZUN_SUCCESS;
 }
+
+#pragma var_order (pos, i, buffer)
+i32 SoundPlayer::GetFmtIndexByName(char *name)
+{
+    char *pos;
+    i32 i = 0;
+    char buffer[128];
+
+    pos = strrchr(name, '/');
+    if (pos == NULL)
+    {
+        pos = strrchr(name, '\\');
+    }
+    if (pos == NULL)
+    {
+        strcpy(buffer, name);
+    }
+    else
+    {
+        strcpy(buffer, pos + 1);
+    }
+    while (this->bgmFmtData[i].name[0] != '\0')
+    {
+        if (strcmp(this->bgmFmtData[i].name, buffer) == 0)
+        {
+            break;
+        }
+        i++;
+    }
+    if (this->bgmFmtData[i].name[0] == '\0')
+    {
+        i = 0;
+    }
+    return i;
+}
+
 };
