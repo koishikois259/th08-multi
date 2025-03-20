@@ -36,7 +36,7 @@
 #include <d3d8.h>
 #include <d3dx8.h>
 
-#include "detours.h
+#include "detours.h"
 #include <fstream>
 #include <string.h>
 

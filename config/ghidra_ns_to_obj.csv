@@ -6,3 +6,4 @@ PbgArchive,th08::PbgArchive,th08::PbgArchiveEntry
 PbgFile,th08::IPbgFile,th08::CPbgFile
 TextHelper,th08::TextHelper
 utils,th08::utils
+zwave,th08::CSoundManager,th08::CSound,th08::CStreamingSound,th08::CWaveFile

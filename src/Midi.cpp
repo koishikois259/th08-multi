@@ -215,15 +215,17 @@ MidiOutput::~MidiOutput()
 
 ZunResult MidiOutput::ReadFileData(int idx, LPCSTR path)
 {
-    if (m_MidiHeadersCursor == idx)
+    if (m_MidiFileIndex == idx)
     {
         StopPlayback();
     }
 
     ReleaseFileData(idx);
 
-    if (m_MidiFileData[idx] = NULL)
+    m_MidiFileData[idx] = FileSystem::OpenFile((LPSTR)path, NULL, false);
+    if (m_MidiFileData[idx] == NULL)
     {
+        g_GameErrorContext.Log(TH_ERR_MIDI_FAILED_TO_READ_FILE, path);
         return ZUN_ERROR;
     }
 
