@@ -75,6 +75,10 @@ struct SoundPlayerCommand
     char string[256];
 };
 
+#define NUM_SOUND_BUFFERS 128
+#define NUM_BGM_SLOTS 16
+#define SOUND_QUEUE_LENGTH 12
+
 class SoundPlayer
 {
   public:
@@ -96,7 +100,7 @@ class SoundPlayer
     ZunResult ReopenBGM(char *path);
     ZunResult PreloadBGM(char *path);
     ZunResult LoadBGM(char *path);
-    void FreePreloadedBGM();
+    void FreePreloadedBGM(i32 idx);
     void StopBGM();
     void FadeOut(f32 seconds);
 
@@ -107,26 +111,26 @@ class SoundPlayer
 
     LPDIRECTSOUND dsoundHdl;
     i32 unk4;
-    LPDIRECTSOUNDBUFFER soundBuffers[128];
-    LPDIRECTSOUNDBUFFER duplicateSoundBuffers[128];
-    i32 unk408[128];
+    LPDIRECTSOUNDBUFFER soundBuffers[NUM_SOUND_BUFFERS];
+    LPDIRECTSOUNDBUFFER duplicateSoundBuffers[NUM_SOUND_BUFFERS];
+    i32 unk408[NUM_SOUND_BUFFERS];
     LPDIRECTSOUNDBUFFER initSoundBuffer;
     HWND gameWindow;
     CSoundManager *manager;
     DWORD bgmThreadId;
     HANDLE bgmThreadHandle;
     i32 unk61c;
-    i32 soundBuffersToPlay[12];
-    u32 unk650[12];
-    u32 unk680[12][128];
-    ThBgmFormat *unk1e80[16];
-    LPBYTE unk1ec0[16];
-    LPBYTE unk1f00[16];
-    DWORD bgmPreloadAllocSizes[16];
+    i32 soundBuffersToPlay[SOUND_QUEUE_LENGTH];
+    u32 unk650[SOUND_QUEUE_LENGTH];
+    u32 unk680[SOUND_QUEUE_LENGTH][128];
+    ThBgmFormat *unk1e80[NUM_BGM_SLOTS];
+    LPBYTE unk1ec0[NUM_BGM_SLOTS];
+    LPBYTE unk1f00[NUM_BGM_SLOTS];
+    DWORD bgmPreloadAllocSizes[NUM_BGM_SLOTS];
     u32 unk1f80;
     ThBgmFormat *bgmFmtData;
     SoundPlayerCommand commandQueue[32];
-    char bgmFileNames[16][256];
+    char bgmFileNames[NUM_BGM_SLOTS][256];
     char currentBgmFileName[256];
     CStreamingSound *bgm;
     HANDLE bgmUpdateEvent;

@@ -49,11 +49,11 @@ ZunResult SoundPlayer::InitializeDSound(HWND gameWindow)
 
     ZeroMemory(this, sizeof(SoundPlayer));
     
-    for (int i = 0; i < ARRAY_SIZE_SIGNED(this->unk408); i++)
+    for (i32 i = 0; i < NUM_SOUND_BUFFERS; i++)
     {
         this->unk408[i] = -1;
     }
-    for (int i = 0; i < ARRAY_SIZE_SIGNED(this->soundBuffersToPlay); i++)
+    for (i32 i = 0; i < SOUND_QUEUE_LENGTH; i++)
     {
         this->soundBuffersToPlay[i] = -1;
     }
@@ -100,6 +100,37 @@ ZunResult SoundPlayer::InitializeDSound(HWND gameWindow)
     SetTimer(gameWindow, 0, 250, NULL);
     this->gameWindow = gameWindow;
     g_GameErrorContext.Log(TH_DBG_SOUNDPLAYER_INIT_SUCCESS);
+    return ZUN_SUCCESS;
+}
+
+ZunResult SoundPlayer::Release()
+{
+    i32 i;
+
+    if (this->bgmFmtData != NULL)
+    {
+        g_ZunMemory.Free(this->bgmFmtData);
+    }
+    for (i = 0; i < NUM_SOUND_BUFFERS; i++)
+    {
+        SAFE_RELEASE(this->duplicateSoundBuffers[i]);
+        SAFE_RELEASE(this->soundBuffers[i]);
+    }
+    if (this->manager == NULL)
+    {
+        return ZUN_SUCCESS;
+    }
+    KillTimer(this->gameWindow, 1);
+    this->StopBGM();
+    this->dsoundHdl = NULL;
+    this->initSoundBuffer->Stop();
+    SAFE_RELEASE(this->initSoundBuffer);
+    SAFE_DELETE(this->bgm);
+    SAFE_DELETE(this->manager);
+    for (i = 0; i < NUM_BGM_SLOTS; i++)
+    {
+        this->FreePreloadedBGM(i);
+    }
     return ZUN_SUCCESS;
 }
 };
