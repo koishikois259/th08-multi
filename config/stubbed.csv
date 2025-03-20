@@ -1,6 +1,2 @@
-th08::SoundPlayer::ReopenBGM
-th08::SoundPlayer::PreloadBGM
 th08::SoundPlayer::LoadBGM
-th08::SoundPlayer::StopBGM
-th08::SoundPlayer::InitSoundBuffers
 th08::SoundPlayer::ProcessQueues

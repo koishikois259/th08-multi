@@ -403,6 +403,39 @@ void SoundPlayer::StopBGM()
     }
 }
 
+ZunResult SoundPlayer::InitSoundBuffers()
+{
+    i32 i;
+
+    if (this->manager == NULL)
+        return ZUN_ERROR;
+    
+    if (this->dsoundHdl == NULL)
+        return ZUN_SUCCESS;
+
+    for (i = 0; i < SOUND_QUEUE_LENGTH; i++)
+    {
+        this->soundQueue[i] = -1;
+    }
+    for (i = 0; i < ARRAY_SIZE_SIGNED(g_SFXList); i++)
+    {
+        if (this->LoadSound(i, g_SFXList[i]) != ZUN_SUCCESS)
+        {
+            g_GameErrorContext.Log(TH_ERR_SOUNDPLAYER_FAILED_TO_LOAD_SOUND_FILE, g_SFXList[i]);
+            return ZUN_ERROR;
+        }
+    }
+    for (i = 0; i < ARRAY_SIZE(g_SoundBufferIdxVol); i++)
+    {
+        this->dsoundHdl->DuplicateSoundBuffer(this->soundBuffers[g_SoundBufferIdxVol[i].bufferIdx],
+                                              &this->duplicateSoundBuffers[i]);
+        this->duplicateSoundBuffers[i]->SetCurrentPosition(0);
+        this->duplicateSoundBuffers[i]->SetVolume(g_SoundBufferIdxVol[i].volume);
+    }
+
+    return ZUN_SUCCESS;
+}
+
 void SoundPlayer::PlaySoundByIdx(SoundIdx idx, i32 unused)
 {
     i32 unk;
