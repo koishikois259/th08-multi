@@ -98,8 +98,8 @@ class SoundPlayer
     void PlaySoundPositionedByIdx(SoundIdx idx, f32 pan);
     ZunResult StartBGM(char *path);
     ZunResult ReopenBGM(char *path);
-    ZunResult PreloadBGM(char *path);
-    ZunResult LoadBGM(char *path);
+    ZunResult PreloadBGM(i32 idx, char *path);
+    ZunResult LoadBGM(i32 idx);
     void FreePreloadedBGM(i32 idx);
     void StopBGM();
     void FadeOut(f32 seconds);

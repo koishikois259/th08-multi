@@ -8,4 +8,8 @@
 #include "pbg/PbgArchive.hpp"
 #include "pbg/PbgFile.hpp"
 #include "pbg/PbgMemory.hpp"
+#include "SoundPlayer.hpp"
+#include "Supervisor.hpp"
+#include "TextHelper.hpp"
+#include "Midi.hpp"
 #include "utils.hpp"
