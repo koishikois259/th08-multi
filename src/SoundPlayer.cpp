@@ -169,6 +169,22 @@ i32 SoundPlayer::GetFmtIndexByName(char *name)
     return i;
 }
 
+WAVEFORMATEX *SoundPlayer::GetWavFormatData(u8 *soundData, char *formatString, i32 *formatSize,
+                                            u32 fileSizeExcludingFormat)
+{
+    while (fileSizeExcludingFormat > 0)
+    {
+        *formatSize = *(i32 *)(soundData + 4);
+        if (strncmp((char *)soundData, formatString, 4) == 0)
+        {
+            return (WAVEFORMATEX *)(soundData + 8);
+        }
+        fileSizeExcludingFormat -= (*formatSize + 8);
+        soundData += *formatSize + 8;
+    }
+    return NULL;
+}
+
 ZunResult SoundPlayer::LoadFmt(char *path)
 {
     this->bgmFmtData = (ThBgmFormat *)FileSystem::OpenFile(path, NULL, FALSE);

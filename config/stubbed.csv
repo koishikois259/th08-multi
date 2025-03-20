@@ -1,5 +1,4 @@
 th08::SoundPlayer::LoadSound
-th08::SoundPlayer::GetWavFormatData
 th08::SoundPlayer::StartBGM
 th08::SoundPlayer::ReopenBGM
 th08::SoundPlayer::PreloadBGM
