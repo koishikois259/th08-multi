@@ -55,7 +55,7 @@ ZunResult SoundPlayer::InitializeDSound(HWND gameWindow)
     }
     for (i32 i = 0; i < SOUND_QUEUE_LENGTH; i++)
     {
-        this->soundBuffersToPlay[i] = -1;
+        this->soundQueue[i] = -1;
     }
 
     this->manager = new CSoundManager();
@@ -177,13 +177,13 @@ void SoundPlayer::PlaySoundByIdx(SoundIdx idx, i32 unused)
     unk = g_SoundBufferIdxVol[idx].unk;
     for (i = 0; i < SOUND_QUEUE_LENGTH; i++)
     {
-        if (this->soundBuffersToPlay[i] < 0)
+        if (this->soundQueue[i] < 0)
             break;
 
-        if (this->soundBuffersToPlay[i] == idx)
+        if (this->soundQueue[i] == idx)
         {
             if (this->unk650[i] < 0x80)
-                this->unk680[i][this->unk650[i]++] = unused;
+                this->soundQueuePanData[i][this->unk650[i]++] = unused;
 
             return;
         }
@@ -192,9 +192,41 @@ void SoundPlayer::PlaySoundByIdx(SoundIdx idx, i32 unused)
     if (i >= SOUND_QUEUE_LENGTH)
         return;
     
-    this->soundBuffersToPlay[i] = idx;
+    this->soundQueue[i] = idx;
     this->unk408[idx] = unk;
-    this->unk680[i][0] = unused;
+    this->soundQueuePanData[i][0] = unused;
+    this->unk650[i]++;
+}
+
+void SoundPlayer::PlaySoundPositionedByIdx(SoundIdx idx, f32 pan)
+{
+    i32 unk;
+    i32 panAsInt;
+    i32 i;
+
+    unk = g_SoundBufferIdxVol[idx].unk;
+    panAsInt = ((pan - 192) * 1000) / 192;
+
+    for (i = 0; i < SOUND_QUEUE_LENGTH; i++)
+    {
+        if (this->soundQueue[i] < 0)
+            break;
+
+        if (this->soundQueue[i] == idx)
+        {
+            if (this->unk650[i] < 0x80)
+                this->soundQueuePanData[i][this->unk650[i]++] = panAsInt;
+
+            return;
+        }
+    }
+
+    if (i >= SOUND_QUEUE_LENGTH)
+        return;
+    
+    this->soundQueue[i] = idx;
+    this->unk408[idx] = unk;
+    this->soundQueuePanData[i][0] = panAsInt;
     this->unk650[i]++;
 }
 

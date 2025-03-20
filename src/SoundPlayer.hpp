@@ -120,9 +120,9 @@ class SoundPlayer
     DWORD bgmThreadId;
     HANDLE bgmThreadHandle;
     i32 unk61c;
-    i32 soundBuffersToPlay[SOUND_QUEUE_LENGTH];
+    i32 soundQueue[SOUND_QUEUE_LENGTH];
     i32 unk650[SOUND_QUEUE_LENGTH];
-    u32 unk680[SOUND_QUEUE_LENGTH][128];
+    u32 soundQueuePanData[SOUND_QUEUE_LENGTH][128];
     ThBgmFormat *unk1e80[NUM_BGM_SLOTS];
     LPBYTE unk1ec0[NUM_BGM_SLOTS];
     LPBYTE unk1f00[NUM_BGM_SLOTS];
