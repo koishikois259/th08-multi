@@ -1,6 +1,7 @@
 #include "SoundPlayer.hpp"
 
 #include "Global.hpp"
+#include "Supervisor.hpp"
 #include "dxutil.hpp"
 #include "i18n.hpp"
 #include "utils.hpp"
@@ -276,6 +277,45 @@ ZunResult SoundPlayer::LoadFmt(char *path)
 {
     this->bgmFmtData = (ThBgmFormat *)FileSystem::OpenFile(path, NULL, FALSE);
     return this->bgmFmtData != NULL ? ZUN_SUCCESS : ZUN_ERROR;
+}
+
+#pragma var_order(notifySize, fmtData, res, numSamplesPerSec, blockAlign)
+ZunResult SoundPlayer::StartBGM(char *path)
+{
+    HRESULT res;
+    ThBgmFormat *fmtData;
+    DWORD blockAlign;
+    DWORD numSamplesPerSec;
+    DWORD notifySize;
+
+    strcpy(this->currentBgmFileName, path);
+
+    if (this->manager == NULL)
+        return ZUN_ERROR;
+
+    if (this->dsoundHdl == NULL)
+        return ZUN_ERROR;
+
+    utils::DebugPrint("Streming BGM Start\r\n");
+    this->StopBGM();
+
+    fmtData = this->bgmFmtData;
+    blockAlign = fmtData->format.nBlockAlign;
+    numSamplesPerSec = fmtData->format.nSamplesPerSec;
+    notifySize = numSamplesPerSec * 4 * blockAlign / BGM_WAV_BITS_PER_SAMPLE;
+    notifySize -=(notifySize % blockAlign);
+    this->bgmUpdateEvent = CreateEventA(NULL, FALSE, FALSE, NULL);
+    this->bgmThreadHandle = CreateThread(NULL, 0, SoundPlayer::BGMPlayerThread, g_Supervisor.hwndGameWindow, 0,
+                                         &this->bgmThreadId);
+    res = this->manager->CreateStreaming(&this->bgm, path,
+                                         DSBCAPS_GETCURRENTPOSITION2 | DSBCAPS_CTRLPOSITIONNOTIFY, GUID_NULL, 16,
+                                         notifySize, this->bgmUpdateEvent, fmtData);
+    if (FAILED(res))
+    {
+        utils::DebugPrint(TH_ERR_SOUNDPLAYER_FAILED_TO_CREATE_BGM_SOUND_BUFFER);
+        return ZUN_ERROR;
+    }
+    return ZUN_SUCCESS;
 }
 
 void SoundPlayer::PlaySoundByIdx(SoundIdx idx, i32 unused)
