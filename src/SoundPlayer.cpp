@@ -380,6 +380,52 @@ ZunResult SoundPlayer::PreloadBGM(i32 idx, char *path)
     return ZUN_SUCCESS;
 }
 
+#pragma var_order(notifySize, hr, numSamplesPerSec, blockAlign)
+ZunResult SoundPlayer::LoadBGM(i32 idx)
+{
+    HRESULT hr;
+    DWORD blockAlign;
+    DWORD numSamplesPerSec;
+    DWORD notifySize;
+
+    if (this->manager == NULL)
+        return ZUN_ERROR;
+
+    if (g_Supervisor.cfg.musicMode == OFF)
+        return ZUN_ERROR;
+
+    if (this->dsoundHdl == NULL)
+        return ZUN_ERROR;
+
+    if (!g_Supervisor.IsMusicPreloadEnabled())
+        return this->ReopenBGM(this->bgmFileNames[idx]);
+
+    if (this->unk1ec0[idx] == NULL)
+        return ZUN_ERROR;
+
+    utils::DebugPrint("Streming BGM Load no %d\r\n", idx);
+
+    blockAlign = this->bgmPreloadFmtData[idx]->format.nBlockAlign;
+    numSamplesPerSec = this->bgmPreloadFmtData[idx]->format.nSamplesPerSec;
+    notifySize = numSamplesPerSec * 4 * blockAlign / BGM_WAV_BITS_PER_SAMPLE;
+    notifySize -= (notifySize % blockAlign);
+    this->bgmUpdateEvent = CreateEventA(NULL, FALSE, FALSE, NULL);
+    this->bgmThreadHandle =
+        CreateThread(NULL, 0, SoundPlayer::BGMPlayerThread, g_Supervisor.hwndGameWindow, 0, &this->bgmThreadId);
+    hr = this->manager->CreateStreamingFromMemory(
+        &this->bgm, this->unk1f00[idx], this->bgmPreloadAllocSizes[idx], this->bgmPreloadFmtData[idx],
+        DSBCAPS_GETCURRENTPOSITION2 | DSBCAPS_CTRLPOSITIONNOTIFY, GUID_NULL, 16, notifySize, this->bgmUpdateEvent);
+    if (FAILED(hr))
+    {
+        utils::DebugPrint(TH_ERR_SOUNDPLAYER_FAILED_TO_CREATE_BGM_SOUND_BUFFER);
+        return ZUN_ERROR;
+    }
+
+    utils::DebugPrint("load comp\r\n");
+    this->unk1f80 = idx;
+    return ZUN_SUCCESS;
+}
+
 void SoundPlayer::StopBGM()
 {
     if (this->bgm != NULL)
