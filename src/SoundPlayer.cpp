@@ -169,6 +169,12 @@ i32 SoundPlayer::GetFmtIndexByName(char *name)
     return i;
 }
 
+ZunResult SoundPlayer::LoadFmt(char *path)
+{
+    this->bgmFmtData = (ThBgmFormat *)FileSystem::OpenFile(path, NULL, FALSE);
+    return this->bgmFmtData != NULL ? ZUN_SUCCESS : ZUN_ERROR;
+}
+
 void SoundPlayer::PlaySoundByIdx(SoundIdx idx, i32 unused)
 {
     i32 unk;
