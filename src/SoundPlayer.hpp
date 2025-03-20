@@ -123,6 +123,7 @@ class SoundPlayer
     LPBYTE unk1ec0[16];
     LPBYTE unk1f00[16];
     DWORD bgmPreloadAllocSizes[16];
+    u32 unk1f80;
     ThBgmFormat *bgmFmtData;
     SoundPlayerCommand commandQueue[32];
     char bgmFileNames[16][256];
@@ -135,6 +136,7 @@ class SoundPlayer
     i32 sfxVolume;
     i32 unkVolume;
 };
+C_ASSERT(sizeof(SoundPlayer) == 0x5224);
 
 DIFFABLE_EXTERN(SoundPlayer, g_SoundPlayer)
 }; // namespace th08

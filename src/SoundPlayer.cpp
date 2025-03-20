@@ -1,7 +1,19 @@
 #include "SoundPlayer.hpp"
 
+#include "Global.hpp"
+#include "dxutil.hpp"
+#include "i18n.hpp"
+#include "utils.hpp"
+
 namespace th08
 {
+
+#define BGM_BUFFER_SIZE 0x8000
+#define BGM_WAV_NUM_CHANNELS 2
+#define BGM_WAV_BITS_PER_SAMPLE 16
+#define BGM_WAV_BLOCK_ALIGN (BGM_WAV_BITS_PER_SAMPLE / 8 * BGM_WAV_NUM_CHANNELS)
+#define BGM_WAV_SAMPLES_PER_SEC 44100
+
 DIFFABLE_STATIC_ARRAY_ASSIGN(SoundBufferIdxVolume, 46, g_SoundBufferIdxVol) = {
     {0, -1900, 0},   {0, -2100, 0},   {1, -1200, 5},    {1, -1500, 5},   {2, -1100, 100}, {3, -700, 100},
     {4, -700, 100},  {5, -1900, 50},  {6, -2200, 50},   {7, -2400, 50},  {8, -1100, 100}, {9, -1100, 100},
@@ -25,4 +37,69 @@ DIFFABLE_STATIC_ARRAY_ASSIGN(char *, 36, g_SFXList) = {
 };
 DIFFABLE_STATIC(SoundPlayer, g_SoundPlayer)
 
+#pragma var_order(bufDesc, audioBuffer2Start, audioBuffer2Len, audioBuffer1Len, audioBuffer1Start, wavFormat)
+ZunResult SoundPlayer::InitializeDSound(HWND gameWindow)
+{
+    DSBUFFERDESC bufDesc;
+    WAVEFORMATEX wavFormat;
+    LPVOID audioBuffer1Start;
+    DWORD audioBuffer1Len;
+    LPVOID audioBuffer2Start;
+    DWORD audioBuffer2Len;
+
+    ZeroMemory(this, sizeof(SoundPlayer));
+    
+    for (int i = 0; i < ARRAY_SIZE_SIGNED(this->unk408); i++)
+    {
+        this->unk408[i] = -1;
+    }
+    for (int i = 0; i < ARRAY_SIZE_SIGNED(this->soundBuffersToPlay); i++)
+    {
+        this->soundBuffersToPlay[i] = -1;
+    }
+
+    this->manager = new CSoundManager();
+    if (FAILED(this->manager->Initialize(gameWindow, 2, 2, BGM_WAV_SAMPLES_PER_SEC, BGM_WAV_BITS_PER_SAMPLE)))
+    {
+        g_GameErrorContext.Log(TH_ERR_SOUNDPLAYER_FAILED_TO_INITIALIZE_OBJECT);
+        SAFE_DELETE(this->manager);
+        return ZUN_ERROR;
+    }
+
+    this->dsoundHdl = this->manager->GetDirectSound();
+    this->bgmThreadHandle = NULL;
+    ZeroMemory(&bufDesc, sizeof(DSBUFFERDESC));
+    bufDesc.dwSize = sizeof(DSBUFFERDESC);
+    bufDesc.dwFlags = DSBCAPS_GLOBALFOCUS | DSBCAPS_LOCSOFTWARE;
+    bufDesc.dwBufferBytes = BGM_BUFFER_SIZE;
+    ZeroMemory(&wavFormat, sizeof(WAVEFORMATEX));
+    wavFormat.cbSize = 0;
+    wavFormat.wFormatTag = WAVE_FORMAT_PCM;
+    wavFormat.nChannels = BGM_WAV_NUM_CHANNELS;
+    wavFormat.nSamplesPerSec = BGM_WAV_SAMPLES_PER_SEC;
+    wavFormat.nAvgBytesPerSec = BGM_WAV_SAMPLES_PER_SEC * sizeof(INT16) * BGM_WAV_NUM_CHANNELS;
+    wavFormat.nBlockAlign = BGM_WAV_BLOCK_ALIGN;
+    wavFormat.wBitsPerSample = BGM_WAV_BITS_PER_SAMPLE;
+    bufDesc.lpwfxFormat = &wavFormat;
+    if (FAILED(this->dsoundHdl->CreateSoundBuffer(&bufDesc, &this->initSoundBuffer, NULL)))
+    {
+        return ZUN_ERROR;
+    }
+    if (FAILED(this->initSoundBuffer->Lock(0, BGM_BUFFER_SIZE, &audioBuffer1Start, &audioBuffer1Len,
+                                           &audioBuffer2Start, &audioBuffer2Len, 0)))
+    {
+        return ZUN_ERROR;
+    }
+
+    ZeroMemory(audioBuffer1Start, BGM_BUFFER_SIZE);
+    this->initSoundBuffer->Unlock(audioBuffer1Start, audioBuffer1Len, audioBuffer2Start, audioBuffer2Len);
+    this->initSoundBuffer->Play(0, 0, 1);
+    this->bgmVolume = 100;
+    this->sfxVolume = 100;
+    /* 4 times per second */
+    SetTimer(gameWindow, 0, 250, NULL);
+    this->gameWindow = gameWindow;
+    g_GameErrorContext.Log(TH_DBG_SOUNDPLAYER_INIT_SUCCESS);
+    return ZUN_SUCCESS;
+}
 };
