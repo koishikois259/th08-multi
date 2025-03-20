@@ -169,6 +169,35 @@ i32 SoundPlayer::GetFmtIndexByName(char *name)
     return i;
 }
 
+void SoundPlayer::PlaySoundByIdx(SoundIdx idx, i32 unused)
+{
+    i32 unk;
+    i32 i;
+
+    unk = g_SoundBufferIdxVol[idx].unk;
+    for (i = 0; i < SOUND_QUEUE_LENGTH; i++)
+    {
+        if (this->soundBuffersToPlay[i] < 0)
+            break;
+
+        if (this->soundBuffersToPlay[i] == idx)
+        {
+            if (this->unk650[i] < 0x80)
+                this->unk680[i][this->unk650[i]++] = unused;
+
+            return;
+        }
+    }
+
+    if (i >= SOUND_QUEUE_LENGTH)
+        return;
+    
+    this->soundBuffersToPlay[i] = idx;
+    this->unk408[idx] = unk;
+    this->unk680[i][0] = unused;
+    this->unk650[i]++;
+}
+
 #pragma var_order(msg, looped, lpThreadParameterCopy, waitObj, res, stopped)
 DWORD WINAPI SoundPlayer::BGMPlayerThread(LPVOID lpThreadParameter)
 {
