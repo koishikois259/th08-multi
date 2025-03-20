@@ -314,6 +314,18 @@ ZunResult SoundPlayer::StartBGM(char *path)
     return ZUN_SUCCESS;
 }
 
+ZunResult SoundPlayer::ReopenBGM(char *path)
+{
+    if (this->bgm == NULL)
+        return ZUN_ERROR;
+
+    i32 idx = GetFmtIndexByName(path);
+
+    this->bgm->GetWaveFile()->Reopen(&this->bgmFmtData[idx]);
+    utils::DebugPrint("Streming BGM Reopen %d\r\n", idx);
+    return ZUN_SUCCESS;
+}
+
 void SoundPlayer::PlaySoundByIdx(SoundIdx idx, i32 unused)
 {
     i32 unk;

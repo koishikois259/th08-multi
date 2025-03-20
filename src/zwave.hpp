@@ -126,6 +126,10 @@ class CSound
     HRESULT SetVolume(i32 iVolume);
     HRESULT Pause();
     HRESULT Unpause();
+    CWaveFile *GetWaveFile()
+    {
+        return m_pWaveFile;
+    }
 };
 
 //-----------------------------------------------------------------------------
