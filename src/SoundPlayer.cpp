@@ -380,6 +380,29 @@ ZunResult SoundPlayer::PreloadBGM(i32 idx, char *path)
     return ZUN_SUCCESS;
 }
 
+void SoundPlayer::StopBGM()
+{
+    if (this->bgm != NULL)
+    {
+        utils::DebugPrint("Streming BGM stop\r\n");
+        this->bgm->Stop();
+        if (this->bgmThreadHandle != NULL)
+        {
+            PostThreadMessageA(this->bgmThreadId, WM_QUIT, 0, 0);
+            utils::DebugPrint("stop m_dwNotifyThreadID\r\n");
+
+            while (WaitForSingleObject(this->bgmThreadHandle, 256))
+                PostThreadMessageA(this->bgmThreadId, WM_QUIT, 0, 0);
+
+            utils::DebugPrint("stop comp\r\n");
+            CloseHandle(this->bgmThreadHandle);
+            CloseHandle(this->bgmUpdateEvent);
+            this->bgmThreadHandle = NULL;
+        }
+        SAFE_DELETE(this->bgm);
+    }
+}
+
 void SoundPlayer::PlaySoundByIdx(SoundIdx idx, i32 unused)
 {
     i32 unk;
