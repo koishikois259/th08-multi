@@ -53,6 +53,12 @@
             "reverse_fn_order": false
         },
         {
+            "name": "SoundPlayer",
+            "target_path": "build/objdiff/orig/SoundPlayer.obj",
+            "base_path": "build/objdiff/reimpl/SoundPlayer.obj",
+            "reverse_fn_order": false
+        },
+        {
             "name": "TextHelper",
             "target_path": "build/objdiff/orig/TextHelper.obj",
             "base_path": "build/objdiff/reimpl/TextHelper.obj",
