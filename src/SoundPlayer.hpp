@@ -19,7 +19,7 @@ struct SoundPlayerCommand
 
 class SoundPlayer
 {
-public:
+  public:
     LPDIRECTSOUND dsoundHdl;
     i32 unk4;
     LPDIRECTSOUNDBUFFER soundBuffers[128];

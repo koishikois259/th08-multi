@@ -170,7 +170,6 @@ class CStreamingSound : public CSound
     }
 };
 
-
 //-----------------------------------------------------------------------------
 // Name: class CWaveFile
 // Desc: Encapsulates reading or writing sound data to or from a wave file
@@ -222,7 +221,7 @@ class CWaveFile
 
 //-----------------------------------------------------------------------------
 // Name: struct ThBgmFormat
-// Desc: 
+// Desc:
 //-----------------------------------------------------------------------------
 struct ThBgmFormat
 {
