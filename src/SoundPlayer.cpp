@@ -169,6 +169,15 @@ i32 SoundPlayer::GetFmtIndexByName(char *name)
     return i;
 }
 
+SoundPlayer::SoundPlayer()
+{
+    ZeroMemory(this, sizeof(SoundPlayer));
+    for (i32 i = 0; i < NUM_SOUND_BUFFERS; i++)
+    {
+        this->unk408[i] = -1;
+    }
+}
+
 void SoundPlayer::FreePreloadedBGM(i32 idx)
 {
     if (this->unk1ec0[idx] != NULL)
