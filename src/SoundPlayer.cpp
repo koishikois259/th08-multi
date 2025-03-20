@@ -177,4 +177,12 @@ void SoundPlayer::FreePreloadedBGM(i32 idx)
         this->unk1ec0[idx] = NULL;
     }
 }
+
+void SoundPlayer::FadeOut(f32 seconds)
+{
+    if (this->bgm != NULL)
+    {
+        this->bgm->FadeOut(seconds);
+    }
+}
 };
