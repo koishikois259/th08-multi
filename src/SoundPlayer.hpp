@@ -102,7 +102,7 @@ class SoundPlayer
     ZunResult LoadBGM(i32 idx);
     void FreePreloadedBGM(i32 idx);
     void StopBGM();
-    static void FadeOut(SoundPlayer *player, f32 seconds);
+    void FadeOut(f32 seconds);
 
     static DWORD WINAPI BGMPlayerThread(LPVOID lpThreadParameter);
 
