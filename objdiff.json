@@ -53,6 +53,12 @@
             "reverse_fn_order": false
         },
         {
+            "name": "TextHelper",
+            "target_path": "build/objdiff/orig/TextHelper.obj",
+            "base_path": "build/objdiff/reimpl/TextHelper.obj",
+            "reverse_fn_order": false
+        },
+        {
             "name": "utils",
             "target_path": "build/objdiff/orig/utils.obj",
             "base_path": "build/objdiff/reimpl/utils.obj",
