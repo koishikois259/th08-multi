@@ -11,6 +11,60 @@ namespace th08
 {
 enum SoundIdx
 {
+    NO_SOUND = -1,
+    SOUND_SHOOT = 0,
+    SOUND_1,
+    SOUND_2,
+    SOUND_3,
+    SOUND_PICHUN,
+    SOUND_5,
+    SOUND_6,
+    SOUND_7,
+    SOUND_8,
+    SOUND_9,
+    SOUND_SELECT,
+    SOUND_BACK,
+    SOUND_MOVE_MENU,
+    SOUND_D,
+    SOUND_E,
+    SOUND_F,
+    SOUND_10,
+    SOUND_11,
+    SOUND_TOTAL_BOSS_DEATH,
+    SOUND_13,
+    SOUND_DAMAGE,
+    SOUND_ITEM,
+    SOUND_16,
+    SOUND_17,
+    SOUND_18,
+    SOUND_19,
+    SOUND_1A,
+    SOUND_1B,
+    SOUND_1UP,
+    SOUND_TIMEOUT,
+    SOUND_GRAZE,
+    SOUND_POWERUP,
+    SOUND_20,
+    SOUND_21,
+    SOUND_PAUSE,
+    SOUND_SPELL_CAPTURE,
+    SOUND_FAMILIAR_SPAWN,
+    SOUND_DAMAGE_LOW_HEALTH,
+    SOUND_TIMEOUT_2,
+    SOUND_FAMILIAR_UNHIDE,
+    SOUND_FAMILIAR_HIDE,
+    SOUND_INVALID_ACTION,
+    SOUND_2A,
+    SOUND_2B,
+    SOUND_2C,
+    SOUND_2D,
+};
+
+struct SoundBufferIdxVolume
+{
+    i32 bufferIdx;
+    i16 volume;
+    i16 unk;
 };
 
 struct SoundPlayerCommand
