@@ -26,15 +26,12 @@ DIFFABLE_STATIC_ARRAY_ASSIGN(SoundBufferIdxVolume, 46, g_SoundBufferIdxVol) = {
     {34, 0, 100},    {34, -600, 100}, {35, -800, 0},    {8, -100, 100},
 };
 DIFFABLE_STATIC_ARRAY_ASSIGN(char *, 36, g_SFXList) = {
-    "se_plst00.wav", "se_enep00.wav",   "se_pldead00.wav", "se_power0.wav",
-    "se_power1.wav", "se_tan00.wav",    "se_tan01.wav",    "se_tan02.wav",
-    "se_ok00.wav",   "se_cancel00.wav", "se_select00.wav", "se_gun00.wav",
-    "se_cat00.wav",  "se_lazer00.wav",  "se_lazer01.wav",  "se_enep01.wav",
-    "se_nep00.wav",  "se_damage00.wav", "se_item00.wav",   "se_kira00.wav",
-    "se_kira01.wav", "se_kira02.wav",   "se_extend.wav",   "se_timeout.wav",
-    "se_graze.wav",  "se_powerup.wav",  "se_pause.wav",    "se_cardget.wav",
-    "se_option.wav", "se_damage01.wav", "se_timeout2.wav", "se_opshow.wav",
-    "se_ophide.wav", "se_invalid.wav",  "se_slash.wav",    "se_item01.wav",
+    "se_plst00.wav",   "se_enep00.wav",  "se_pldead00.wav", "se_power0.wav",   "se_power1.wav",   "se_tan00.wav",
+    "se_tan01.wav",    "se_tan02.wav",   "se_ok00.wav",     "se_cancel00.wav", "se_select00.wav", "se_gun00.wav",
+    "se_cat00.wav",    "se_lazer00.wav", "se_lazer01.wav",  "se_enep01.wav",   "se_nep00.wav",    "se_damage00.wav",
+    "se_item00.wav",   "se_kira00.wav",  "se_kira01.wav",   "se_kira02.wav",   "se_extend.wav",   "se_timeout.wav",
+    "se_graze.wav",    "se_powerup.wav", "se_pause.wav",    "se_cardget.wav",  "se_option.wav",   "se_damage01.wav",
+    "se_timeout2.wav", "se_opshow.wav",  "se_ophide.wav",   "se_invalid.wav",  "se_slash.wav",    "se_item01.wav",
 };
 DIFFABLE_STATIC(SoundPlayer, g_SoundPlayer)
 
@@ -49,7 +46,7 @@ ZunResult SoundPlayer::InitializeDSound(HWND gameWindow)
     DWORD audioBuffer2Len;
 
     ZeroMemory(this, sizeof(SoundPlayer));
-    
+
     for (i32 i = 0; i < NUM_SOUND_BUFFERS; i++)
     {
         this->unk408[i] = -1;
@@ -86,8 +83,8 @@ ZunResult SoundPlayer::InitializeDSound(HWND gameWindow)
     {
         return ZUN_ERROR;
     }
-    if (FAILED(this->initSoundBuffer->Lock(0, BGM_BUFFER_SIZE, &audioBuffer1Start, &audioBuffer1Len,
-                                           &audioBuffer2Start, &audioBuffer2Len, 0)))
+    if (FAILED(this->initSoundBuffer->Lock(0, BGM_BUFFER_SIZE, &audioBuffer1Start, &audioBuffer1Len, &audioBuffer2Start,
+                                           &audioBuffer2Len, 0)))
     {
         return ZUN_ERROR;
     }
@@ -135,7 +132,7 @@ ZunResult SoundPlayer::Release()
     return ZUN_SUCCESS;
 }
 
-#pragma var_order (pos, i, buffer)
+#pragma var_order(pos, i, buffer)
 i32 SoundPlayer::GetFmtIndexByName(char *name)
 {
     char *pos;
@@ -303,13 +300,12 @@ ZunResult SoundPlayer::StartBGM(char *path)
     blockAlign = fmtData->format.nBlockAlign;
     numSamplesPerSec = fmtData->format.nSamplesPerSec;
     notifySize = numSamplesPerSec * 4 * blockAlign / BGM_WAV_BITS_PER_SAMPLE;
-    notifySize -=(notifySize % blockAlign);
+    notifySize -= (notifySize % blockAlign);
     this->bgmUpdateEvent = CreateEventA(NULL, FALSE, FALSE, NULL);
-    this->bgmThreadHandle = CreateThread(NULL, 0, SoundPlayer::BGMPlayerThread, g_Supervisor.hwndGameWindow, 0,
-                                         &this->bgmThreadId);
-    res = this->manager->CreateStreaming(&this->bgm, path,
-                                         DSBCAPS_GETCURRENTPOSITION2 | DSBCAPS_CTRLPOSITIONNOTIFY, GUID_NULL, 16,
-                                         notifySize, this->bgmUpdateEvent, fmtData);
+    this->bgmThreadHandle =
+        CreateThread(NULL, 0, SoundPlayer::BGMPlayerThread, g_Supervisor.hwndGameWindow, 0, &this->bgmThreadId);
+    res = this->manager->CreateStreaming(&this->bgm, path, DSBCAPS_GETCURRENTPOSITION2 | DSBCAPS_CTRLPOSITIONNOTIFY,
+                                         GUID_NULL, 16, notifySize, this->bgmUpdateEvent, fmtData);
     if (FAILED(res))
     {
         utils::DebugPrint(TH_ERR_SOUNDPLAYER_FAILED_TO_CREATE_BGM_SOUND_BUFFER);
@@ -340,7 +336,7 @@ void SoundPlayer::PlaySoundByIdx(SoundIdx idx, i32 unused)
 
     if (i >= SOUND_QUEUE_LENGTH)
         return;
-    
+
     this->soundQueue[i] = idx;
     this->unk408[idx] = unk;
     this->soundQueuePanData[i][0] = unused;
@@ -372,7 +368,7 @@ void SoundPlayer::PlaySoundPositionedByIdx(SoundIdx idx, f32 pan)
 
     if (i >= SOUND_QUEUE_LENGTH)
         return;
-    
+
     this->soundQueue[i] = idx;
     this->unk408[idx] = unk;
     this->soundQueuePanData[i][0] = panAsInt;
@@ -394,8 +390,7 @@ DWORD WINAPI SoundPlayer::BGMPlayerThread(LPVOID lpThreadParameter)
     looped = true;
     while (!stopped)
     {
-        waitObj =
-            MsgWaitForMultipleObjects(1, &g_SoundPlayer.bgmUpdateEvent, FALSE, INFINITE, QS_ALLEVENTS);
+        waitObj = MsgWaitForMultipleObjects(1, &g_SoundPlayer.bgmUpdateEvent, FALSE, INFINITE, QS_ALLEVENTS);
         if (g_SoundPlayer.bgm == NULL)
         {
             stopped = true;
@@ -471,4 +466,4 @@ void SoundPlayer::FadeOut(f32 seconds)
         this->bgm->FadeOut(seconds);
     }
 }
-};
+}; // namespace th08
