@@ -169,6 +169,93 @@ i32 SoundPlayer::GetFmtIndexByName(char *name)
     return i;
 }
 
+#pragma var_order(sFDCursor, dsBuffer, wavDataPtr, formatSize, audioPtr2, audioSize2, audioSize1, audioPtr1,           \
+                  soundFileData, wavData, fileSize)
+ZunResult SoundPlayer::LoadSound(i32 idx, char *path)
+{
+    u8 *soundFileData;
+    u8 *sFDCursor;
+    i32 fileSize;
+    WAVEFORMATEX *wavDataPtr;
+    WAVEFORMATEX *audioPtr1;
+    WAVEFORMATEX *audioPtr2;
+    DWORD audioSize1;
+    DWORD audioSize2;
+    WAVEFORMATEX wavData;
+    i32 formatSize;
+    DSBUFFERDESC dsBuffer;
+
+    if (this->manager == NULL)
+    {
+        return ZUN_SUCCESS;
+    }
+    SAFE_RELEASE(this->soundBuffers[idx]);
+    soundFileData = (u8 *)FileSystem::OpenFile(path, NULL, FALSE);
+    sFDCursor = soundFileData;
+    if (sFDCursor == NULL)
+    {
+        return ZUN_ERROR;
+    }
+    if (strncmp((char *)sFDCursor, "RIFF", 4))
+    {
+        g_GameErrorContext.Log(TH_ERR_NOT_A_WAV_FILE, path);
+        g_ZunMemory.Free(soundFileData);
+        return ZUN_ERROR;
+    }
+    sFDCursor += 4;
+
+    fileSize = *(i32 *)sFDCursor;
+    sFDCursor += 4;
+
+    if (strncmp((char *)sFDCursor, "WAVE", 4))
+    {
+        g_GameErrorContext.Log(TH_ERR_NOT_A_WAV_FILE, path);
+        g_ZunMemory.Free(soundFileData);
+        return ZUN_ERROR;
+    }
+    sFDCursor += 4;
+    wavDataPtr = GetWavFormatData(sFDCursor, "fmt ", &formatSize, fileSize - 12);
+    if (wavDataPtr == NULL)
+    {
+        g_GameErrorContext.Log(TH_ERR_NOT_A_WAV_FILE, path);
+        g_ZunMemory.Free(soundFileData);
+        return ZUN_ERROR;
+    }
+    wavData = *wavDataPtr;
+
+    wavDataPtr = GetWavFormatData(sFDCursor, "data", &formatSize, fileSize - 12);
+    if (wavDataPtr == NULL)
+    {
+        g_GameErrorContext.Log(TH_ERR_NOT_A_WAV_FILE, path);
+        g_ZunMemory.Free(soundFileData);
+        return ZUN_ERROR;
+    }
+    ZeroMemory(&dsBuffer, sizeof(dsBuffer));
+    dsBuffer.dwSize = sizeof(dsBuffer);
+    dsBuffer.dwFlags = DSBCAPS_GLOBALFOCUS | DSBCAPS_CTRLVOLUME | DSBCAPS_CTRLPAN | DSBCAPS_LOCSOFTWARE;
+    dsBuffer.dwBufferBytes = formatSize;
+    dsBuffer.lpwfxFormat = &wavData;
+    if (FAILED(this->dsoundHdl->CreateSoundBuffer(&dsBuffer, &this->soundBuffers[idx], NULL)))
+    {
+        g_ZunMemory.Free(soundFileData);
+        return ZUN_ERROR;
+    }
+    if (FAILED(soundBuffers[idx]->Lock(0, formatSize, (LPVOID *)&audioPtr1, (LPDWORD)&audioSize1, (LPVOID *)&audioPtr2,
+                                       (LPDWORD)&audioSize2, NULL)))
+    {
+        g_ZunMemory.Free(soundFileData);
+        return ZUN_ERROR;
+    }
+    CopyMemory(audioPtr1, wavDataPtr, audioSize1);
+    if (audioSize2 != 0)
+    {
+        CopyMemory(audioPtr2, (i8 *)wavDataPtr + audioSize1, audioSize2);
+    }
+    soundBuffers[idx]->Unlock((LPVOID *)audioPtr1, audioSize1, (LPVOID *)audioPtr2, audioSize2);
+    g_ZunMemory.Free(soundFileData);
+    return ZUN_SUCCESS;
+}
+
 WAVEFORMATEX *SoundPlayer::GetWavFormatData(u8 *soundData, char *formatString, i32 *formatSize,
                                             u32 fileSizeExcludingFormat)
 {
