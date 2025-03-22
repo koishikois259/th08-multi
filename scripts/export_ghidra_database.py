@@ -25,6 +25,7 @@ def fetchVersions(args):
     with tempfile.NamedTemporaryFile(prefix="versions") as f:
         ghidra_helpers.runAnalyze(
             args.GHIDRA_REPO_NAME,
+            project_name=args.project_name,
             process=args.program,
             username=args.username,
             ssh_key=args.ssh_key,
@@ -59,6 +60,7 @@ def export(args, version: dict):
 
     ghidra_helpers.runAnalyze(
         args.GHIDRA_REPO_NAME,
+        project_name=args.project_name,
         process=args.program,
         username=args.username,
         ssh_key=args.ssh_key,
@@ -151,6 +153,7 @@ def main():
         description="Export a ghidra database history to git",
     )
     parser.add_argument("GHIDRA_REPO_NAME")
+    parser.add_argument("--project-name")
     parser.add_argument("GIT_REPO_PATH", type=Path)
     parser.add_argument("EXPORT_TYPE", choices=[XML, DECOMP])
     parser.add_argument(
