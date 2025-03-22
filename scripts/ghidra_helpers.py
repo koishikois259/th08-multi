@@ -44,7 +44,7 @@ def findAnalyzeHeadless():
 
 def runAnalyze(
     ghidra_repo_name,
-    project_name="Touhou 06",
+    project_name,
     process=None,
     import_file=None,
     analysis=False,
