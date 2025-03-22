@@ -39,7 +39,14 @@ jobs:
       run: |
         echo "$GHIDRA_SSH_AUTH" > ssh_key
         chmod 0600 ssh_key
-        GIT_SSH_COMMAND="ssh -i $PWD/ssh_key -o IdentitiesOnly=yes" git clone "$RE_REPO" "$RE_REPO_NAME" --branch ${{ matrix.branch }}
+        GIT_SSH_COMMAND="ssh -i $PWD/ssh_key -o IdentitiesOnly=yes" git clone "$RE_REPO" "$RE_REPO_NAME"
+        if git -C "$RE_REPO_NAME" rev-parse --verify "origin/${{ matrix.branch }}" ; then
+          # Switch to existing branch
+          git -C "$RE_REPO_NAME" switch -c "${{ matrix.branch }}" "origin/${{ matrix.branch }}"
+        else
+          # Create branch
+          git -C "$RE_REPO_NAME" switch --orphan "${{ matrix.branch }}"
+        fi
         rm ssh_key
       env:
         GHIDRA_SSH_AUTH: ${{ secrets.GHIDRA_SSH_AUTH }}
