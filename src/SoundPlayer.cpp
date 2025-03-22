@@ -934,7 +934,7 @@ void SoundPlayer::FadeOut(f32 seconds)
 {
     if (this->bgm != NULL)
     {
-        player->bgm->FadeOut(seconds);
+        this->bgm->FadeOut(seconds);
     }
 }
 }; // namespace th08

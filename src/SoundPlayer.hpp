@@ -77,7 +77,8 @@ struct SoundPlayerCommand
 
 #define NUM_SOUND_BUFFERS 128
 #define NUM_BGM_SLOTS 16
-#define SOUND_QUEUE_LENGTH 12
+#define SFX_QUEUE_LENGTH 12
+#define BGM_QUEUE_LENGTH 31
 
 class SoundPlayer
 {
@@ -120,16 +121,16 @@ class SoundPlayer
     DWORD bgmThreadId;
     HANDLE bgmThreadHandle;
     i32 unk61c;
-    i32 soundQueue[SOUND_QUEUE_LENGTH];
-    i32 unk650[SOUND_QUEUE_LENGTH];
-    u32 soundQueuePanData[SOUND_QUEUE_LENGTH][128];
+    i32 soundQueue[SFX_QUEUE_LENGTH];
+    i32 unk650[SFX_QUEUE_LENGTH];
+    u32 soundQueuePanData[SFX_QUEUE_LENGTH][128];
     ThBgmFormat *bgmPreloadFmtData[NUM_BGM_SLOTS];
     LPBYTE unk1ec0[NUM_BGM_SLOTS];
     LPBYTE unk1f00[NUM_BGM_SLOTS];
     DWORD bgmPreloadAllocSizes[NUM_BGM_SLOTS];
     u32 unk1f80;
     ThBgmFormat *bgmFmtData;
-    SoundPlayerCommand commandQueue[32];
+    SoundPlayerCommand commandQueue[BGM_QUEUE_LENGTH + 1];
     char bgmFileNames[NUM_BGM_SLOTS][256];
     char currentBgmFileName[256];
     CStreamingSound *bgm;
