@@ -62,7 +62,7 @@ jobs:
         if [[ -e config/ghidra-user-maps.toml ]]; then
           USER_MAPS_ARG="--user-mappings=config/ghidra-user-maps.toml"
         fi
-        python scripts/export_ghidra_database.py $USER_MAPS_ARG --username github-action --ssh-key ssh_key --program "$GHIDRA_FILE_NAME" "ghidra://$GHIDRA_SERVER/$GHIDRA_PROJECT_NAME/$GHIDRA_FOLDER" "$RE_REPO_NAME" ${{ matrix.type }}
+        python scripts/export_ghidra_database.py $USER_MAPS_ARG --username github-action --ssh-key ssh_key --program "$GHIDRA_FILE_NAME" --project_name "$GHIDRA_PROJECT_NAME" "ghidra://$GHIDRA_SERVER/$GHIDRA_PROJECT_NAME/$GHIDRA_FOLDER" "$RE_REPO_NAME" ${{ matrix.type }}
         rm ssh_key
       env: # Or as an environment variable
         GHIDRA_SSH_AUTH: ${{ secrets.GHIDRA_SSH_AUTH }}
