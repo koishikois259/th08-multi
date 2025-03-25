@@ -10,6 +10,9 @@ on:
         required: true
         type: number
 
+env:
+  EXPECTED_HASH: 330fbdbf58a710829d65277b4f312cfbb38d5448b3df523e79350b879213d924
+
 jobs:
   compare:
     runs-on: windows-latest
@@ -51,9 +54,9 @@ jobs:
       run: |
         curl -L $env:ORIGINAL_URL -o resources/game.exe
         $hash = (Get-FileHash resources/game.exe).Hash
-        if ($hash -ne "9f76483c46256804792399296619c1274363c31cd8f1775fafb55106fb852245") {
+        if ($hash -ne $env:EXPECTED_HASH) {
           Write-Host "Downloaded file with unexpected hash."
-          Write-Host "Expected: 9f76483c46256804792399296619c1274363c31cd8f1775fafb55106fb852245"
+          Write-Host "Expected: " $env:EXPECTED_HASH
           Write-Host "Got: $hash"
           exit 1
         }
