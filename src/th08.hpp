@@ -4,7 +4,7 @@
 #include "GameManager.hpp"
 #include "Global.hpp"
 #include "Midi.hpp"
-#include "ResultScreen.hpp"
+#include "ResultSysInf.hpp"
 #include "ScreenEffect.hpp"
 #include "SoundPlayer.hpp"
 #include "SprtCtrl.hpp"

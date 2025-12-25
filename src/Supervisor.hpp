@@ -116,7 +116,7 @@ struct SupervisorFlags
 
 struct Supervisor
 {
-    static i32 RegisterChain();
+    static ZunResult RegisterChain();
 
     ZunResult LoadConfig(char *configFile);
     void ThreadClose();

@@ -7,11 +7,11 @@
 
 namespace th08
 {
-    struct ResultScreen
+    struct ResultSysInf
     {
         static ZunResult RegisterChain(u32 unk); 
 
         unknown_fields(0x0, 0x477b0);
     };
-    C_ASSERT(sizeof(ResultScreen) == 0x477b0);
+    C_ASSERT(sizeof(ResultSysInf) == 0x477b0);
 };
