@@ -9,24 +9,13 @@
 #include "inttypes.hpp"
 #include "utils.hpp"
 #include "ZunBool.hpp"
+#include "Global.hpp"
+
 
 namespace th08
 {
 #define GAME_VERSION 0x80001
 #define ZWAV_MAGIC 'VAWZ'
-
-struct ControllerMapping
-{
-    i16 shotButton;
-    i16 bombButton;
-    i16 focusButton;
-    i16 menuButton;
-    i16 upButton;
-    i16 downButton;
-    i16 leftButton;
-    i16 rightButton;
-    i16 skipButton;
-};
 
 enum MusicMode
 {
@@ -118,21 +107,32 @@ struct Supervisor
 {
     static ZunResult RegisterChain();
 
+    static ChainCallbackResult OnUpdate(Supervisor *s);
+    static ZunResult AddedCallback(Supervisor *s);
+    static ZunResult DeletedCallback(Supervisor *s);
+    static ChainCallbackResult DrawFpsCounter(Supervisor *s);
+    static ChainCallbackResult OnDraw2(Supervisor *s);
+    static ChainCallbackResult OnDraw3(Supervisor *s);
+
     ZunResult LoadConfig(char *configFile);
     void ThreadClose();
     void InitializeCriticalSections();
     void DeleteCriticalSections();
     ZunBool TakeSnapshot(char *filePath);
-    u32 DisableFog();
+    void SetRenderState(D3DRENDERSTATETYPE renderStateType, int value);
+    i32 DisableFog();
+    i32 EnableFog();
 
-    u32 IsShotSlowEnabled()
+    ZunResult ThreadStart(LPTHREAD_START_ROUTINE startFunction, void *startParam);
+
+    ZunBool IsShotSlowEnabled()
     {
         return this->m_Cfg.shotSlow;
     }
 
-    u32 ShouldForceBackbufferClear()
+    ZunBool ShouldForceBackbufferClear()
     {
-        return this->m_Cfg.opts.displayMinimumGraphics | this->m_Cfg.opts.clearBackBufferOnRefresh;
+        return this->m_Cfg.opts.clearBackBufferOnRefresh | this->m_Cfg.opts.displayMinimumGraphics;
     }
 
     ZunBool IsHardwareBlendingDisabled()
@@ -163,6 +163,11 @@ struct Supervisor
     ZunBool IsFogDisabled()
     {
         return m_Cfg.opts.disableFog;
+    }
+
+    ZunBool Supervisor::IsHUDRedrawEnabled()
+    {
+        return this->m_Cfg.opts.redrawHUDEveryFrame;
     }
 
     ZunBool IsReferenceRasterizerMode()
@@ -225,10 +230,10 @@ struct Supervisor
     DWORD m_TotalPlayTime;
     DWORD m_SystemTime;
     D3DCAPS8 m_D3dCaps;
-    HANDLE m_Unk284;
-    unknown_fields(0x288, 0x4);
+    HANDLE m_runningSubthreadHandle;
+    DWORD m_runningSubthreadID;
     BOOL m_Unk28c;
-    DWORD m_Unk290;
+    BOOL m_Unk290;
     unknown_fields(0x294, 0x4);
     CRITICAL_SECTION m_CriticalSections[4];
     u8 m_LockCounts[4];
