@@ -14,7 +14,7 @@
 #include "Global.hpp"
 #include "i18n.hpp"
 #include "inttypes.hpp"
-#include "ResultScreen.hpp"
+#include "ResultSysInf.hpp"
 #include "ScreenEffect.hpp"
 #include "Supervisor.hpp" // Official name: mother.hpp
 #include "SoundPlayer.hpp"
@@ -205,7 +205,7 @@ restart:
 awfulConditionalBreak:
     if (g_GameManager.plst.base.magic != 0)
     {
-        ResultScreen::RegisterChain(2);
+        ResultSysInf::RegisterChain(2);
     }
 
     g_Chain.Release();

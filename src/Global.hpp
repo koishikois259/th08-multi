@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Supervisor.hpp"
 #include "ZunResult.hpp"
 #include "diffbuild.hpp"
 #include "inttypes.hpp"
@@ -280,6 +279,19 @@ class ZunMemory
 
     RegistryInfo *m_Registry[0x1000];
     BOOL m_bRegistryInUse;
+};
+
+struct ControllerMapping
+{
+    i16 shotButton;
+    i16 bombButton;
+    i16 focusButton;
+    i16 menuButton;
+    i16 upButton;
+    i16 downButton;
+    i16 leftButton;
+    i16 rightButton;
+    i16 skipButton;
 };
 
 DIFFABLE_EXTERN(Rng, g_Rng);

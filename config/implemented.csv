@@ -38,6 +38,11 @@ th08::ZunMemory::AddToRegistry
 th08::ZunMemory::RemoveFromRegistry
 th08::GameErrorContext::GameErrorContext
 th08::MidiTimer::OnTimerElapsed
+th08::Supervisor::RegisterChain
+th08::Supervisor::IsSoftwareTexturing
+th08::Supervisor::IsFogDisabled
+th08::Supervisor::EnableFog
+th08::Supervisor::DisableFog
 th08::Supervisor::EnterCriticalSectionWrapper
 th08::Supervisor::LeaveCriticalSectionWrapper
 th08::Supervisor::LoadConfig
