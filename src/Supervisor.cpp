@@ -1,4 +1,5 @@
 #include "Supervisor.hpp"
+#include "SprtCtrl.hpp"
 #include "Global.hpp"
 #include "i18n.hpp"
 #include "utils.hpp"
@@ -8,7 +9,43 @@ namespace th08
 {
 DIFFABLE_STATIC(Supervisor, g_Supervisor);
 
-#pragma optimize("s", on)
+#pragma var_order(elem, result, supervisor)
+ZunResult Supervisor::RegisterChain()
+{
+    Supervisor *supervisor = &g_Supervisor;
+
+    supervisor->m_WantedState = 0;
+    supervisor->m_CurState = -1;
+    supervisor->m_CalcCount = 0;
+
+    ChainElem *elem = g_Chain.CreateElem((ChainCallback)Supervisor::OnUpdate);
+
+    elem->m_Arg = supervisor;
+    elem->m_AddedCallback = (ChainLifetimeCallback) Supervisor::AddedCallback;
+    elem->m_DeletedCallback = (ChainLifetimeCallback) Supervisor::DeletedCallback;
+
+    ZunResult result = (ZunResult) g_Chain.AddToCalcChain(elem, 0);
+
+    if (result != ZUN_SUCCESS)
+    {
+        return result;
+    }
+
+    elem = g_Chain.CreateElem((ChainCallback) Supervisor::DrawFpsCounter);
+    elem->m_Arg = supervisor;
+    g_Chain.AddToDrawChain(elem, 16);
+
+    elem = g_Chain.CreateElem((ChainCallback) Supervisor::OnDraw2);
+    elem->m_Arg = supervisor;
+    g_Chain.AddToDrawChain(elem, 0);
+
+    elem = g_Chain.CreateElem((ChainCallback) Supervisor::OnDraw3);
+    elem->m_Arg = supervisor;
+    g_Chain.AddToDrawChain(elem, 2);
+
+    return ZUN_SUCCESS;
+}
+
 #pragma var_order(fileSize, configFileBuffer, bgmHandle, bytesRead, bgmBuffer, bgmHandle2, bytesRead2, bgmBuffer2)
 ZunResult Supervisor::LoadConfig(char *configFile)
 {
@@ -96,7 +133,7 @@ ZunResult Supervisor::LoadConfig(char *configFile)
         g_ControllerMapping = g_Supervisor.m_Cfg.controllerMapping;
     }
 
-    g_Supervisor.m_Cfg.opts.useD3dHwTextureBlending = true;
+    g_Supervisor.m_Cfg.opts.useSwTextureBlending = true; // Bit ignored from PCB onwards (HW blending always used)
     if (this->m_Cfg.opts.dontUseVertexBuf != false)
     {
         g_GameErrorContext.Log(TH_ERR_NO_VERTEX_BUFFER);
@@ -173,20 +210,80 @@ ZunResult Supervisor::LoadConfig(char *configFile)
     return ZUN_SUCCESS;
 }
 
+ZunResult Supervisor::ThreadStart(LPTHREAD_START_ROUTINE startFunction, void *startParam)
+{
+    this->ThreadClose();
+
+    utils::GuiDebugPrint("info : Sub Thread Start Request\n");
+
+    this->m_runningSubthreadHandle = CreateThread(NULL,
+                                                  0,
+                                                  startFunction,
+                                                  startParam,
+                                                  0,
+                                                  &m_runningSubthreadID);
+
+    this->m_Unk290 = TRUE;
+
+    return (this->m_runningSubthreadHandle != NULL) ? ZUN_SUCCESS : ZUN_ERROR;
+}
+
 void Supervisor::ThreadClose()
 {
-    if (m_Unk284 != NULL)
+    if (m_runningSubthreadHandle != NULL)
     {
         utils::GuiDebugPrint("info : Sub Thread Close Request\n");
         m_Unk28c = TRUE;
 
-        while (WaitForSingleObject(m_Unk284, 1000) == WAIT_TIMEOUT)
+        while (WaitForSingleObject(m_runningSubthreadHandle, 1000) == WAIT_TIMEOUT)
             Sleep(1);
 
-        CloseHandle(m_Unk284);
-        m_Unk284 = NULL;
+        CloseHandle(m_runningSubthreadHandle);
+        m_runningSubthreadHandle = NULL;
         m_Unk28c = FALSE;
     }
 }
-#pragma optimize("", on)
+
+void Supervisor::InitializeCriticalSections() {
+    for (u32 i = 0; i < ARRAY_SIZE_SIGNED(m_CriticalSections); i++)
+    {
+        InitializeCriticalSection(&m_CriticalSections[i]);
+    }
+}
+
+i32 Supervisor::EnableFog()
+{
+    g_SprtCtrl->FlushVertexBuffer();
+
+    if (this->m_FogState != FOG_ENABLED)
+    {
+        this->m_FogState = FOG_ENABLED;
+
+        return this->m_D3dDevice->SetRenderState(D3DRS_FOGENABLE, TRUE);
+    }
+
+    return 0;
+}
+
+i32 Supervisor::DisableFog()
+{
+    g_SprtCtrl->FlushVertexBuffer();
+
+    if (this->m_FogState != FOG_DISABLED)
+    {
+        this->m_FogState = FOG_DISABLED;
+
+        return this->m_D3dDevice->SetRenderState(D3DRS_FOGENABLE, FALSE);
+    }
+
+    return 0;
+}
+
+void Supervisor::SetRenderState(D3DRENDERSTATETYPE renderStateType, int value)
+{
+    g_SprtCtrl->FlushVertexBuffer();
+
+    this->m_D3dDevice->SetRenderState(renderStateType, value);
+}
+
 }; // namespace th08

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Supervisor.hpp"
 #include "ZunResult.hpp"
 #include "diffbuild.hpp"
 #include "inttypes.hpp"
@@ -9,6 +8,10 @@
 
 namespace th08
 {
+
+#define IS_PRESSED(key) (g_CurFrameInput & (key))
+#define WAS_PRESSED(key) (((g_CurFrameInput & (key)) != 0) && (g_CurFrameInput & (key)) != (g_LastFrameInput & (key)))
+
 enum ChainCallbackResult
 {
     CHAIN_CALLBACK_RESULT_CONTINUE_AND_REMOVE_JOB = (unsigned int)0,
@@ -277,12 +280,28 @@ class ZunMemory
     RegistryInfo *m_Registry[0x1000];
     BOOL m_bRegistryInUse;
 };
-
+  
+struct ControllerMapping
+{
+    i16 shotButton;
+    i16 bombButton;
+    i16 focusButton;
+    i16 menuButton;
+    i16 upButton;
+    i16 downButton;
+    i16 leftButton;
+    i16 rightButton;
+    i16 skipButton;
+};
+  
 f32 AddNormalizeAngle(f32 a, f32 b);
 void Rotate(D3DXVECTOR3 *outVector, D3DXVECTOR3 *point, f32 angle);
 
 DIFFABLE_EXTERN(Rng, g_Rng);
+DIFFABLE_EXTERN(u16, g_CurFrameInput);
+DIFFABLE_EXTERN(u16, g_LastFrameInput);
 DIFFABLE_EXTERN(GameErrorContext, g_GameErrorContext);
+DIFFABLE_EXTERN(Chain, g_Chain);
 DIFFABLE_EXTERN(PbgArchive, g_PbgArchive);
 DIFFABLE_EXTERN(ZunMemory, g_ZunMemory);
 DIFFABLE_EXTERN(ControllerMapping, g_ControllerMapping);
