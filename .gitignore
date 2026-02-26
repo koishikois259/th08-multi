@@ -9,3 +9,5 @@ build.ninja
 __pycache__
 .vscode
 
+reccmp-user.yml
+reccmp-build.yml

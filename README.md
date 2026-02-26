@@ -21,7 +21,7 @@ This project aims to perfectly reconstruct the source code of [Touhou Eiyashou ~
 
 This project requires the original `th08.exe` version 1.00d (SHA256 hashsum 330fbdbf58a710829d65277b4f312cfbb38d5448b3df523e79350b879213d924, you can check hashsum on windows with command `certutil -hashfile <path-to-your-file> SHA256`.)
 
-Copy `th08.exe` to `resources/game.exe`.
+Copy `th08.exe` to `resources/`.
 
 ### Dependencies
 
@@ -74,6 +74,34 @@ python3 ./scripts/build.py
 
 This will automatically generate a ninja build script `build.ninja`, and run
 ninja on it.
+
+### Diffing
+
+In order to contribute to the decompilation, you are going to need reccmp
+([Instructions](https://github.com/isledecomp/reccmp/tree/master?tab=readme-ov-file#getting-started)).
+
+In the project root, run:
+
+```bash
+reccmp-project detect --search-path resources/
+```
+
+Build the recompiled executable if you have not done so (see
+the above section). Then, in the `build/` directory, run:
+
+```bash
+reccmp-project detect --what recompiled
+```
+
+To generate a report of the differences between the original and recompiled
+binaries, again in the `build/` directory, run:
+
+```bash
+reccmp-reccmp --target th08 --html report.html
+```
+
+This will display a report of the accuracy to the original binary, and export
+this report to a HTML file `report.html`.
 
 # Credits
 

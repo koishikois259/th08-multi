@@ -40,7 +40,7 @@ def configure(build_type):
         writer.variable("link", "link.exe")
         writer.variable(
             "th08_link_flags",
-            "/subsystem:windows /machine:X86 /filealign:4096 /incremental:no /opt:icf /opt:noref /map /mapinfo:exports /mapinfo:lines",
+            "/subsystem:windows /machine:X86 /filealign:4096 /incremental:no /opt:icf /opt:ref /map /mapinfo:exports /mapinfo:lines",
         )
 
         writer.variable("msvc_deps_prefix", "Note: including file:")
@@ -283,12 +283,12 @@ def configure(build_type):
 
         th08_link_libs = "dxguid.lib d3dx8.lib d3d8.lib dsound.lib winmm.lib kernel32.lib user32.lib dinput8.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib"
         writer.build(
-            "$builddir/th08e.exe",
+            "$builddir/th08.exe",
             "link",
             inputs=objfiles,
             variables={
                 "link_libs": th08_link_libs,
-                "link_flags": "$th08_link_flags /debug /pdb:$builddir/th08e.pdb",
+                "link_flags": "$th08_link_flags /debug /pdb:$builddir/th08.pdb",
             },
         )
 
