@@ -226,7 +226,7 @@ struct SprtCtrl
     ~SprtCtrl() {}
     ZunResult ServicePreloadedAnims();
     u32 ExecuteScript(Sprt *sprite);
-    void ExecuteAnms(Sprt *sprites, int count);
+    void ExecuteScriptOnSprtArray(Sprt *sprites, int count);
 
     void ClearBlendMode()
     {
