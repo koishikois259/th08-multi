@@ -28,7 +28,7 @@
 #define TH_JP_DBG_CAPS_IMMEDIATE_PRESENTATION_SWAP "　プレゼンテーション間隔（直接）: "
 #define TH_JP_DBG_CAPS_PRESENTATION_VSYNC "　プレゼンテーション間隔（垂直同期）: "
 #define TH_JP_DBG_CAPS_DEVICE_START "　-- デバイス能力 ------------------------------\r\n"
-#define TH_JP_DBG_CAPS_NONLOCAL_VRAM_BLIT "　System -> 非ローカルVRAMブリット :"
+#define TH_JP_DBG_CAPS_NONLOCAL_VRAM_BLIT "　System -> 非ローカルVRAMブリット : "
 #define TH_JP_DBG_CAPS_HARDWARE_TL "　ハードウェア T&L : "
 #define TH_JP_DBG_CAPS_TEXTURES_FROM_NONLOCAL_VRAM "　非ローカルVRAMからテクスチャ取得 : "
 #define TH_JP_DBG_CAPS_TEXTURES_FROM_MAIN_MEMORY "　システムメモリからテクスチャ取得 : "
@@ -70,7 +70,8 @@
 #define TH_JP_ERR_MIDI_FAILED_TO_READ_FILE "error : MIDI File が読み込めない %s \rv\r\n"
 #define TH_JP_ERR_MIDI_NOT_LOADED "error : まだMIDIが読み込まれていないのに再生しようとしている\n"
 #define TH_JP_ERR_ARCFILE_CORRUPTED "ファイル %s のオープン中にエラーが発生しました"
-#define TH_JP_ERR_NOT_A_WAV_FILE "Wav ファイルじゃない? %s\r\n"
+#define TH_JP_ERR_NOT_A_WAV_FILE  "Wav ファイルじゃない? %s\r\n"
+#define TH_JP_ERR_NOT_A_WAV_FILE2 "Wav ファイルじゃない %s\r\n"
 #define TH_JP_ERR_NO_WAVE_FILE "wave データが無いので、midi にします\r\n"
 #define TH_JP_ERR_BGM_VERSION_MISMATCH "BGM データのバージョンが違います\r\n"
 #define TH_JP_ERR_NO_VERTEX_BUFFER "頂点バッファの使用を抑制します\r\n"
@@ -168,6 +169,7 @@
 #define TH_EN_ERR_MIDI_NOT_LOADED "error : MIDI not loaded before being playback started.\n"
 #define TH_EN_ERR_ARCFILE_CORRUPTED "Error opening file %s"
 #define TH_EN_ERR_NOT_A_WAV_FILE "%s isn't a wav file?"
+#define TH_EN_ERR_NOT_A_WAV_FILE2 "%s isn't a wav file"
 #define TH_EN_ERR_NO_WAVE_FILE "There is no wave data, so I'll make it midi!\r\n"
 #define TH_EN_ERR_BGM_VERSION_MISMATCH "The BGM data version is wrong.\r\n"
 #define TH_EN_ERR_NO_VERTEX_BUFFER "Suppressing the use of the vertex buffer.\r\n"
@@ -267,6 +269,7 @@
 #define TH_ERR_MIDI_NOT_LOADED TH_MAKE_LANG_STR(TH_LANG, _ERR_MIDI_NOT_LOADED)
 #define TH_ERR_ARCFILE_CORRUPTED TH_MAKE_LANG_STR(TH_LANG, _ERR_ARCFILE_CORRUPTED)
 #define TH_ERR_NOT_A_WAV_FILE TH_MAKE_LANG_STR(TH_LANG, _ERR_NOT_A_WAV_FILE)
+#define TH_ERR_NOT_A_WAV_FILE2 TH_MAKE_LANG_STR(TH_LANG, _ERR_NOT_A_WAV_FILE2)
 #define TH_ERR_NO_WAVE_FILE TH_MAKE_LANG_STR(TH_LANG, _ERR_NO_WAVE_FILE)
 #define TH_ERR_BGM_VERSION_MISMATCH TH_MAKE_LANG_STR(TH_LANG, _ERR_BGM_VERSION_MISMATCH)
 #define TH_ERR_NO_VERTEX_BUFFER TH_MAKE_LANG_STR(TH_LANG, _ERR_NO_VERTEX_BUFFER)
