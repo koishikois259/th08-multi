@@ -81,6 +81,12 @@ public class ExportGhidraToReccmp extends GhidraScript
                     continue;
                 }
                 
+                /* filter out instruction labels */
+                if (currentProgram.getListing().getDefinedDataAt(symbol.getAddress()) == null)
+                {
+                    continue;
+                }
+
                 if (symbolName.contains("`vftable"))
                 {
                     strType = "vtable";
