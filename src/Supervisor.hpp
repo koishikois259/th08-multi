@@ -214,12 +214,10 @@ struct Supervisor
     HINSTANCE m_hInstance;
     PDIRECT3D8 m_D3dIface;
     PDIRECT3DDEVICE8 m_D3dDevice;
+    LPDIRECTINPUT8A m_DInputIface;
     LPDIRECTINPUTDEVICE8A m_Keyboard;
     LPDIRECTINPUTDEVICE8A m_Controller;
     DIDEVCAPS m_ControllerCaps;
-
-    u8 unk40[0x04];
-
     HWND m_HwndGameWindow;
     D3DXMATRIX m_ViewMatrix;
     D3DXMATRIX m_ProjectionMatrix;

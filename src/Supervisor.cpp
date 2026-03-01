@@ -74,7 +74,7 @@ ChainCallbackResult Supervisor::OnUpdate(Supervisor *s)
     g_SprtCtrl->ResetMoreStuff();
     g_SprtCtrl->unk0x1c.x = g_SprtCtrl->unk0x1c.y = 0.0f;
 
-    g_SprtCtrl->ExecuteAnms(g_SupervisorSprites, ARRAY_SIZE(g_SupervisorSprites));
+    g_SprtCtrl->ExecuteScriptOnSprtArray(g_SupervisorSprites, ARRAY_SIZE(g_SupervisorSprites));
 
     if (g_SprtCtrl->ServicePreloadedAnims() != ZUN_SUCCESS)
     {

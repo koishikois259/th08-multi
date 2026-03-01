@@ -196,7 +196,7 @@ ZunResult SoundPlayer::LoadSound(i32 idx, char *path)
     }
     if (strncmp((char *)sFDCursor, "RIFF", 4))
     {
-        g_GameErrorContext.Log(TH_ERR_NOT_A_WAV_FILE, path);
+        g_GameErrorContext.Log(TH_ERR_NOT_A_WAV_FILE2, path);
         g_ZunMemory.Free(soundFileData);
         return ZUN_ERROR;
     }

@@ -147,11 +147,11 @@ class GameErrorContext
     {
         if (m_BufferEnd != m_Buffer)
         {
-            Log("---------------------------------------------------------- \n");
+            Log("---------------------------------------------------------- \r\n");
 
             if (m_ShowMessageBox)
             {
-                MessageBoxA(NULL, m_Buffer, "", MB_ICONSTOP);
+                MessageBoxA(NULL, m_Buffer, "log", MB_ICONSTOP);
             }
 
             FileSystem::WriteDataToFile("./log.txt", m_Buffer, strlen(m_Buffer));

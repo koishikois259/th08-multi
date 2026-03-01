@@ -4,7 +4,7 @@ namespace th08
 {
 DIFFABLE_STATIC(SprtCtrl *, g_SprtCtrl);
 
-void SprtCtrl::ExecuteAnms(Sprt *sprite, int count)
+void SprtCtrl::ExecuteScriptOnSprtArray(Sprt *sprite, int count)
 {
     for (int i = 0; i < count; i++)
     {
