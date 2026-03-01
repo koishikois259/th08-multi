@@ -27,7 +27,7 @@ def build(build_type, verbose=False, jobs=1, target=None):
     elif build_type == BuildType.OBJDIFFBUILD:
         ninja_args += ["objdiff"]
     else:
-        ninja_args += ["build/th08e.exe"]
+        ninja_args += ["build/th08.exe"]
 
     # Then, run the build. We use run_windows_program to automatically go through
     # wine if running on linux/macos. scripts/th08run.bat will setup PATH and other
