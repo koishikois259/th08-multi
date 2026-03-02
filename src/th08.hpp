@@ -1,5 +1,6 @@
 #pragma once
 
+#include "AnmManager.hpp"
 #include "Background.hpp"
 #include "Ending.hpp"
 #include "GameManager.hpp"
@@ -7,10 +8,9 @@
 #include "Midi.hpp"
 #include "MusicRoom.hpp"
 #include "ReplayManager.hpp"
-#include "ResultSysInf.hpp"
+#include "ResultScreen.hpp"
 #include "ScreenEffect.hpp"
 #include "SoundPlayer.hpp"
-#include "SprtCtrl.hpp"
 #include "Supervisor.hpp"
 #include "TextHelper.hpp"
 #include "Title.hpp"

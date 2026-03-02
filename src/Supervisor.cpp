@@ -1,12 +1,12 @@
+#include "AnmManager.hpp"
 #include "Ending.hpp"
 #include "GameManager.hpp"
 #include "Global.hpp"
 #include "i18n.hpp"
 #include "MusicRoom.hpp"
 #include "ReplayManager.hpp"
-#include "ResultSysInf.hpp"
+#include "ResultScreen.hpp"
 #include "SoundPlayer.hpp"
-#include "SprtCtrl.hpp"
 #include "Supervisor.hpp"
 #include "Title.hpp"
 #include "utils.hpp"
@@ -62,21 +62,21 @@ ChainCallbackResult Supervisor::OnUpdate(Supervisor *s)
         return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
     }
 
-    g_SprtCtrl->ClearVertexShader();
-    g_SprtCtrl->ClearSprite();
-    g_SprtCtrl->ClearTexture();
-    g_SprtCtrl->ClearColorOp();
-    g_SprtCtrl->ClearBlendMode();
-    g_SprtCtrl->ClearZWrite();
+    g_AnmManager->ClearVertexShader();
+    g_AnmManager->ClearSprite();
+    g_AnmManager->ClearTexture();
+    g_AnmManager->ClearColorOp();
+    g_AnmManager->ClearBlendMode();
+    g_AnmManager->ClearZWrite();
 
-    g_SprtCtrl->ResetSomeStuff();
-    g_SprtCtrl->ClearCameraSettings();
-    g_SprtCtrl->ResetMoreStuff();
-    g_SprtCtrl->unk0x1c.x = g_SprtCtrl->unk0x1c.y = 0.0f;
+    g_AnmManager->ResetSomeStuff();
+    g_AnmManager->ClearCameraSettings();
+    g_AnmManager->ResetMoreStuff();
+    g_AnmManager->unk0x1c.x = g_AnmManager->unk0x1c.y = 0.0f;
 
-    g_SprtCtrl->ExecuteScriptOnSprtArray(g_SupervisorSprites, ARRAY_SIZE(g_SupervisorSprites));
+    g_AnmManager->ExecuteScriptOnVmArray(g_SupervisorSprites, ARRAY_SIZE(g_SupervisorSprites));
 
-    if (g_SprtCtrl->ServicePreloadedAnims() != ZUN_SUCCESS)
+    if (g_AnmManager->ServicePreloadedAnims() != ZUN_SUCCESS)
     {
         return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
     }
@@ -161,7 +161,7 @@ init_titlescreen:
                     case 4:
                         return CHAIN_CALLBACK_RESULT_EXIT_GAME_ERROR;
                     case 5:
-                        if (ResultSysInf::RegisterChain(0) != ZUN_SUCCESS)
+                        if (ResultScreen::RegisterChain(0) != ZUN_SUCCESS)
                         {
                             return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
                         }
@@ -174,7 +174,7 @@ init_titlescreen:
                         break;
                     case 9:
                         GameManager::CutChain();
-                        if (EndingInf::RegisterChain() != ZUN_SUCCESS)
+                        if (Ending::RegisterChain() != ZUN_SUCCESS)
                         {
                             return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
                         }
@@ -204,7 +204,7 @@ init_titlescreen:
                         goto init_titlescreen;
                     case 6:
                         GameManager::CutChain();
-                        if (ResultSysInf::RegisterChain(1) != ZUN_SUCCESS)
+                        if (ResultScreen::RegisterChain(1) != ZUN_SUCCESS)
                         {
                             return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
                         }
@@ -271,7 +271,7 @@ init_titlescreen:
                         break;
                     case 9:
                         GameManager::CutChain();
-                        if (EndingInf::RegisterChain() != ZUN_SUCCESS)
+                        if (Ending::RegisterChain() != ZUN_SUCCESS)
                         {
                             return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
                         }
@@ -313,7 +313,7 @@ init_titlescreen:
 
                         goto init_titlescreen;
                     case 6:
-                        if (ResultSysInf::RegisterChain(1) != ZUN_SUCCESS)
+                        if (ResultScreen::RegisterChain(1) != ZUN_SUCCESS)
                         {
                             return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
                         }
@@ -321,14 +321,14 @@ init_titlescreen:
                 }
                 break;
         }
-        g_LastFrameInput = g_CurFrameInput = g_IsEighthFrameOfHeldInput = 0;
+        g_CurFrameInput = g_LastFrameInput = g_IsEighthFrameOfHeldInput = 0;
     }
 
     s->m_WantedState = s->m_CurState;
     s->m_CalcCount++;
 
     if ((s->m_CalcCount % 4000) == 3999
-        && g_Supervisor.VerifyExeIntegrity("100d", g_Supervisor.m_ExeSize, g_Supervisor.m_ExeChecksum) != ZUN_SUCCESS)
+        && g_Supervisor.VerifyExeIntegrity("0100d", g_Supervisor.m_ExeSize, g_Supervisor.m_ExeChecksum) != ZUN_SUCCESS)
     {
         return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
     }
@@ -548,7 +548,7 @@ void Supervisor::InitializeCriticalSections() {
 
 i32 Supervisor::EnableFog()
 {
-    g_SprtCtrl->FlushVertexBuffer();
+    g_AnmManager->FlushVertexBuffer();
 
     if (this->m_FogState != FOG_ENABLED)
     {
@@ -562,7 +562,7 @@ i32 Supervisor::EnableFog()
 
 i32 Supervisor::DisableFog()
 {
-    g_SprtCtrl->FlushVertexBuffer();
+    g_AnmManager->FlushVertexBuffer();
 
     if (this->m_FogState != FOG_DISABLED)
     {
@@ -576,7 +576,7 @@ i32 Supervisor::DisableFog()
 
 void Supervisor::SetRenderState(D3DRENDERSTATETYPE renderStateType, int value)
 {
-    g_SprtCtrl->FlushVertexBuffer();
+    g_AnmManager->FlushVertexBuffer();
 
     this->m_D3dDevice->SetRenderState(renderStateType, value);
 }

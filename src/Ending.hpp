@@ -9,13 +9,13 @@
 namespace th08
 {
 
-struct EndingInf
+struct Ending
 {
     static ZunResult RegisterChain();
 
     unknown_fields(0x0, 0x2ab8);
 };
 
-C_ASSERT(sizeof(EndingInf) == 0x2ab8);
+C_ASSERT(sizeof(Ending) == 0x2ab8);
 
 } // namespace th08
