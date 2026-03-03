@@ -168,7 +168,7 @@ restart_from_first_job:
             case CHAIN_CALLBACK_RESULT_CONTINUE_AND_REMOVE_JOB:
                 tmp1 = current;
                 current = current->m_Next;
-                Cut(tmp1);
+                CutImpl(tmp1);
 
                 updatedCount++;
                 continue;
@@ -273,7 +273,7 @@ int Chain::RunDrawChain()
             case CHAIN_CALLBACK_RESULT_CONTINUE_AND_REMOVE_JOB:
                 tmp1 = current;
                 current = current->m_Next;
-                Cut(tmp1);
+                CutImpl(tmp1);
 
                 updatedCount++;
                 continue;
