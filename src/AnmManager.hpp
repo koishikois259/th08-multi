@@ -42,41 +42,41 @@ struct ZunImageInfo
 };
 C_ASSERT(sizeof(ZunImageInfo) == 0x14);
 
-enum SprtBlendMode
+enum AnmBlendMode
 {
-    SprtBlendMode_Unset = -1
+    AnmBlendMode_Unset = -1
 };
 
-enum SprtColorOp
+enum AnmColorOp
 {
-    SprtColorOp_Unset = -1
+    AnmColorOp_Unset = -1
 };
 
-enum SprtVertexShader
+enum AnmVertexShader
 {
-    SprtVertexShader_Unset = -1
+    AnmVertexShader_Unset = -1
 };
 
-enum SprtCameraMode
+enum AnmCameraMode
 {
-    SortCameraMode_Unset = -1
+    AnmCameraMode_Unset = -1
 };
 
-enum SprtZWriteMode
+enum AnmZWriteMode
 {
-    SprtZWriteMode_Unset = -1
+    AnmZWriteMode_Unset = -1
 };
 
-struct SprtEntry
+struct AnmEntry
 {
     IDirect3DTexture8 *texture;
     u8 *rawData;
     i32 size;
 };
 
-C_ASSERT(sizeof(SprtEntry) == 0xc);
+C_ASSERT(sizeof(AnmEntry) == 0xc);
 
-struct SprtRawEntry
+struct AnmRawEntry
 {
     i32 numSprites;
     i32 numScripts;
@@ -97,29 +97,29 @@ struct SprtRawEntry
     u32 unk2;
 };
 
-C_ASSERT(sizeof(SprtRawEntry) == 0x40);
+C_ASSERT(sizeof(AnmRawEntry) == 0x40);
 
-struct SprtLoadedSprite
+struct AnmLoadedSprite
 {
     unknown_fields(0x0, 0x44);
 };
 
-C_ASSERT(sizeof(SprtLoadedSprite) == 0x44);
+C_ASSERT(sizeof(AnmLoadedSprite) == 0x44);
 
-struct SprtFileDesc
+struct AnmFileDesc
 {
     i32 anmIdx;
-    SprtRawEntry *rawData;
+    AnmRawEntry *rawData;
     i32 unk0x8;
-    SprtLoadedSprite *sprites;
+    AnmLoadedSprite *sprites;
     void *scripts;
-    SprtEntry *textures;
+    AnmEntry *textures;
     int entryLoadNumber;
 };
 
-C_ASSERT(sizeof(SprtFileDesc) == 0x1c);
+C_ASSERT(sizeof(AnmFileDesc) == 0x1c);
 
-struct SprtInterpData
+struct AnmInterpData
 {
     D3DXVECTOR3 posInitial;
     D3DXVECTOR3 posFinal;
@@ -133,9 +133,9 @@ struct SprtInterpData
     D3DCOLOR color2Final;
 };
 
-C_ASSERT(sizeof(SprtInterpData) == 0x50);
+C_ASSERT(sizeof(AnmInterpData) == 0x50);
 
-struct SprtInterpTimers
+struct AnmInterpTimers
 {
     ZunTimer pos;
     ZunTimer rgb1;
@@ -146,9 +146,9 @@ struct SprtInterpTimers
     ZunTimer alpha2;
 };
 
-C_ASSERT(sizeof(SprtInterpTimers) == 0x54);
+C_ASSERT(sizeof(AnmInterpTimers) == 0x54);
 
-struct SprtInterpModes
+struct AnmInterpModes
 {
     u8 pos;
     u8 rgb1;
@@ -160,7 +160,7 @@ struct SprtInterpModes
     u8 unk0x7;
 };
 
-struct SprtPrefix
+struct AnmPrefix
 {
     D3DXVECTOR3 rotation;
     D3DXVECTOR3 angleVel;
@@ -170,9 +170,9 @@ struct SprtPrefix
     D3DXVECTOR2 uvScrollPos;
     ZunTimer currentTimeInScript;
     ZunTimer waitTimer;
-    SprtInterpTimers interpCurrentTImes;
-    SprtInterpTimers interpEndTimes;
-    SprtInterpModes interpModes;
+    AnmInterpTimers interpCurrentTImes;
+    AnmInterpTimers interpEndTimes;
+    AnmInterpModes interpModes;
     i32 intVars[4];
     f32 floatVars[4];
     i32 intVar8;
@@ -187,30 +187,30 @@ struct SprtPrefix
     i16 type;
     i16 pendingInterrupt;
     i32 playerBulletHitAnimationType;
-    SprtFileDesc *anmFile;
+    AnmFileDesc *anmFile;
     D3DXVECTOR3 pos;
 };
 
-C_ASSERT(sizeof(SprtPrefix) == 0x214);
+C_ASSERT(sizeof(AnmPrefix) == 0x214);
 
-struct SprtRawInstr
+struct AnmRawInstr
 {
 };
 
 // Unofficial name: AnmVm 
-struct Sprt
+struct AnmVm
 {
-    SprtPrefix prefix;
+    AnmPrefix prefix;
     i16 activeSpriteIndex;
     i16 anmFileIndex;
     i16 baseSpriteIndex;
     i16 scriptIndex;
-    SprtRawInstr *beginningOfScript;
-    SprtRawInstr *currentInstruction;
-    SprtLoadedSprite *loadedSprite;
+    AnmRawInstr *beginningOfScript;
+    AnmRawInstr *currentInstruction;
+    AnmLoadedSprite *loadedSprite;
     ZunTimer interruptReturnTime;
-    SprtRawInstr *interruptReturnInstruction;
-    SprtInterpData interpData;
+    AnmRawInstr *interruptReturnInstruction;
+    AnmInterpData interpData;
     D3DXVECTOR3 pos2;
     i32 timeOfLastSpriteSet;
     u8 fontWidth;
@@ -218,14 +218,14 @@ struct Sprt
     unknown_fields(0x29a, 0xa);
 };
 
-C_ASSERT(sizeof(Sprt) == 0x2a4);
+C_ASSERT(sizeof(AnmVm) == 0x2a4);
 
 struct AnmManager
 {
     ~AnmManager() {}
     ZunResult ServicePreloadedAnims();
-    u32 ExecuteScript(Sprt *sprite);
-    void ExecuteScriptOnVmArray(Sprt *sprites, int count);
+    u32 ExecuteScript(AnmVm *sprite);
+    void ExecuteScriptOnVmArray(AnmVm *sprites, int count);
 
     void ClearBlendMode()
     {
@@ -234,7 +234,7 @@ struct AnmManager
 
     void ClearColorOp()
     {
-        m_CurrentColorOp = SprtColorOp_Unset;
+        m_CurrentColorOp = AnmColorOp_Unset;
     }
 
     void ClearSprite()
@@ -244,7 +244,7 @@ struct AnmManager
 
     void ClearVertexShader()
     {
-        m_CurrentVertexShader = SprtVertexShader_Unset;
+        m_CurrentVertexShader = AnmVertexShader_Unset;
     }
 
     void ClearTexture()
@@ -254,12 +254,12 @@ struct AnmManager
 
     void ClearCameraSettings()
     {
-        m_CameraMode = SortCameraMode_Unset;
+        m_CameraMode = AnmCameraMode_Unset;
     }
 
     void ClearZWrite()
     {
-        m_DisableZWrite = SprtZWriteMode_Unset;
+        m_DisableZWrite = AnmZWriteMode_Unset;
     }
 
     void ResetSomeStuff()
@@ -324,7 +324,7 @@ struct AnmManager
     unknown_fields(0x24, 0x1c00);
     D3DXVECTOR3 unk0x1c24;
     unknown_fields(0x1c30, 0x34);
-    Sprt unk0x1c64;
+    AnmVm unk0x1c64;
     unknown_fields(0x1f08, 0x130);
 
     IDirect3DSurface8 *m_Surfaces[32];
