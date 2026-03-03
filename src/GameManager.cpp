@@ -12,7 +12,7 @@ void GameManager::CutChain()
 {
     g_Chain.Cut(&g_GameManagerCalcChain);
     g_Chain.Cut(&g_GameManagerDrawChain);
-    if (g_GameManager.m_Globals->m_Score > 999999999)
+    if (g_GameManager.m_Globals->m_Score >= 1000000000)
     {
         g_GameManager.m_Globals->m_Score = 999999999;
     }
