@@ -15,7 +15,7 @@
 namespace th08
 {
 DIFFABLE_STATIC(Supervisor, g_Supervisor);
-DIFFABLE_STATIC_ARRAY(Sprt, 3, g_SupervisorSprites);
+DIFFABLE_STATIC_ARRAY(AnmVm, 3, g_SupervisorSprites);
 
 
 #pragma var_order(elem, result, supervisor)

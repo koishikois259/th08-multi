@@ -4,7 +4,7 @@ namespace th08
 {
 DIFFABLE_STATIC(AnmManager *, g_AnmManager);
 
-void AnmManager::ExecuteScriptOnVmArray(Sprt *sprite, int count)
+void AnmManager::ExecuteScriptOnVmArray(AnmVm *sprite, int count)
 {
     for (int i = 0; i < count; i++)
     {

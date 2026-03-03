@@ -65,9 +65,9 @@
       "reverse_fn_order": false
     },
     {
-      "name": "SprtCtrl",
-      "target_path": "build/objdiff/orig/SprtCtrl.obj",
-      "base_path": "build/objdiff/reimpl/SprtCtrl.obj",
+      "name": "AnmManager",
+      "target_path": "build/objdiff/orig/AnmManager.obj",
+      "base_path": "build/objdiff/reimpl/AnmManager.obj",
       "reverse_fn_order": false
     },
     {

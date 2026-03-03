@@ -265,5 +265,5 @@ struct Supervisor
 C_ASSERT(sizeof(Supervisor) == 0x364);
 
 DIFFABLE_EXTERN(Supervisor, g_Supervisor);
-DIFFABLE_EXTERN_ARRAY(Sprt, 3, g_SupervisorSprites);
+DIFFABLE_EXTERN_ARRAY(AnmVm, 3, g_SupervisorSprites);
 }; // namespace th08
