@@ -4,11 +4,11 @@
 #include <d3dx8math.h>
 #include <dinput.h>
 
+#include "AnmManager.hpp"
 #include "Midi.hpp"
 #include "diffbuild.hpp"
 #include "inttypes.hpp"
 #include "utils.hpp"
-#include "SprtCtrl.hpp"
 #include "ZunBool.hpp"
 #include "Global.hpp"
 

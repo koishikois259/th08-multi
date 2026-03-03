@@ -4,6 +4,7 @@
 #include "diffbuild.hpp"
 #include "inttypes.hpp"
 #include "pbg/PbgArchive.hpp"
+#include "utils.hpp"
 #include <windows.h>
 #include <d3dx8.h>
 
@@ -12,6 +13,10 @@ namespace th08
 
 #define IS_PRESSED(key) (g_CurFrameInput & (key))
 #define WAS_PRESSED(key) (((g_CurFrameInput & (key)) != 0) && (g_CurFrameInput & (key)) != (g_LastFrameInput & (key)))
+
+/* zunName is ZUN's original name for this type */
+#define ZUN_NEW(type, zunName) ((type *) g_ZunMemory.AddToRegistry(new type(), sizeof(type), zunName))
+#define ZUN_DELETE(p) g_ZunMemory.RemoveFromRegistry(p); delete p; p = NULL;
 
 enum ChainCallbackResult
 {

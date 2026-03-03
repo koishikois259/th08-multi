@@ -101,7 +101,7 @@ def configure(build_type):
             "ReplayManager": "/Od",
             "Supervisor": "/Os /Ob1",
             "SoundPlayer": "/Od",
-            "SprtCtrl": "/Od",
+            "AnmManager": "/Od",
             "zwave": "/Od",
         }
 
@@ -125,7 +125,7 @@ def configure(build_type):
             "ReplayManager",
             "Supervisor",
             "SoundPlayer",
-            "SprtCtrl",
+            "AnmManager",
             "zwave",
         ]
 

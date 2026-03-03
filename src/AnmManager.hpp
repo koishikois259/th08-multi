@@ -220,13 +220,12 @@ struct Sprt
 
 C_ASSERT(sizeof(Sprt) == 0x2a4);
 
-// Unofficial name: AnmManager
-struct SprtCtrl
+struct AnmManager
 {
-    ~SprtCtrl() {}
+    ~AnmManager() {}
     ZunResult ServicePreloadedAnims();
     u32 ExecuteScript(Sprt *sprite);
-    void ExecuteScriptOnSprtArray(Sprt *sprites, int count);
+    void ExecuteScriptOnVmArray(Sprt *sprites, int count);
 
     void ClearBlendMode()
     {
@@ -368,8 +367,8 @@ struct SprtCtrl
     i32 m_SurfaceCaptureDstW;
     i32 m_SurfaceCaptureDstH;
 };
-C_ASSERT(sizeof(SprtCtrl) == 0x2a2570);
+C_ASSERT(sizeof(AnmManager) == 0x2a2570);
 
-DIFFABLE_EXTERN(SprtCtrl *, g_SprtCtrl);
+DIFFABLE_EXTERN(AnmManager *, g_AnmManager);
 
 }; // namespace th08

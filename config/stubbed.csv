@@ -1,4 +1,4 @@
-th08::EndingInf::RegisterChain
+th08::Ending::RegisterChain
 th08::GameManager::RegisterChain
 th08::GameManager::AdvanceToNextStage
 th08::MusicRoom::RegisterChain
@@ -11,12 +11,12 @@ th08::Supervisor::OnDraw2
 th08::Supervisor::OnDraw3
 th08::Supervisor::VerifyExeIntegrity
 th08::ReplayManager::SaveReplay
-th08::ResultSysInf::RegisterChain
+th08::ResultScreen::RegisterChain
 th08::ScreenEffect::SetViewport
-th08::SprtCtrl::CaptureToSurface
-th08::SprtCtrl::CaptureToTexture
-th08::SprtCtrl::ClearVertexBuffer
-th08::SprtCtrl::FlushVertexBuffer
-th08::SprtCtrl::ServicePreloadedAnims
-th08::SprtCtrl::ExecuteScript
+th08::AnmManager::CaptureToSurface
+th08::AnmManager::CaptureToTexture
+th08::AnmManager::ClearVertexBuffer
+th08::AnmManager::FlushVertexBuffer
+th08::AnmManager::ServicePreloadedAnims
+th08::AnmManager::ExecuteScript
 th08::Title::RegisterChain

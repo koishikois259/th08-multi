@@ -8,17 +8,17 @@
 #include <string.h>
 #include <windows.h>
 #include <winnls32.h>
+#include "AnmManager.hpp"
 #include "Background.hpp"
 #include "diffbuild.hpp"
 #include "GameManager.hpp"
 #include "Global.hpp"
 #include "i18n.hpp"
 #include "inttypes.hpp"
-#include "ResultSysInf.hpp"
+#include "ResultScreen.hpp"
 #include "ScreenEffect.hpp"
 #include "Supervisor.hpp" // Official name: mother.hpp
 #include "SoundPlayer.hpp"
-#include "SprtCtrl.hpp"
 #include "ZunBool.hpp"
 #include "ZunColor.hpp"
 #include "ZunMath.hpp"
@@ -133,7 +133,7 @@ restart:
     Controller::GetJoystickCaps();
     Controller::ResetKeyboard();
 
-    g_SprtCtrl = (SprtCtrl *) g_ZunMemory.AddToRegistry(new SprtCtrl(), sizeof(SprtCtrl), "SprtCtrlInf");
+    g_AnmManager = ZUN_NEW(AnmManager, "SprtCtrlInf");
     
     if (!g_Supervisor.IsWindowed())
     {
@@ -187,7 +187,7 @@ restart:
                 }
                 else if (d3dDeviceStatus == D3DERR_DEVICENOTRESET)
                 {
-                    g_SprtCtrl->ReleaseSurfaces();
+                    g_AnmManager->ReleaseSurfaces();
 
                     if (g_Supervisor.m_D3dDevice->Reset(&g_Supervisor.m_PresentParameters) != D3D_OK)
                     {
@@ -205,7 +205,7 @@ restart:
 awfulConditionalBreak:
     if (g_GameManager.plst.base.magic != 0)
     {
-        ResultSysInf::RegisterChain(2);
+        ResultScreen::RegisterChain(2);
     }
 
     g_Chain.Release();
@@ -216,9 +216,7 @@ stop:
     Sleep(1000);
 
     g_SoundPlayer.Release();
-    g_ZunMemory.RemoveFromRegistry(g_SprtCtrl);
-    delete g_SprtCtrl;
-    g_SprtCtrl = NULL;
+    ZUN_DELETE(g_AnmManager);
     
     if (g_Supervisor.m_D3dDevice != NULL)
     {
@@ -314,7 +312,7 @@ RenderResult GameWindow::Render()
             m_LastFrameTime += (1.0f / 60);
         }
 
-        g_SprtCtrl->FlushVertexBuffer();
+        g_AnmManager->FlushVertexBuffer();
 
         g_Supervisor.m_Viewport.X = 0;
         g_Supervisor.m_Viewport.Y = 0;
@@ -342,11 +340,11 @@ RenderResult GameWindow::Render()
         if (g_Supervisor.m_Cfg.frameskipConfig <= m_FramesSinceRedraw)
         {
             g_Supervisor.m_D3dDevice->BeginScene();
-            g_SprtCtrl->ClearVertexBuffer();
+            g_AnmManager->ClearVertexBuffer();
             g_Supervisor.m_FogState = FOG_UNSET;
             g_Supervisor.DisableFog();
             g_Chain.RunDrawChain();
-            g_SprtCtrl->FlushVertexBuffer();
+            g_AnmManager->FlushVertexBuffer();
             g_Supervisor.m_D3dDevice->SetTexture(0, NULL);
             g_Supervisor.m_D3dDevice->EndScene();
             m_FramesSinceRedraw = 0;
@@ -371,14 +369,14 @@ void GameWindow::Present()
 
     if (g_Supervisor.m_D3dDevice->Present(NULL, NULL, NULL, NULL) < 0)
     {
-        g_SprtCtrl->ReleaseSurfaces();
+        g_AnmManager->ReleaseSurfaces();
         g_Supervisor.m_D3dDevice->Reset(&g_Supervisor.m_PresentParameters);
         ResetRenderState();
 
         g_Supervisor.m_Unk174 = 2;
     }
 
-    g_SprtCtrl->TakeScreencaptures();
+    g_AnmManager->TakeScreencaptures();
 
     if (WAS_PRESSED(TH_BUTTON_HOME))
     {
@@ -949,13 +947,13 @@ void GameWindow::ResetRenderState()
     g_Supervisor.m_D3dDevice->SetTextureStageState(0, D3DTSS_ADDRESSU, D3DTADDRESS_WRAP);
     g_Supervisor.m_D3dDevice->SetTextureStageState(0, D3DTSS_ADDRESSV, D3DTADDRESS_WRAP);
 
-    if (g_SprtCtrl != NULL)
+    if (g_AnmManager != NULL)
     {
-        g_SprtCtrl->ClearBlendMode();
-        g_SprtCtrl->ClearColorOp();
-        g_SprtCtrl->ClearVertexShader();
-        g_SprtCtrl->ClearTexture();
-        g_SprtCtrl->ClearCameraSettings();
+        g_AnmManager->ClearBlendMode();
+        g_AnmManager->ClearColorOp();
+        g_AnmManager->ClearVertexShader();
+        g_AnmManager->ClearTexture();
+        g_AnmManager->ClearCameraSettings();
     }
 
     g_Background.m_SkyFogNeedsSetup = true;
