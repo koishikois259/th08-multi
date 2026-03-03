@@ -6,13 +6,14 @@ DIFFABLE_STATIC(AnmManager *, g_AnmManager);
 
 void AnmManager::ExecuteScriptOnVmArray(AnmVm *sprite, int count)
 {
-    for (int i = 0; i < count; i++)
+    while(count != 0)
     {
-        if (sprite->scriptIndex > -1)
+        if (sprite->scriptIndex >= 0)
         {
             g_AnmManager->ExecuteScript(sprite);
         }
         sprite++;
+        count--;
     }
 }
 
