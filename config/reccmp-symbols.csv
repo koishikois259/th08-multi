@@ -972,12 +972,12 @@ th08::AnmManager::LoadAnm,0x465800,function
 th08::AnmManager::ReadAnmEntries,0x465860,function
 th08::AnmManager::PreloadAnm,0x465a40,function
 th08::AnmManager::LoadExternalTextureData,0x465ac0,function
-th08::AnmManager::LoadAnmEntry,0x465ba0,function
-th08::AnmManager::FUN_00465cc0,0x465cc0,function
+th08::AnmManager::PostloadAnmEntry,0x465ba0,function
+th08::AnmManager::LoadTextureData,0x465cc0,function
 th08::AnmManager::ServicePreloadedAnims,0x466000,function
 th08::AnmManager::ReleaseAnm,0x466060,function
-FUN_00466160,0x466160,function
-FUN_004661b0,0x4661b0,function
+th08::AnmManager::ReleaseAnmEntry,0x466160,function
+th08::AnmFileDesc::LoadSprite,0x4661b0,function
 FUN_00466310,0x466310,function
 th08::AnmManager::DrawVmTextFmt,0x4663b0,function
 FUN_004664a0,0x4664a0,function

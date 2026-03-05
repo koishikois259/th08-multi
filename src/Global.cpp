@@ -970,9 +970,9 @@ LPBYTE FileSystem::Encrypt(LPBYTE inData, i32 size, u8 xorValue, u8 xorValueInc,
 }
 
 #pragma var_order(unused, entryname, size, data, handle)
-LPBYTE FileSystem::OpenFile(LPSTR path, i32 *fileSize, BOOL isExternalResource)
+LPBYTE FileSystem::OpenFile(LPCSTR path, i32 *fileSize, BOOL isExternalResource)
 {
-    char *entryname;
+    const char *entryname;
     DWORD size;
     LPBYTE data;
     HANDLE handle;

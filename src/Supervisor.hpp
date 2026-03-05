@@ -234,7 +234,7 @@ struct Supervisor
     i32 m_Unk16c;
     i32 m_Unk170;
     i32 m_Unk174; // Commonly set for screen transitions and decremented once per frame, but never actually used for anything
-    unknown_fields(0x178, 0x4);
+    i32 m_Unk178;
     BOOL m_DisableVsync;
     ZunBool m_CouldSetRefreshRate;
     i32 m_LastFrameTime; // Unused in IN
@@ -247,7 +247,7 @@ struct Supervisor
     D3DCAPS8 m_D3dCaps;
     HANDLE m_runningSubthreadHandle;
     DWORD m_runningSubthreadID;
-    BOOL m_Unk28c;
+    BOOL m_SubthreadCloseRequestActive;
     BOOL m_Unk290;
     u32 m_Unk294;
     CRITICAL_SECTION m_CriticalSections[4];
@@ -263,7 +263,5 @@ struct Supervisor
     unknown_fields(0x35c, 0x8);
 };
 C_ASSERT(sizeof(Supervisor) == 0x364);
-
 DIFFABLE_EXTERN(Supervisor, g_Supervisor);
-DIFFABLE_EXTERN_ARRAY(AnmVm, 3, g_SupervisorSprites);
 }; // namespace th08

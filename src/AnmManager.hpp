@@ -4,6 +4,7 @@
 #include "diffbuild.hpp"
 #include "Global.hpp"
 #include "inttypes.hpp"
+#include "Supervisor.hpp"
 #include "ZunResult.hpp"
 #include "ZunColor.hpp"
 #include "utils.hpp"
@@ -34,11 +35,11 @@ struct VertexTex1DiffuseXyzrhw
 // The only reason this ABI mismatch doesn't cause issues is because no surface indices are ever loaded other than 0
 struct ZunImageInfo
 {
-    u32 width;
-    u32 height;
-    u32 depth;
-    u32 mipLevels;
-    D3DFORMAT format;
+    u32 Width;
+    u32 Height;
+    u32 Depth;
+    u32 MipLevels;
+    D3DFORMAT Format;
 };
 C_ASSERT(sizeof(ZunImageInfo) == 0x14);
 
@@ -89,7 +90,7 @@ struct AnmRawEntry
     u32 spriteIdxOffset;
     u32 mipmapNameOffset;
     u32 version;
-    u32 unk1;
+    u32 priority;
     u32 textureOffset;
     u8 hasData;
     /* 3 bytes pad for alignment */
@@ -99,25 +100,35 @@ struct AnmRawEntry
 
 C_ASSERT(sizeof(AnmRawEntry) == 0x40);
 
+struct AnmTextureHeader
+{
+    char magic[4];      /* THTX */
+    u16 unk0x4;
+    u16 unk0x8;
+    u16 width;
+    u16 height;
+    u16 unk0x14;
+    u16 unk0x18;
+};
+
 struct AnmLoadedSprite
 {
-    unknown_fields(0x0, 0x44);
+    u32 anmIdx;
+    IDirect3DTexture8 *texture;
+    ZunVec2 startPixelInclusive;
+    ZunVec2 endPixelInclusive;
+    float height;
+    float width;
+    ZunVec2 uvStart;
+    ZunVec2 uvEnd;
+    float heightPx;
+    float widthPx;
+    ZunVec2 scaleFactor;
+    u32 unk0x40;
 };
 
 C_ASSERT(sizeof(AnmLoadedSprite) == 0x44);
 
-struct AnmFileDesc
-{
-    i32 anmIdx;
-    AnmRawEntry *rawData;
-    i32 unk0x8;
-    AnmLoadedSprite *sprites;
-    void *scripts;
-    AnmEntry *textures;
-    int entryLoadNumber;
-};
-
-C_ASSERT(sizeof(AnmFileDesc) == 0x1c);
 
 struct AnmInterpData
 {
@@ -160,6 +171,40 @@ struct AnmInterpModes
     u8 unk0x7;
 };
 
+struct AnmRawInstr
+{
+};
+
+struct AnmFileDesc
+{
+    i32 anmIdx;
+    AnmRawEntry *rawData;
+    i32 totalEntries;
+    AnmLoadedSprite *sprites;
+    AnmRawInstr **scripts;
+    AnmEntry *textures;
+    int numberEntriesToBeLoaded;
+
+    void LoadSprite(i32 spriteIdx, AnmLoadedSprite *loadedSprite);
+};
+
+C_ASSERT(sizeof(AnmFileDesc) == 0x1c);
+
+struct AnmRawSprite
+{
+    u32 id;
+    float x;
+    float y;
+    float width;
+    float height;
+};
+
+struct AnmRawScript
+{
+    u32 id;
+    u32 offset;
+};
+
 struct AnmPrefix
 {
     D3DXVECTOR3 rotation;
@@ -193,11 +238,8 @@ struct AnmPrefix
 
 C_ASSERT(sizeof(AnmPrefix) == 0x214);
 
-struct AnmRawInstr
-{
-};
 
-// Unofficial name: AnmVm 
+
 struct AnmVm
 {
     AnmPrefix prefix;
@@ -223,9 +265,22 @@ C_ASSERT(sizeof(AnmVm) == 0x2a4);
 struct AnmManager
 {
     ~AnmManager() {}
-    ZunResult ServicePreloadedAnims();
     u32 ExecuteScript(AnmVm *sprite);
     void ExecuteScriptOnVmArray(AnmVm *sprites, int count);
+    ZunResult CreateTextureFromFile(IDirect3DTexture8 **outTexture, i32 format, i32 colorKey);
+    ZunResult CreateTextureFromAnm(IDirect3DTexture8 **outTexture, AnmTextureHeader *textureData, i32 format);
+    ZunResult CreateEmptyTexture(IDirect3DTexture8 **outTexture, i32 width, i32 height, i32 format);
+    AnmFileDesc *LoadAnm(i32 anmIdx, const char *filename);
+    AnmFileDesc *ReadAnmEntries(i32 anmIdx, const char *filename);
+    AnmFileDesc *PreloadAnm(i32 anmIdx, const char *filename);
+    i32 LoadExternalTextureData(AnmFileDesc *fileDesc, i32 entryNumber, i32 *sprites, i32 *scripts, AnmRawEntry *rawEntry);
+    AnmFileDesc *PostloadAnmEntry(AnmFileDesc *anm);
+    BOOL LoadTextureData(AnmFileDesc *fileDesc, i32 entryNumber, i32 sprites, i32 scripts, AnmRawEntry *rawEntry);
+    ZunResult ServicePreloadedAnims();
+    void ReleaseAnm(i32 anmIdx);
+    void ReleaseAnmEntry(AnmEntry *anmEntry);
+    ZunResult LoadSurface(i32 surfaceIdx, const char *path);
+    void ReleaseSurface(i32 surfaceIdx);
 
     void ClearBlendMode()
     {
@@ -321,7 +376,7 @@ struct AnmManager
     u32 unk0x14;
     u32 unk0x18;
     D3DXVECTOR2 unk0x1c;
-    unknown_fields(0x24, 0x1c00);
+    AnmFileDesc m_AnmFiles[256];
     D3DXVECTOR3 unk0x1c24;
     unknown_fields(0x1c30, 0x34);
     AnmVm unk0x1c64;
