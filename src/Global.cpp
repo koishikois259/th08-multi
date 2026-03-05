@@ -519,13 +519,13 @@ u16 Controller::GetControllerInput(u16 buttons)
         {
             i32 retryCount = 0;
 
-            utils::DebugPrint("error : DIERR_INPUTLOST\n");
+            utils::DebugPrint("error : DIERR_INPUTLOST\r\n");
             aaa = g_Supervisor.m_Controller->Acquire();
 
             while (aaa == DIERR_INPUTLOST)
             {
                 aaa = g_Supervisor.m_Controller->Acquire();
-                utils::DebugPrint("error : DIERR_INPUTLOST %d\n", retryCount);
+                utils::DebugPrint("error : DIERR_INPUTLOST %d\r\n", retryCount);
 
                 retryCount++;
 
@@ -676,7 +676,7 @@ u8 *Controller::GetControllerState()
         if (FAILED(dires))
         {
             diRetryCount = 0;
-            utils::DebugPrint("error : DIERR_INPUTLOST\n");
+            utils::DebugPrint("error : DIERR_INPUTLOST\r\n");
             dires = g_Supervisor.m_Controller->Acquire();
             while (dires == DIERR_INPUTLOST)
             {
@@ -684,7 +684,7 @@ u8 *Controller::GetControllerState()
                 diRetryCount++;
                 if (diRetryCount >= 400)
                 {
-                    utils::DebugPrint("error : DIERR_INPUTLOST %d\n", diRetryCount);
+                    utils::DebugPrint("error : DIERR_INPUTLOST %d\r\n", diRetryCount);
                     return g_ControllerData;
                 }
             }
@@ -1007,12 +1007,12 @@ LPBYTE FileSystem::OpenFile(LPCSTR path, i32 *fileSize, BOOL isExternalResource)
         }
         if (size == 0)
         {
-            g_GameErrorContext.Fatal("error : %s is not found in arcfile.\n", entryname);
+            g_GameErrorContext.Fatal("error : %s is not found in arcfile.\r\n", entryname);
             goto error;
         }
         if (size != 0)
         {
-            utils::DebugPrint("%s Decode ... \n", entryname);
+            utils::DebugPrint("%s Decode ... \r\n", entryname);
 
             data = (LPBYTE)g_ZunMemory.Alloc(size, path);
             if (data == NULL)
@@ -1025,13 +1025,13 @@ LPBYTE FileSystem::OpenFile(LPCSTR path, i32 *fileSize, BOOL isExternalResource)
         }
     }
 
-    utils::DebugPrint("%s Load ... \n", path);
+    utils::DebugPrint("%s Load ... \r\n", path);
 
     handle = CreateFileA(path, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING,
                          FILE_FLAG_SEQUENTIAL_SCAN | FILE_ATTRIBUTE_NORMAL, NULL);
     if (handle == INVALID_HANDLE_VALUE)
     {
-        utils::DebugPrint("error : %s is not found.\n", path);
+        utils::DebugPrint("error : %s is not found.\r\n", path);
         goto error;
     }
 
@@ -1039,7 +1039,7 @@ LPBYTE FileSystem::OpenFile(LPCSTR path, i32 *fileSize, BOOL isExternalResource)
     data = (LPBYTE)g_ZunMemory.Alloc(size, path);
     if (data == NULL)
     {
-        utils::DebugPrint("error : %s allocation error.\n", path);
+        utils::DebugPrint("error : %s allocation error.\r\n", path);
         CloseHandle(handle);
         goto error;
     }
@@ -1093,7 +1093,7 @@ int FileSystem::WriteDataToFile(LPCSTR path, LPVOID data, size_t size)
         FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_ALLOCATE_BUFFER,
                        NULL, GetLastError(), LANG_USER_DEFAULT, (LPSTR)&buffer, 0, NULL);
 
-        utils::DebugPrint("error : %s write error %s\n", path, buffer);
+        utils::DebugPrint("error : %s write error %s\r\n", path, buffer);
         LocalFree(buffer);
         g_Supervisor.LeaveCriticalSectionWrapper(2);
         return -1;
@@ -1103,13 +1103,13 @@ int FileSystem::WriteDataToFile(LPCSTR path, LPVOID data, size_t size)
     if (size != numBytesWritten)
     {
         CloseHandle(handle);
-        utils::DebugPrint("error : %s write error\n", path);
+        utils::DebugPrint("error : %s write error\r\n", path);
         g_Supervisor.LeaveCriticalSectionWrapper(2);
         return -2;
     }
 
     CloseHandle(handle);
-    utils::DebugPrint("%s write ...\n", path);
+    utils::DebugPrint("%s write ...\r\n", path);
     g_Supervisor.LeaveCriticalSectionWrapper(2);
     return 0;
 }

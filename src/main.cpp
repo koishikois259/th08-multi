@@ -429,7 +429,7 @@ ZunBool GameWindow::InitD3DInterface()
 
     if (g_Supervisor.m_D3dIface == NULL)
     {
-        g_GameErrorContext.Log(TH_ERR_D3D_ERR_COULD_NOT_CREATE_OBJ);
+        g_GameErrorContext.Fatal(TH_ERR_D3D_ERR_COULD_NOT_CREATE_OBJ);
         return true;
     }
 
@@ -671,7 +671,7 @@ ZunBool GameWindow::InitD3DRendering()
                             if (presentParams.FullScreen_PresentationInterval == D3DPRESENT_INTERVAL_IMMEDIATE)
                             {
                                 g_GameErrorContext.Log(TH_ERR_ASYNC_VSYNC_UNSUPPORTED);
-                                g_GameErrorContext.Log(TH_ERR_CHANGE_REFRESH_RATE);
+                                g_GameErrorContext.Fatal(TH_ERR_CHANGE_REFRESH_RATE);
                                 presentParams.FullScreen_PresentationInterval = D3DPRESENT_INTERVAL_ONE;
                                 presentParams.SwapEffect = D3DSWAPEFFECT_COPY;
 
@@ -679,7 +679,7 @@ ZunBool GameWindow::InitD3DRendering()
                             }
                             else
                             {
-                                g_GameErrorContext.Log(TH_ERR_D3D_INIT_FAILED);
+                                g_GameErrorContext.Fatal(TH_ERR_D3D_INIT_FAILED);
                             
                                 if (g_Supervisor.m_D3dIface != NULL)
                                 {

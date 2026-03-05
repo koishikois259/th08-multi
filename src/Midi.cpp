@@ -393,12 +393,12 @@ ZunResult MidiOutput::UnprepareHeader(LPMIDIHDR pmh)
 {
     if (pmh == NULL)
     {
-        utils::DebugPrint("error :\n");
+        utils::DebugPrint("error :\r\n");
     }
 
     if (m_MidiOutDev.handle == NULL)
     {
-        utils::DebugPrint("error :\n");
+        utils::DebugPrint("error :\r\n");
     }
 
     for (i32 i = 0; i < ARRAY_SIZE_SIGNED(m_MidiHeaders); i++)
@@ -416,7 +416,7 @@ success:
     MMRESULT res = midiOutUnprepareHeader(m_MidiOutDev.handle, pmh, sizeof(*pmh));
     if (res != MMSYSERR_NOERROR)
     {
-        utils::DebugPrint("error :\n");
+        utils::DebugPrint("error :\r\n");
     }
 
     g_ZunMemory.Free(pmh->lpData);

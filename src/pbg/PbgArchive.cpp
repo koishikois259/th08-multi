@@ -22,7 +22,7 @@ PbgArchive::~PbgArchive()
 bool PbgArchive::Load(LPCSTR filename)
 {
     Release();
-    utils::DebugPrint("info : %s open arcfile\n", filename);
+    utils::DebugPrint("info : %s open arcfile\r\n", filename);
 
     m_FileAbstraction = NewEx(CPbgFile());
     if (m_FileAbstraction == NULL)
@@ -39,7 +39,7 @@ bool PbgArchive::Load(LPCSTR filename)
         }
     }
 
-    utils::DebugPrint("info : %s not found\n", filename);
+    utils::DebugPrint("info : %s not found\r\n", filename);
     Release();
     return false;
 }
@@ -48,7 +48,7 @@ void PbgArchive::Release()
 {
     if (m_Filename != NULL)
     {
-        utils::DebugPrint("info : %s close arcfile\n", m_Filename);
+        utils::DebugPrint("info : %s close arcfile\r\n", m_Filename);
     }
     MemFree(m_Filename);
     DeleteArray(m_Entries);
@@ -102,7 +102,7 @@ LPBYTE PbgArchive::ReadDecompressEntry(LPCSTR filename, LPBYTE outBuffer)
     return decompressedData;
 
 entry_read_error:
-    utils::DebugPrint("info : %s error\n", m_Filename);
+    utils::DebugPrint("info : %s error\r\n", m_Filename);
     MemFree(compressedData);
     return NULL;
 }
