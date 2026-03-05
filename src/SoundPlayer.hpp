@@ -111,8 +111,8 @@ class SoundPlayer
         {
             this->bgm->UpdateFadeOut();
             this->bgm->UpdateFadeIn();
-            this->bgm->UpdateShortFadeOut();
-            this->bgm->UpdateShortFadeIn();
+            this->bgm->UpdatePartialFadeOut();
+            this->bgm->UpdatePartialFadeIn();
         }
     }
 

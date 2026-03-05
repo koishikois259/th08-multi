@@ -528,14 +528,14 @@ void Supervisor::ThreadClose()
     if (m_runningSubthreadHandle != NULL)
     {
         utils::GuiDebugPrint("info : Sub Thread Close Request\n");
-        m_Unk28c = TRUE;
+        m_SubthreadCloseRequestActive = TRUE;
 
         while (WaitForSingleObject(m_runningSubthreadHandle, 1000) == WAIT_TIMEOUT)
             Sleep(1);
 
         CloseHandle(m_runningSubthreadHandle);
         m_runningSubthreadHandle = NULL;
-        m_Unk28c = FALSE;
+        m_SubthreadCloseRequestActive = FALSE;
     }
 }
 

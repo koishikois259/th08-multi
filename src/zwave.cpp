@@ -729,10 +729,10 @@ HRESULT CStreamingSound::UpdateFadeIn()
 }
 
 //-----------------------------------------------------------------------------
-// Name: CStreamingSound::UpdateShortFadeIn()
+// Name: CStreamingSound::UpdatePartialFadeIn()
 // Desc:
 //-----------------------------------------------------------------------------
-HRESULT CStreamingSound::UpdateShortFadeIn()
+HRESULT CStreamingSound::UpdatePartialFadeIn()
 {
     if (m_iFadeType == 3)
     {
@@ -750,10 +750,10 @@ HRESULT CStreamingSound::UpdateShortFadeIn()
 }
 
 //-----------------------------------------------------------------------------
-// Name: CStreamingSound::UpdateShortFadeOut()
+// Name: CStreamingSound::UpdatePartialFadeOut()
 // Desc:
 //-----------------------------------------------------------------------------
-HRESULT CStreamingSound::UpdateShortFadeOut()
+HRESULT CStreamingSound::UpdatePartialFadeOut()
 {
     if (m_iFadeType == 4)
     {

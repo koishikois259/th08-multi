@@ -68,8 +68,8 @@
 #define TH_JP_ERR_ALREADY_RUNNING "二つは起動できません\r\n"
 #define TH_JP_ERR_NO_PAD_FOUND "使えるパッドが存在しないようです、残念\r\n"
 #define TH_JP_ERR_MIDI_FAILED_TO_READ_FILE "error : MIDI File が読み込めない %s \rv\r\n"
-#define TH_JP_ERR_MIDI_NOT_LOADED "error : まだMIDIが読み込まれていないのに再生しようとしている\n"
-#define TH_JP_ERR_ARCFILE_CORRUPTED "ファイル %s のオープン中にエラーが発生しました"
+#define TH_JP_ERR_MIDI_NOT_LOADED "error : まだMIDIが読み込まれていないのに再生しようとしている\r\n"
+#define TH_JP_ERR_ARCFILE_CORRUPTED "ファイル %s のオープン中にエラーが発生しました\r\n"
 #define TH_JP_ERR_NOT_A_WAV_FILE  "Wav ファイルじゃない? %s\r\n"
 #define TH_JP_ERR_NOT_A_WAV_FILE2 "Wav ファイルじゃない %s\r\n"
 #define TH_JP_ERR_NO_WAVE_FILE "wave データが無いので、midi にします\r\n"
@@ -99,6 +99,12 @@
 #define TH_JP_ERR_SOUNDPLAYER_FAILED_TO_LOAD_SOUND_FILE "error : Sound ファイルが読み込めない データを確認 %s\r\n"
 #define TH_JP_DBG_SOUNDPLAYER_INIT_SUCCESS "DirectSound は正常に初期化されました\r\n"
 #define TH_JP_DBG_SOUNDPLAYER_BGM_THREAD_TERMINATED "atention : ストリーミング用スレッドは終了しました。\r\n"
+#define TH_JP_ERR_ANMMANAGER_NO_TEXTURE_STORAGE "テクスチャ格納先が足りません\r\n"
+#define TH_JP_ERR_ANMMANAGER_ANIMATION_CORRUPTED "アニメが読み込めません。データが失われてるか壊れています\r\n"
+#define TH_JP_ERR_ANMMANAGER_ANIMATION_WRONG_VERSION "アニメのバージョンが違います\r\n"
+#define TH_JP_ERR_ANMMANAGER_EXTERN_TEXTURE_CORRUPTED "テクスチャ %s が作成できません。データが失われてるか壊れています\r\n"
+#define TH_JP_ERR_ANMMANAGER_TEXTURE_CORRUPTED "テクスチャが読み込めません。データが失われてるか壊れています\r\n"
+#define TH_JP_ERR_CANNOT_BE_LOADED "%sが読み込めないです。\r\n"
 
 // EN
 #define TH_EN_WINDOW_TITLE "Touhou Eiyashou ~ Imperishable Night. ver 1.00d"
@@ -196,6 +202,12 @@
 #define TH_EN_ERR_SOUNDPLAYER_FAILED_TO_LOAD_SOUND_FILE "error: Could not load sound file %s\r\n"
 #define TH_EN_DBG_SOUNDPLAYER_INIT_SUCCESS "DirectSound initialized successfully\r\n"
 #define TH_EN_DBG_SOUNDPLAYER_BGM_THREAD_TERMINATED "attention : The streaming BGM task thread has terminated.\r\n"
+#define TH_EN_ERR_ANMMANAGER_NO_TEXTURE_STORAGE "No more texture storage left\r\n"
+#define TH_EN_ERR_ANMMANAGER_ANIMATION_CORRUPTED "Unable to load animation %s. Data is missing or corrupted\r\n"
+#define TH_EN_ERR_ANMMANAGER_ANIMATION_WRONG_VERSION "Animation versions do not match\r\n"
+#define TH_EN_ERR_ANMMANAGER_EXTERN_TEXTURE_CORRUPTED "Unable to create texture %s. Data is missing or corrupted\r\n"
+#define TH_EN_ERR_ANMMANAGER_TEXTURE_CORRUPTED "The texture cannot be loaded. The data is either missing or corrupted.\r\n"
+#define TH_EN_ERR_CANNOT_BE_LOADED "%s cannot be read.\r\n"
 
 #define TH_CONCAT_HELPER(x, y) x##y
 
@@ -297,5 +309,12 @@
 #define TH_ERR_SOUNDPLAYER_FAILED_TO_LOAD_SOUND_FILE TH_MAKE_LANG_STR(TH_LANG, _ERR_SOUNDPLAYER_FAILED_TO_LOAD_SOUND_FILE)
 #define TH_DBG_SOUNDPLAYER_INIT_SUCCESS TH_MAKE_LANG_STR(TH_LANG, _DBG_SOUNDPLAYER_INIT_SUCCESS)
 #define TH_DBG_SOUNDPLAYER_BGM_THREAD_TERMINATED TH_MAKE_LANG_STR(TH_LANG, _DBG_SOUNDPLAYER_BGM_THREAD_TERMINATED)
+
+#define TH_ERR_ANMMANAGER_NO_TEXTURE_STORAGE TH_MAKE_LANG_STR(TH_LANG, _ERR_ANMMANAGER_NO_TEXTURE_STORAGE)
+#define TH_ERR_ANMMANAGER_ANIMATION_CORRUPTED TH_MAKE_LANG_STR(TH_LANG, _ERR_ANMMANAGER_ANIMATION_CORRUPTED)
+#define TH_ERR_ANMMANAGER_ANIMATION_WRONG_VERSION TH_MAKE_LANG_STR(TH_LANG, _ERR_ANMMANAGER_ANIMATION_WRONG_VERSION)
+#define TH_ERR_ANMMANAGER_EXTERN_TEXTURE_CORRUPTED TH_MAKE_LANG_STR(TH_LANG, _ERR_ANMMANAGER_EXTERN_TEXTURE_CORRUPTED)
+#define TH_ERR_ANMMANAGER_TEXTURE_CORRUPTED TH_MAKE_LANG_STR(TH_LANG, _ERR_ANMMANAGER_TEXTURE_CORRUPTED)
+#define TH_ERR_CANNOT_BE_LOADED TH_MAKE_LANG_STR(TH_LANG, _ERR_CANNOT_BE_LOADED)
 
 #define TH_FONT_NAME "ＭＳ ゴシック"

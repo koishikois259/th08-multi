@@ -131,7 +131,7 @@ namespace FileSystem
 LPBYTE Decrypt(LPBYTE inData, i32 size, u8 xorValue, u8 xorValueInc, i32 chunkSize, i32 maxBytes);
 LPBYTE TryDecryptFromTable(LPBYTE inData, LPINT unused, i32 size);
 LPBYTE Encrypt(LPBYTE inData, i32 size, u8 xorValue, u8 xorValueInc, i32 chunkSize, i32 maxBytes);
-LPBYTE OpenFile(LPSTR path, i32 *fileSize, BOOL isExternalResource);
+LPBYTE OpenFile(LPCSTR path, i32 *fileSize, BOOL isExternalResource);
 BOOL CheckIfFileAlreadyExists(LPCSTR path);
 int WriteDataToFile(LPCSTR path, LPVOID data, size_t size);
 }; // namespace FileSystem
@@ -351,6 +351,12 @@ struct ZunGlobals
 };
 
 C_ASSERT(sizeof(ZunGlobals) == 0xe4);
+
+struct ZunVec2
+{
+    float x;
+    float y;
+};
 
 f32 AddNormalizeAngle(f32 a, f32 b);
 void Rotate(D3DXVECTOR3 *outVector, D3DXVECTOR3 *point, f32 angle);
