@@ -697,7 +697,7 @@ FUN_00445e3d,0x445e3d,0x6a,unknown,,u8,u8,u8
 th08::Supervisor::RegisterChain,0x445ea7,0xfc,__fastcall,,ZunResult
 th08::Supervisor::AddedCallback,0x445fa3,0x1fd,__fastcall,,ZunResult,Supervisor*
 th08::Supervisor::LoadDat,0x4461a0,0x92,__stdcall,,ZunResult
-th08::Supervisor::CheckFps,0x446232,0x296,__cdecl,,u8
+th08::Supervisor::CheckFps,0x446232,0x296,__cdecl,,i32
 th08::Supervisor::StartupThread,0x4464c8,0x56f,__cdecl,,void
 th08::Supervisor::SetupDInput,0x446a37,0x290,__thiscall,,ZunResult,Supervisor*
 FUN_00446cc7,0x446cc7,0x3f,__stdcall,,i32,i32
