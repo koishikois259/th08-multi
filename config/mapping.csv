@@ -696,9 +696,9 @@ th08::Supervisor::OnDraw3,0x445d3e,0xff,__fastcall,,ChainCallbackResult,Supervis
 FUN_00445e3d,0x445e3d,0x6a,unknown,,u8,u8,u8
 th08::Supervisor::RegisterChain,0x445ea7,0xfc,__fastcall,,ZunResult
 th08::Supervisor::AddedCallback,0x445fa3,0x1fd,__fastcall,,ZunResult,Supervisor*
-FUN_004461a0,0x4461a0,0x92,unknown,,u8
-FUN_00446232,0x446232,0x296,unknown,,u8
-th08::Supervisor::StartupThread,0x4464c8,0x56f,unknown,,u8
+th08::Supervisor::LoadDat,0x4461a0,0x92,__stdcall,,ZunResult
+th08::Supervisor::CheckFps,0x446232,0x296,__cdecl,,u8
+th08::Supervisor::StartupThread,0x4464c8,0x56f,__cdecl,,void
 th08::Supervisor::SetupDInput,0x446a37,0x290,__thiscall,,ZunResult,Supervisor*
 FUN_00446cc7,0x446cc7,0x3f,__stdcall,,i32,i32
 th08::Supervisor::DeletedCallback,0x446d06,0x205,__fastcall,,ZunResult,Supervisor*
@@ -726,7 +726,7 @@ th08::Supervisor::UpdateGameTime,0x448418,0x175,__thiscall,,void,Supervisor*
 th08::Supervisor::VerifyExeIntegrity,0x44858d,0x12d,__thiscall,,ZunResult,Supervisor*,char*,i32,i32
 th08::Supervisor::ThreadStart,0x4486ba,0x61,__thiscall,,ZunResult,Supervisor*,PTHREAD_START_ROUTINE*,void*
 th08::Supervisor::ThreadClose,0x44871b,0x75,__thiscall,,void,Supervisor*
-th08::Supervisor::FUN_00448790,0x448790,0x8a,__thiscall,,void,Supervisor*,_D3DVECTOR*
+th08::Supervisor::SetupLoadingVms,0x448790,0x8a,__thiscall,,void,Supervisor*,_D3DVECTOR*
 th08::Supervisor::FUN_0044881a,0x44881a,0x55,__thiscall,,void,Supervisor*
 th08::Supervisor::FUN_0044886f,0x44886f,0x103,__thiscall,,void,Supervisor*,u32*
 th08::Supervisor::FUN_00448972,0x448972,0x58,__thiscall,,void,Supervisor*
@@ -889,8 +889,8 @@ th08::ScoreDat::ParseLSNM,0x45ab70,0x88,__fastcall,,i32,ScoreDat*,Lsnm*
 th08::ScoreDat::ParseFLSP,0x45ac00,0x88,__fastcall,,i32,ScoreDat*,Flsp*
 th08::ScoreDat::ParseCLRD,0x45ac90,0x170,__fastcall,,ZunResult,ScoreDat*,Clrd*
 th08::ScoreDat::ParsePSCR,0x45ae00,0x127,__fastcall,,ZunResult,ScoreDat*,Pscr*
-th08::ScoreDat::ParsePLST,0x45af30,0x81,__fastcall,,u32,ScoreDat*,Plst*
-th08::ScoreDat::ReleaseScore,0x45afc0,0x35,__thiscall,,void,ScoreDat*
+th08::ScoreDat::ParsePLST,0x45af30,0x81,__fastcall,,ZunResult,ScoreDat*,Plst*
+th08::ScoreDat::ReleaseScore,0x45afc0,0x35,__fastcall,,void,ScoreDat*
 th08::ScreenEffect::ScreenEffect,0x45b000,0x19,unknown,,u8
 th08::ScreenEffect::Clear,0x45b020,0xbe,__fastcall,,u8,unsigned long
 th08::ScreenEffect::SetViewport,0x45b0e0,0x7c,__fastcall,,void,unsigned long
@@ -975,7 +975,7 @@ FUN_00464c60,0x464c60,0x16f,unknown,,u8,u8,u8,u8
 th08::AnmManager::FUN_00464dd0,0x464dd0,0xe1,__thiscall,,u8,AnmManager*,u8,u8
 FUN_00464ec0,0x464ec0,0x1ab,unknown,,u8,u8,u8,u8
 th08::AnmManager::AnmManager,0x465070,0x1d2,__thiscall,,AnmManager*,AnmManager*
-th08::AnmManager::FUN_00465250,0x465250,0x2bc,__thiscall,,void,AnmManager*
+th08::AnmManager::SetupVertexBuffer,0x465250,0x2bc,__thiscall,,void,AnmManager*
 th08::GetAnmFormat,0x465510,0x53,__fastcall,,i32,i32
 th08::AnmManager::CreateTextureFromFile,0x465570,0x62,__thiscall,,ZunResult,AnmManager*,IDirect3DTexture8**,u32,i32
 th08::AnmManager::CreateTextureFromAnm,0x4655e0,0x1dc,__thiscall,,ZunResult,AnmManager*,IDirect3DTexture8**,AnmTextureHeader*,i32
@@ -997,12 +997,12 @@ FUN_00466650,0x466650,0x16e,unknown,,u8,u8,u8,u8,u8,u8,u8
 th08::AnmManager::LoadSurface,0x4667c0,0x29e,__thiscall,,ZunResult,AnmManager*,i32,char*
 FUN_00466a60,0x466a60,0x7e,unknown,,u8,u8,u8
 th08::AnmManager::ReleaseSurface,0x466ae0,0xc8,__thiscall,,void,AnmManager*,i32
-th08::AnmManager::FUN_00466bb0,0x466bb0,0x1bd,__thiscall,,u8,AnmManager*,i32,i32,i32,i32,i32
+th08::AnmManager::CopySurfaceToBackbuffer,0x466bb0,0x1bd,__thiscall,,u8,AnmManager*,i32,i32,i32,i32,i32
 FUN_00466d70,0x466d70,0x1a8,unknown,,u8,u8,u8,u8,u8,u8,u8,u8
 th08::AnmManager::CaptureToTexture,0x466f20,0x11e,__thiscall,,void,AnmManager*,i32,i32,i32,i32,i32,i32,i32,i32,i32
 FUN_00467040,0x467040,0x133,unknown,,u8,u8,u8,u8,u8,u8,u8
 th08::AnmManager::CaptureToSurface,0x467180,0x219,__thiscall,,void,AnmManager*,i32,i32,i32,i32,i32,i32,i32,i32,i32
-FUN_00467399,0x467399,0x10d,unknown,,u8
+th08::Title::OnUpdate,0x467399,0x10d,__fastcall,,u32,Title*
 FUN_004674e0,0x4674e0,0xe77,unknown,,u8
 FUN_0046837b,0x46837b,0x1148,unknown,,u8
 FUN_004694c3,0x4694c3,0x48,unknown,,u8,u8
@@ -1027,16 +1027,16 @@ FUN_0046ffc0,0x46ffc0,0x34b,unknown,,u8
 FUN_0047030b,0x47030b,0x119,unknown,,u8,u8
 FUN_00470424,0x470424,0x109,unknown,,u8,u8
 FUN_0047052d,0x47052d,0x352,unknown,,u8
-FUN_0047087f,0x47087f,0x1ed,unknown,,u8
-FUN_00470a6c,0x470a6c,0x369,__fastcall,,u32,u32*
+th08::Title::OnDraw,0x47087f,0x1ed,unknown,,u8
+FUN_00470a6c,0x470a6c,0x369,__fastcall,,ZunResult,u32*
 th08::Supervisor::FUN_00470dd5,0x470dd5,0x3b,unknown,,u8
 th08::Title::TitleSetupThread,0x470e10,0x371,unknown,,u8
 FUN_00471181,0x471181,0x27f,unknown,,u8
 FUN_00471400,0x471400,0x6d,unknown,,u8
 th08::Title::RegisterChain,0x47146d,0x119,__fastcall,,ZunResult,i32
 th08::Title::Title,0x471586,0xcb,__thiscall,,Title*,Title*
-FUN_00471651,0x471651,0x11,unknown,,u8
-FUN_00471662,0x471662,0x7d,unknown,,u8
+th08::Title::AddedCallback,0x471651,0x11,__fastcall,,ZunResult,u32*
+th08::Title::DeletedCallback,0x471662,0x7d,__stdcall,,ZunResult
 th08::CSoundManager::CSoundManager,0x4716e0,0x17,__thiscall,,CSoundManager*,CSoundManager*
 th08::CSoundManager::~CSoundManager,0x471700,0x2c,__thiscall,,void,CSoundManager*
 th08::CSoundManager::Initialize,0x471730,0x8e,__thiscall,,long,CSoundManager*,HWND__*,unsigned long,unsigned long,unsigned long,unsigned long
