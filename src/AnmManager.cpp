@@ -6,6 +6,11 @@ namespace th08
 {
 DIFFABLE_STATIC(AnmManager *, g_AnmManager);
 
+D3DFORMAT g_TextureFormatD3D8Mapping[] =
+{
+    D3DFMT_UNKNOWN, D3DFMT_A8R8G8B8, D3DFMT_A1R5G5B5, D3DFMT_R5G6B5, D3DFMT_R8G8B8, D3DFMT_A4R4G4B4
+};
+
 void AnmManager::ExecuteScriptOnVmArray(AnmVm *sprite, int count)
 {
     while(count != 0)
@@ -19,15 +24,30 @@ void AnmManager::ExecuteScriptOnVmArray(AnmVm *sprite, int count)
     }
 }
 
-static i32 GetAnmFormat(i32 format)
+// STUB: th08 0x465070
+AnmManager::AnmManager()
 {
 }
 
+// STUB: th08 0x465250
+void AnmManager::SetupVertexBuffer()
+{
+    memset((void *) this, 0, sizeof(AnmManager));
+}
+
+// STUB: th08 0x465510
+static i32 GetAnmFormat(i32 format)
+{
+    return 0;
+}
+
+// STUB: th08 0x465570
 ZunResult AnmManager::CreateTextureFromFile(IDirect3DTexture8 **outTexture, i32 format, i32 colorKey)
 {
     return ZUN_ERROR;
 }
 
+// STUB: th08 0x4655e0
 ZunResult AnmManager::CreateTextureFromAnm(IDirect3DTexture8 **outTexture, AnmTextureHeader *textureHeader, i32 format)
 {
     return ZUN_ERROR;
@@ -35,7 +55,9 @@ ZunResult AnmManager::CreateTextureFromAnm(IDirect3DTexture8 **outTexture, AnmTe
 
 ZunResult AnmManager::CreateEmptyTexture(IDirect3DTexture8 **outTexture, i32 width, i32 height, i32 format)
 {
-    return ZUN_ERROR;
+    D3DXCreateTexture(g_Supervisor.m_D3dDevice, width, height, 1, 0, g_TextureFormatD3D8Mapping[format], D3DPOOL_MANAGED, outTexture);
+
+    return ZUN_SUCCESS;
 }
 
 AnmFileDesc *AnmManager::LoadAnm(i32 anmIdx, const char *filename)
@@ -46,6 +68,7 @@ AnmFileDesc *AnmManager::LoadAnm(i32 anmIdx, const char *filename)
     {
         fileDesc->numberEntriesToBeLoaded = 1;
 
+        /* ZUN bug: no NULL check! */
         while (fileDesc->numberEntriesToBeLoaded != 0)
         {
             fileDesc = this->PostloadAnmEntry(fileDesc);
@@ -154,7 +177,7 @@ AnmFileDesc *AnmManager::PreloadAnm(i32 anmIdx, const char *filename)
 
 i32 AnmManager::LoadExternalTextureData(AnmFileDesc *fileDesc, i32 entryNumber, i32 *sprites, i32 *scripts, AnmRawEntry *rawEntry)
 {
-    return -1;
+    return 0;
 }
 
 #pragma var_order(currentEntryNumber, currentNumSprites, entryLoadNumber, data, result, currentNumScripts, rawEntry)
@@ -495,4 +518,51 @@ void AnmManager::ReleaseSurface(i32 surfaceIdx)
     this->m_SurfaceData[surfaceIdx] = NULL;
 }
 
+/* completely identical to EoSD. */
+void AnmManager::CopySurfaceToBackbuffer(i32 surfaceIdx, i32 left, i32 top, i32 x, i32 y)
+{
+    if (this->m_SurfacesBis[surfaceIdx] == NULL)
+    {
+        return;
+    }
+
+    IDirect3DSurface8 *destSurface;
+    if (g_Supervisor.m_D3dDevice->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &destSurface) != D3D_OK)
+    {
+        return;
+    }
+    if (this->m_Surfaces[surfaceIdx] == NULL)
+    {
+        if (g_Supervisor.m_D3dDevice->CreateRenderTarget(
+                this->m_SurfaceInfo[surfaceIdx].Width, this->m_SurfaceInfo[surfaceIdx].Height,
+                g_Supervisor.m_PresentParameters.BackBufferFormat, D3DMULTISAMPLE_NONE, TRUE,
+                &this->m_Surfaces[surfaceIdx]) != D3D_OK)
+        {
+            if (g_Supervisor.m_D3dDevice->CreateImageSurface(
+                    this->m_SurfaceInfo[surfaceIdx].Width, this->m_SurfaceInfo[surfaceIdx].Height,
+                    g_Supervisor.m_PresentParameters.BackBufferFormat, &this->m_Surfaces[surfaceIdx]) != D3D_OK)
+            {
+                destSurface->Release();
+                return;
+            }
+        }
+        if (D3DXLoadSurfaceFromSurface(this->m_Surfaces[surfaceIdx], NULL, NULL, this->m_SurfacesBis[surfaceIdx], NULL,
+                                       NULL, D3DX_FILTER_NONE, 0) != D3D_OK)
+        {
+            destSurface->Release();
+            return;
+        }
+    }
+
+    RECT sourceRect;
+    POINT destPoint;
+    sourceRect.left = left;
+    sourceRect.top = top;
+    sourceRect.right = this->m_SurfaceInfo[surfaceIdx].Width;
+    sourceRect.bottom = this->m_SurfaceInfo[surfaceIdx].Height;
+    destPoint.x = x;
+    destPoint.y = y;
+    g_Supervisor.m_D3dDevice->CopyRects(this->m_Surfaces[surfaceIdx], &sourceRect, 1, destSurface, &destPoint);
+    destSurface->Release();
+}
 }; // Namespace th08

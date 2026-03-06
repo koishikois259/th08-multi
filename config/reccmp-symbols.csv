@@ -15,13 +15,13 @@ th08::AsciiManager::DeletedCallback,0x4028c0,function
 th08::AsciiManager::CutChain,0x4028f0,function
 th08::AsciiManager::AddString,0x402920,function
 th08::AsciiManager::AddFormatText,0x402a30,function
-FUN_00402a80,0x402a80,function
+th08::AsciiManager::AddFormatText2,0x402a80,function
 th08::AsciiManager::DrawStrings,0x402b20,function
 FUN_004031e0,0x4031e0,function
-FUN_00403200,0x403200,function
-FUN_00403330,0x403330,function
-FUN_00403460,0x403460,function
-th08::AsciiManager::FUN_00403600,0x403600,function
+th08::AsciiManager::CreatePopup1,0x403200,function
+th08::AsciiManager::CreatePopup2,0x403330,function
+th08::AsciiManager::CreatePopup3,0x403460,function
+th08::AsciiManager::CreatePopup4,0x403600,function
 th08::PauseMenu::OnUpdatePauseMenu,0x4037b0,function
 D3DXVECTOR3::D3DXVECTOR3,0x404720,function
 th08::PauseMenu::OnDrawPauseMenu,0x404750,function
@@ -29,6 +29,8 @@ th08::RetryMenu::OnUpdateRetryMenu,0x404890,function
 th08::Spellcard::FUN_00405260,0x405260,function
 th08::PlstPlayCounts::IncrementTotalAttempts,0x405280,function
 th08::RetryMenu::OnDrawRetryMenu,0x4052b0,function
+th08::AsciiManager::OnDrawHighPrioImpl,0x405420,function
+th08::AsciiManager::DrawPercentage,0x405e10,function
 th08::ChainElem::SetCallback,0x406520,function
 th08::Supervisor::IsSoftwareTexturing,0x406550,function
 th08::Supervisor::IsFogDisabled,0x406580,function
@@ -75,7 +77,12 @@ th08::GameManager::UpdateAntiTamper,0x406e50,function
 th08::Rng::GetRandomU32InRange,0x406ef0,function
 th08::GameManager::SetBombCount,0x406f30,function
 th08::GameManager::SetPower,0x406fa0,function
+th08::AsciiManager::FUN_00406fd0,0x406fd0,function
+th08::AsciiManager::SetInterrupt,0x4070b0,function
 th08::AnmVm::SetInterrupt,0x407120,function
+th08::AsciiManager::GetInterrupt,0x407140,function
+th08::AsciiManager::FUN_00407160,0x407160,function
+th08::AsciiManager::SetSpaceWidth,0x407180,function
 th08::Background::Background,0x4071a0,function
 FUN_004073b0,0x4073b0,function
 th08::Background::OnUpdate,0x407400,function
@@ -218,14 +225,14 @@ FUN_00418010,0x418010,function
 FUN_00418030,0x418030,function
 FUN_00418050,0x418050,function
 th08::Spellcard::CutChain,0x4180f0,function
-FUN_00418110,0x418110,function
+th08::ZunTimer::operator--,0x418110,function
 th08::GameManager::FUN_00418130,0x418130,function
 th08::GameManager::FUN_00418180,0x418180,function
 th08::GameManager::AddScore,0x4181f0,function
 th08::GameManager::AddTimeOrbs,0x418220,function
 FUN_004182e0,0x4182e0,function
 FUN_00418300,0x418300,function
-FUN_00418330,0x418330,function
+th08::EclManager::Load,0x418330,function
 FUN_00418420,0x418420,function
 FUN_00418450,0x418450,function
 th08::EclManager::RunEcl,0x4184b0,function
@@ -243,7 +250,7 @@ FUN_0041fd20,0x41fd20,function
 FUN_0041fd40,0x41fd40,function
 FUN_0041fd90,0x41fd90,function
 FUN_0041fdd0,0x41fdd0,function
-FUN_0041fdf0,0x41fdf0,function
+th08::ZunTimer::operator+=,0x41fdf0,function
 FUN_0041fe10,0x41fe10,function
 FUN_00420120,0x420120,function
 FUN_00420950,0x420950,function
@@ -270,6 +277,8 @@ th08::GameManager::GetPower,0x422480,function
 FUN_004224a0,0x4224a0,function
 FUN_00422720,0x422720,function
 th08::GameManager::ScaleFloatBasedOnRank,0x422b80,function
+th08::AsciiManager::FUN_00422bb0,0x422bb0,function
+th08::AsciiManager::SetBossMarkerPosition,0x422be0,function
 FUN_00422c20,0x422c20,function
 FUN_00422c40,0x422c40,function
 FUN_004230c0,0x4230c0,function
@@ -416,6 +425,8 @@ FUN_0042f1f0,0x42f1f0,function
 th08::GameManager::IsSoloHuman,0x42f230,function
 th08::GameManager::IsSoloYoukai,0x42f270,function
 th08::GameManager::GetLives,0x42f2b0,function
+th08::AsciiManager::FUN_0042f2d0,0x42f2d0,function
+th08::AsciiManager::SetScale,0x42f2f0,function
 FUN_0042f320,0x42f320,function
 FUN_0042f340,0x42f340,function
 FUN_0042f360,0x42f360,function
@@ -467,7 +478,7 @@ th08::Gui::MsgWait,0x43587e,function
 th08::Gui::FUN_004358bb,0x4358bb,function
 th08::Gui::FUN_00435900,0x435900,function
 th08::Gui::DrawGameScene,0x43625d,function
-FUN_0043741d,0x43741d,function
+th08::Gui::FUN_0043741d,0x43741d,function
 th08::Gui::AddedCallback,0x437a2f,function
 th08::Gui::DeletedCallback,0x437a40,function
 th08::Gui::RegisterChain,0x437ad0,function
@@ -483,7 +494,7 @@ FUN_00437e5d,0x437e5d,function
 FUN_00437edc,0x437edc,function
 FUN_00437f5c,0x437f5c,function
 FUN_00438046,0x438046,function
-FUN_0043826b,0x43826b,function
+th08::Gui::FUN_0043826b,0x43826b,function
 th08::Supervisor::IsMinimumGraphicsMode,0x438a29,function
 th08::Supervisor::IsDepthTestDisabled,0x438a41,function
 th08::Supervisor::IsColorCompositingDisabled,0x438a59,function
@@ -507,6 +518,8 @@ th08::GameManager::FUN_00439829,0x439829,function
 th08::GameManager::FUN_00439856,0x439856,function
 th08::GameManager::AddToBombCount,0x439883,function
 th08::GameManager::GetBombsRemaining,0x4398ce,function
+th08::AsciiManager::SetColor,0x4398e8,function
+th08::AsciiManager::SetIsGuiMode,0x4398ff,function
 FUN_00439916,0x439916,function
 FUN_00439961,0x439961,function
 th08::GameManager::IsWithinPlayfield,0x4399ac,function
@@ -684,8 +697,8 @@ th08::Supervisor::OnDraw3,0x445d3e,function
 FUN_00445e3d,0x445e3d,function
 th08::Supervisor::RegisterChain,0x445ea7,function
 th08::Supervisor::AddedCallback,0x445fa3,function
-FUN_004461a0,0x4461a0,function
-FUN_00446232,0x446232,function
+th08::Supervisor::LoadDat,0x4461a0,function
+th08::Supervisor::CheckFps,0x446232,function
 th08::Supervisor::StartupThread,0x4464c8,function
 th08::Supervisor::SetupDInput,0x446a37,function
 FUN_00446cc7,0x446cc7,function
@@ -714,7 +727,7 @@ th08::Supervisor::UpdateGameTime,0x448418,function
 th08::Supervisor::VerifyExeIntegrity,0x44858d,function
 th08::Supervisor::ThreadStart,0x4486ba,function
 th08::Supervisor::ThreadClose,0x44871b,function
-th08::Supervisor::FUN_00448790,0x448790,function
+th08::Supervisor::SetupLoadingVms,0x448790,function
 th08::Supervisor::FUN_0044881a,0x44881a,function
 th08::Supervisor::FUN_0044886f,0x44886f,function
 th08::Supervisor::FUN_00448972,0x448972,function
@@ -747,8 +760,8 @@ FUN_0044a930,0x44a930,function
 FUN_0044ab40,0x44ab40,function
 FUN_0044aec0,0x44aec0,function
 FUN_0044c1b0,0x44c1b0,function
-FUN_0044c230,0x44c230,function
-FUN_0044c390,0x44c390,function
+th08::Player::RegisterChain,0x44c230,function
+th08::Player::OnUpdate,0x44c390,function
 FUN_0044c5b0,0x44c5b0,function
 FUN_0044c650,0x44c650,function
 FUN_0044cba0,0x44cba0,function
@@ -759,8 +772,8 @@ FUN_0044d2c0,0x44d2c0,function
 FUN_0044d420,0x44d420,function
 FUN_0044d530,0x44d530,function
 FUN_0044d630,0x44d630,function
-FUN_0044d650,0x44d650,function
-FUN_0044dc60,0x44dc60,function
+th08::Player::AddedCallback,0x44d650,function
+th08::Player::DeletedCallback,0x44dc60,function
 th08::Player::CutChain,0x44dd10,function
 FUN_0044dd70,0x44dd70,function
 FUN_0044de60,0x44de60,function
@@ -878,7 +891,7 @@ th08::ScoreDat::ParseFLSP,0x45ac00,function
 th08::ScoreDat::ParseCLRD,0x45ac90,function
 th08::ScoreDat::ParsePSCR,0x45ae00,function
 th08::ScoreDat::ParsePLST,0x45af30,function
-th08::ScoreDat::Release,0x45afc0,function
+th08::ScoreDat::ReleaseScore,0x45afc0,function
 th08::ScreenEffect::ScreenEffect,0x45b000,function
 th08::ScreenEffect::Clear,0x45b020,function
 th08::ScreenEffect::SetViewport,0x45b0e0,function
@@ -963,8 +976,8 @@ FUN_00464c60,0x464c60,function
 th08::AnmManager::FUN_00464dd0,0x464dd0,function
 FUN_00464ec0,0x464ec0,function
 th08::AnmManager::AnmManager,0x465070,function
-FUN_00465250,0x465250,function
-th08::AnmManager::FUN_00465510,0x465510,function
+th08::AnmManager::SetupVertexBuffer,0x465250,function
+th08::GetAnmFormat,0x465510,function
 th08::AnmManager::CreateTextureFromFile,0x465570,function
 th08::AnmManager::CreateTextureFromAnm,0x4655e0,function
 th08::AnmManager::CreateEmptyTexture,0x4657c0,function
@@ -976,7 +989,7 @@ th08::AnmManager::PostloadAnmEntry,0x465ba0,function
 th08::AnmManager::LoadTextureData,0x465cc0,function
 th08::AnmManager::ServicePreloadedAnims,0x466000,function
 th08::AnmManager::ReleaseAnm,0x466060,function
-th08::AnmManager::ReleaseAnmEntry,0x466160,function
+ReleaseAnmEntry,0x466160,function
 th08::AnmFileDesc::LoadSprite,0x4661b0,function
 FUN_00466310,0x466310,function
 th08::AnmManager::DrawVmTextFmt,0x4663b0,function
@@ -985,7 +998,7 @@ FUN_00466650,0x466650,function
 th08::AnmManager::LoadSurface,0x4667c0,function
 FUN_00466a60,0x466a60,function
 th08::AnmManager::ReleaseSurface,0x466ae0,function
-th08::AnmManager::FUN_00466bb0,0x466bb0,function
+th08::AnmManager::CopySurfaceToBackbuffer,0x466bb0,function
 FUN_00466d70,0x466d70,function
 th08::AnmManager::CaptureToTexture,0x466f20,function
 FUN_00467040,0x467040,function
@@ -1221,7 +1234,7 @@ D3DXLoadSurfaceFromSurface,0x47abab,function
 FUN_0047ad51,0x47ad51,function
 FUN_0047add7,0x47add7,function
 FUN_0047b0bb,0x47b0bb,function
-FUN_0047b72e,0x47b72e,function
+D3DXCreateTextureFromFileInMemoryEx,0x47b72e,function
 FUN_0047b76e,0x47b76e,function
 FUN_0047b7ca,0x47b7ca,function
 FUN_0047b7ef,0x47b7ef,function
@@ -2230,6 +2243,7 @@ FUN_004b3b50,0x4b3b50,function
 FUN_004b3b60,0x4b3b60,function
 th08::MidiTimer::`vftable',0x4b6550,vtable
 th08::MidiOutput::`vftable',0x4b6554,vtable
+th08::g_TextureFormatD3D8Mapping,0x4b8480,global
 th08::CSound::`vftable',0x4b96bc,vtable
 th08::CStreamingSound::`vftable',0x4b96c0,vtable
 th08::CPbgFile::`vftable',0x4b98b4,vtable
@@ -2243,6 +2257,7 @@ IPersistFile,0x4bd6f0,global
 th08::g_EclExInsn,0x4c6cb0,global
 th08::g_StageAnmFiles,0x4c72f8,global
 th08::g_StageStdFiles,0x4c731c,global
+g_StageEnemyAnms,0x4c7364,global
 th08::g_ControllerMapping,0x4c78c8,global
 th08::g_DecryptParams,0x4c78e0,global
 th08::g_CryptSignature,0x4c7940,global
@@ -2273,6 +2288,7 @@ th08::g_SpellcardDrawChain,0x4eccb0,global
 th08::g_EffectManagerCalcChain,0x577ebc,global
 th08::g_EffectManagerDrawChain,0x577edc,global
 th08::g_EnemyManagerDrawChainHighPrio,0x577f00,global
+th08::g_EnemyManager,0x577f20,global
 th08::g_EnemyManagerCalcChain,0xf54e30,global
 th08::g_EnemyManagerDrawChainLowPrio,0xf54e50,global
 th08::g_BulletManagerDrawChain,0xf54e70,global
@@ -2288,6 +2304,8 @@ th08::g_FocusButtonConflictState,0x164d51c,global
 th08::g_Rng,0x164d520,global
 th08::g_CurFrameInput,0x164d528,global
 th08::g_LastFrameInput,0x164d530,global
+th08::g_IsEighthFrameOfHeldInput,0x164d538,global
+th08::g_NumOfFramesInputsWereHeld,0x164d53c,global
 th08::g_GameErrorContext,0x164d540,global
 th08::g_Chain,0x164f548,global
 th08::g_PbgArchive,0x164f588,global
@@ -2297,7 +2315,7 @@ th08::g_TextBufferSurface,0x1653620,global
 th08::g_ExclusiveMutex,0x17ce6fc,global
 th08::g_GameWindow,0x17ce700,global
 th08::g_Supervisor,0x17ce758,global
-th08::g_SupervisorSprites,0x17ceac0,global
+th08::g_SupervisorLoadingVms,0x17ceac0,global
 th08::g_PlayerCalcChain,0x18b8a08,global
 th08::g_PlayerDrawChainHighPrio,0x18b8a0c,global
 th08::g_PlayerDrawChainLowPrio,0x18b8a10,global

@@ -175,36 +175,6 @@ struct AnmRawInstr
 {
 };
 
-struct AnmFileDesc
-{
-    i32 anmIdx;
-    AnmRawEntry *rawData;
-    i32 totalEntries;
-    AnmLoadedSprite *sprites;
-    AnmRawInstr **scripts;
-    AnmEntry *textures;
-    int numberEntriesToBeLoaded;
-
-    void LoadSprite(i32 spriteIdx, AnmLoadedSprite *loadedSprite);
-};
-
-C_ASSERT(sizeof(AnmFileDesc) == 0x1c);
-
-struct AnmRawSprite
-{
-    u32 id;
-    float x;
-    float y;
-    float width;
-    float height;
-};
-
-struct AnmRawScript
-{
-    u32 id;
-    u32 offset;
-};
-
 struct AnmPrefix
 {
     D3DXVECTOR3 rotation;
@@ -233,16 +203,14 @@ struct AnmPrefix
     i16 pendingInterrupt;
     i32 playerBulletHitAnimationType;
     AnmFileDesc *anmFile;
-    D3DXVECTOR3 pos;
 };
 
-C_ASSERT(sizeof(AnmPrefix) == 0x214);
-
-
+C_ASSERT(sizeof(AnmPrefix) == 0x208);
 
 struct AnmVm
 {
     AnmPrefix prefix;
+    D3DXVECTOR3 pos;
     i16 activeSpriteIndex;
     i16 anmFileIndex;
     i16 baseSpriteIndex;
@@ -258,12 +226,92 @@ struct AnmVm
     u8 fontWidth;
     u8 fontHeight;
     unknown_fields(0x29a, 0xa);
+
+    AnmVm::AnmVm()
+    {
+        memset(this, 0, sizeof(AnmVm));
+        this->activeSpriteIndex = -1;
+    }
+
+    void Initialize()
+    {
+        this->prefix.scale.x = 1.0f;
+        this->prefix.scale.y = 1.0f;
+        this->prefix.color1 = COLOR_WHITE;
+    }
 };
 
 C_ASSERT(sizeof(AnmVm) == 0x2a4);
 
+struct AnmFileDesc
+{
+    i32 anmIdx;
+    AnmRawEntry *rawData;
+    i32 totalEntries;
+    AnmLoadedSprite *sprites;
+    AnmRawInstr **scripts;
+    AnmEntry *textures;
+    int numberEntriesToBeLoaded;
+
+    void LoadSprite(i32 spriteIdx, AnmLoadedSprite *loadedSprite);
+
+    void ExecuteAnmIdx(AnmVm *vm, int scriptIdx)
+    {
+        vm->scriptIndex = scriptIdx;
+
+        vm->pos = D3DXVECTOR3(0, 0, 0);
+        vm->pos2 = D3DXVECTOR3(0, 0, 0);
+
+        vm->fontHeight = 15;
+        vm->fontWidth = 15;
+
+        this->SetAndExecuteScript(vm, this->scripts[scriptIdx]);
+    }
+
+    void SetAndExecuteScript(AnmVm *vm, AnmRawInstr *beginningOfScript)
+    {
+        if (beginningOfScript == NULL || (this->numberEntriesToBeLoaded != 0))
+        {
+            memset(vm, 0, sizeof(AnmVm));
+        }
+        else
+        {
+            vm->Initialize();
+            vm->prefix.anmFile = this;
+            vm->prefix.flags &= 0xfffff9ff;
+            vm->beginningOfScript = beginningOfScript;
+            vm->currentInstruction = vm->beginningOfScript;
+            vm->prefix.currentTimeInScript.SetCurrent(0);
+            vm->prefix.flags &= 0xfffffffe;
+            /* TODO: circular dependency! */
+            #if 0
+            g_AnmManager->ExecuteScript(vm);
+            #endif
+        }
+    }
+};
+
+C_ASSERT(sizeof(AnmFileDesc) == 0x1c);
+
+struct AnmRawSprite
+{
+    u32 id;
+    float x;
+    float y;
+    float width;
+    float height;
+};
+
+struct AnmRawScript
+{
+    u32 id;
+    u32 offset;
+};
+
 struct AnmManager
 {
+    AnmManager();
+    void SetupVertexBuffer();
     ~AnmManager() {}
     u32 ExecuteScript(AnmVm *sprite);
     void ExecuteScriptOnVmArray(AnmVm *sprites, int count);
@@ -281,6 +329,7 @@ struct AnmManager
     void ReleaseAnmEntry(AnmEntry *anmEntry);
     ZunResult LoadSurface(i32 surfaceIdx, const char *path);
     void ReleaseSurface(i32 surfaceIdx);
+    void CopySurfaceToBackbuffer(int surfaceIdx, int left, int top, int x, int y);
 
     void ClearBlendMode()
     {

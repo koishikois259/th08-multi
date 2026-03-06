@@ -9,6 +9,7 @@
 #include "MusicRoom.hpp"
 #include "ReplayManager.hpp"
 #include "ResultScreen.hpp"
+#include "ScoreDat.hpp"
 #include "ScreenEffect.hpp"
 #include "SoundPlayer.hpp"
 #include "Supervisor.hpp"

@@ -8,14 +8,18 @@
 #include "ResultScreen.hpp"
 #include "SoundPlayer.hpp"
 #include "Supervisor.hpp"
+#include "ScoreDat.hpp"
+#include "TextHelper.hpp"
 #include "Title.hpp"
 #include "utils.hpp"
 #include <WinBase.h>
+#include <stdio.h>
+#include <d3dx8.h>
 
 namespace th08
 {
 DIFFABLE_STATIC(Supervisor, g_Supervisor);
-DIFFABLE_STATIC_ARRAY(AnmVm, 3, g_SupervisorSprites);
+DIFFABLE_STATIC_ARRAY(AnmVm, 3, g_SupervisorLoadingVms);
 
 
 #pragma var_order(elem, result, supervisor)
@@ -55,6 +59,91 @@ ZunResult Supervisor::RegisterChain()
     return ZUN_SUCCESS;
 }
 
+#pragma var_order(position, score, s)
+int Supervisor::AddedCallback(Supervisor *s)
+{
+    g_Supervisor.framerateMultiplier = 1.0f;
+
+    ScoreDat *score = ScoreDat::OpenScore("score.dat");
+
+    memset(&g_GameManager.plst, 0, sizeof(g_GameManager.plst));
+    g_GameManager.plst.base.unkLen = g_GameManager.plst.base.th8kLen = sizeof(Plst);
+    g_GameManager.plst.base.magic = 'TSLP';
+    g_GameManager.plst.base.version = 2;
+
+    ScoreDat::ParsePLST(score, &g_GameManager.plst);
+    ScoreDat::ParseCLRD(score, g_GameManager.m_clrdData);
+    ScoreDat::ParsePSCR(score, g_GameManager.m_pscrData);
+    ScoreDat::ParseCATK(score, g_GameManager.m_catkData);
+    ScoreDat::ParseFLSP(score, &g_GameManager.flsp);
+
+    ScoreDat::ReleaseScore(score);
+
+    g_GameManager.m_Flags.finalBClearedWithAnyTeam = g_GameManager.FinalBClearedWithAnyTeam();
+    g_GameManager.m_Flags.finalAClearedWithAnyTeam = g_GameManager.FinalAClearedWithAnyTeam();
+    g_GameManager.m_Flags.finalBClearedWithAllTeams = g_GameManager.FinalBClearedWithAllTeams();
+
+    if (Supervisor::LoadDat() != ZUN_SUCCESS)
+    {
+        return ZUN_ERROR;
+    }
+
+    g_AnmManager->LoadSurface(8, "title/th08logo.jpg");
+    s->m_LoadingAnm = g_AnmManager->LoadAnm(2, "nowloading.anm");
+    if (s->m_LoadingAnm == NULL)
+    {
+        g_AnmManager->ReleaseSurface(0);
+        return ZUN_ERROR;
+    }
+
+    g_Supervisor.m_Unk178 = 1;
+
+    if (!g_Supervisor.m_DisableVsync && Supervisor::CheckFps() != ZUN_SUCCESS)
+    {
+        g_AnmManager->ReleaseSurface(0);
+        return -2;
+    }
+
+    g_AnmManager->SetupVertexBuffer();
+    TextHelper::CreateTextBuffer();
+
+    D3DXVECTOR3 position(500.0, 440.0f, 0.0f);
+
+    g_Supervisor.SetupLoadingVms(&position);
+
+    g_Supervisor.m_Unk294 = 1;
+    g_Supervisor.ThreadStart((LPTHREAD_START_ROUTINE) Supervisor::StartupThread, s);
+
+    return ZUN_SUCCESS;
+}
+
+ZunResult Supervisor::LoadDat()
+{
+    if (g_PbgArchive.Load("th08.dat"))
+    {
+#pragma var_order(fileSize, versionFileName)
+        i32 fileSize;
+        char versionFileName[128];
+
+        sprintf(versionFileName, "th08_%.4x%c.ver", 0x100, 'd');
+
+        g_Supervisor.m_VersionData = FileSystem::OpenFile(versionFileName, &fileSize, 0);
+        g_Supervisor.m_VersionDataSize = fileSize;
+        if (g_Supervisor.m_VersionData == NULL)
+        {
+            g_GameErrorContext.Fatal(TH_ERR_DAT_WRONG_VERSION);
+            return ZUN_ERROR;
+        }
+    }
+    else
+    {
+        g_GameErrorContext.Fatal(TH_ERR_DAT_NOT_FOUND);
+        return ZUN_ERROR;
+    }
+
+    return ZUN_SUCCESS;
+}
+
 ChainCallbackResult Supervisor::OnUpdate(Supervisor *s)
 {
     if (s->m_Flags.receivedCloseMsg && !s->IsSubthreadRunning())
@@ -74,7 +163,7 @@ ChainCallbackResult Supervisor::OnUpdate(Supervisor *s)
     g_AnmManager->ResetMoreStuff();
     g_AnmManager->unk0x1c.x = g_AnmManager->unk0x1c.y = 0.0f;
 
-    g_AnmManager->ExecuteScriptOnVmArray(g_SupervisorSprites, ARRAY_SIZE(g_SupervisorSprites));
+    g_AnmManager->ExecuteScriptOnVmArray(g_SupervisorLoadingVms, ARRAY_SIZE(g_SupervisorLoadingVms));
 
     if (g_AnmManager->ServicePreloadedAnims() != ZUN_SUCCESS)
     {
@@ -211,7 +300,7 @@ init_titlescreen:
                         break;
                     case 10:
                         GameManager::CutChain();
-                        if ((g_GameManager.m_Flags & 1) == 0 && g_GameManager.m_Difficulty < 4)
+                        if ((g_GameManager.m_Flags.unk0) == 0 && g_GameManager.m_Difficulty < 4)
                         {
                             g_GameManager.m_CurrentStage = 0;
                         }
@@ -536,6 +625,27 @@ void Supervisor::ThreadClose()
         CloseHandle(m_runningSubthreadHandle);
         m_runningSubthreadHandle = NULL;
         m_SubthreadCloseRequestActive = FALSE;
+    }
+}
+
+void Supervisor::SetupLoadingVms(D3DXVECTOR3 *position)
+{
+    /* there's some weird stack stuff going on here. In the original code,
+     * 0x4c is subtracted from ESP for no apparent. In an earlier version
+     * it subtracted 0x58, and now it doesn't do that at all?? And it seems
+     * to do with ExecuteAnmIdx?? WTF???
+     */
+    if (!this->m_LoadingVmsHaveBeenSetup)
+    {
+        this->m_LoadingAnm->ExecuteAnmIdx(&g_SupervisorLoadingVms[0], 0);
+        this->m_LoadingAnm->ExecuteAnmIdx(&g_SupervisorLoadingVms[1], 1);
+        this->m_LoadingAnm->ExecuteAnmIdx(&g_SupervisorLoadingVms[2], 2);
+
+        this->m_LoadingVmsHaveBeenSetup = TRUE;
+
+        g_SupervisorLoadingVms[0].pos = *position;
+        g_SupervisorLoadingVms[1].pos = *position;
+        g_SupervisorLoadingVms[2].pos = *position;
     }
 }
 

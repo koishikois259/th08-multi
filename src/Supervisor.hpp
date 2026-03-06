@@ -4,14 +4,12 @@
 #include <d3dx8math.h>
 #include <dinput.h>
 
-#include "AnmManager.hpp"
 #include "Midi.hpp"
 #include "diffbuild.hpp"
 #include "inttypes.hpp"
 #include "utils.hpp"
 #include "ZunBool.hpp"
 #include "Global.hpp"
-
 
 namespace th08
 {
@@ -104,12 +102,18 @@ struct SupervisorFlags
     u32 receivedCloseMsg : 1;
 };
 
+/* This forward declaration is to prevent including AnmManager.hpp */
+struct AnmFileDesc;
+
 struct Supervisor
 {
     static ZunResult RegisterChain();
 
     static ChainCallbackResult OnUpdate(Supervisor *s);
-    static ZunResult AddedCallback(Supervisor *s);
+    static int AddedCallback(Supervisor *s);
+    static ZunResult LoadDat();
+    static i32 CheckFps();
+    static void StartupThread();
     static ZunResult DeletedCallback(Supervisor *s);
     static ChainCallbackResult DrawFpsCounter(Supervisor *s);
     static ChainCallbackResult OnDraw2(Supervisor *s);
@@ -118,8 +122,10 @@ struct Supervisor
 
     ZunResult LoadConfig(char *configFile);
     void ThreadClose();
+    void SetupLoadingVms(D3DXVECTOR3 *position);
     void InitializeCriticalSections();
     void DeleteCriticalSections();
+    void TickTimer(i32 *frames, float *subframes);
     ZunBool TakeSnapshot(char *filePath);
     void SetRenderState(D3DRENDERSTATETYPE renderStateType, int value);
     i32 DisableFog();
@@ -240,7 +246,11 @@ struct Supervisor
     i32 m_LastFrameTime; // Unused in IN
     f32 framerateMultiplier;
     MidiOutput *midiOutput;
-    unknown_fields(0x190, 0x14);
+    float m_LagNumerator;
+    float m_LagDenominator;
+    u32 m_Unk198;
+    u32 m_Unk19c;
+    AnmFileDesc *m_LoadingAnm;
     SupervisorFlags m_Flags;
     DWORD m_TotalPlayTime;
     DWORD m_SystemTime;
@@ -252,7 +262,7 @@ struct Supervisor
     u32 m_Unk294;
     CRITICAL_SECTION m_CriticalSections[4];
     u8 m_LockCounts[4];
-    DWORD unk2fc;
+    DWORD m_LoadingVmsHaveBeenSetup;
 
     unknown_fields(0x300, 0x50);
 
@@ -260,8 +270,99 @@ struct Supervisor
     u32 m_ExeChecksum;
     u32 m_ExeSize;
 
-    unknown_fields(0x35c, 0x8);
+    i32 m_VersionDataSize;
+    void *m_VersionData;
 };
 C_ASSERT(sizeof(Supervisor) == 0x364);
 DIFFABLE_EXTERN(Supervisor, g_Supervisor);
+
+struct ZunTimer
+{
+    int m_Previous;
+    float m_SubFrame;
+    int m_Current;
+
+    ZunTimer()
+    {
+        Initialize();
+    }
+
+    void Initialize()
+    {
+        this->m_Current = 0;
+        this->m_Previous = -999;
+        this->m_SubFrame = 0.0;
+    }
+
+    operator int()
+    {
+        return this->m_Current;
+    }
+
+    operator float()
+    {
+        return (float)this->m_Current + (float)this->m_SubFrame;
+    }
+
+    void operator++(int)
+    {
+        Tick();
+    }
+
+    void Tick()
+    {
+        this->m_Previous = this->m_Current;
+        g_Supervisor.TickTimer(&m_Current, &this->m_SubFrame);
+    }
+
+    void operator--(int)
+    {
+        this->Decrement(1);
+    }
+
+    void operator += (int value)
+    {
+        this->Increment(value);
+    }
+
+    void operator -= (int value)
+    {
+        this->Decrement(value);
+    }
+
+    bool operator < (int value)
+    {
+        return this->m_Current < value;
+    }
+
+    bool operator <= (int value)
+    {
+        return this->m_Current <= value;
+    }
+
+    bool operator > (int value)
+    {
+        return this->m_Current > value;
+    }
+
+    bool operator >= (int value)
+    {
+        return this->m_Current >= value;
+    }
+
+    void Increment(i32 value);
+    void Decrement(i32 value);
+
+    void operator=(i32 value)
+    {
+        SetCurrent(value);
+    }
+
+    void SetCurrent(i32 value)
+    {
+        this->m_Current = value;
+        this->m_Previous = -999;
+        this->m_SubFrame = 0.0;
+    }
+};
 }; // namespace th08
