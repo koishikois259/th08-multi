@@ -130,15 +130,40 @@ struct Hscr
 
 C_ASSERT(sizeof(Hscr) == 0x168);
 
+struct GameManagerFlags
+{
+    u32 unk0 : 1;
+    u32 unk1 : 1;
+    u32 unk2 : 1;
+    u32 unk3 : 1;
+    u32 unk4 : 1;
+    u32 unk5 : 1;
+    u32 unk6 : 1;
+    u32 unk7 : 1;
+    u32 unk8 : 1;
+    u32 unk9 : 1;
+    u32 unk10 : 1;
+    u32 unk11 : 1;
+    u32 unk12 : 1;
+    u32 unk13 : 1;
+    u32 unk14 : 1;
+    u32 finalBClearedWithAnyTeam : 1;
+    u32 finalAClearedWithAnyTeam : 1;
+    u32 finalBClearedWithAllTeams : 1;
+};
+
 struct GameManager
 {
     static ZunResult RegisterChain();
     static void CutChain();
     void AdvanceToNextStage();
+    BOOL FinalBClearedWithAnyTeam();
+    BOOL FinalAClearedWithAnyTeam();
+    BOOL FinalBClearedWithAllTeams();
 
     ZunBool IsUnknown()
     {
-        return m_Unk2C;
+        return m_Unk2D;
     }
 
     i32 unk0x0;
@@ -166,8 +191,7 @@ struct GameManager
     u8 m_shotType;
     u8 m_fullShotType;
     u8 m_Unk3dbaa;
-    /* 1 byte pad */
-    u32 m_Flags;
+    GameManagerFlags m_Flags;
     u16 m_Unk3DBB0;
     u8 m_IsInGameMenu;
     u8 m_showRetryMenu;

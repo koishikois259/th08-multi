@@ -300,13 +300,6 @@ struct ControllerMapping
     i16 skipButton;
 };
 
-struct ZunTimer
-{
-    i32 m_Previous;
-    f32 m_SubFrame;
-    i32 m_Current;
-};
-
 struct ZunGlobals
 {
     u32 m_DisplayScore;
