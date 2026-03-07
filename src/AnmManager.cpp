@@ -6,8 +6,7 @@ namespace th08
 {
 DIFFABLE_STATIC(AnmManager *, g_AnmManager);
 
-D3DFORMAT g_TextureFormatD3D8Mapping[] =
-{
+D3DFORMAT g_TextureFormatD3D8Mapping[] = {
     D3DFMT_UNKNOWN, D3DFMT_A8R8G8B8, D3DFMT_A1R5G5B5, D3DFMT_R5G6B5, D3DFMT_R8G8B8, D3DFMT_A4R4G4B4
 };
 
@@ -35,10 +34,16 @@ void AnmManager::SetupVertexBuffer()
     memset((void *) this, 0, sizeof(AnmManager));
 }
 
-// STUB: th08 0x465510
 static i32 GetAnmFormat(i32 format)
-{
-    return 0;
+{ 
+  if (g_Supervisor.Is16bitColorMode() != 0) {
+    if ((g_TextureFormatD3D8Mapping[format] == D3DFMT_A8R8G8B8) || (g_TextureFormatD3D8Mapping[format] == D3DFMT_UNKNOWN)) {
+        return 5;
+    } else if (g_TextureFormatD3D8Mapping[format] == D3DFMT_R8G8B8) {
+      return 3;
+    }
+  }
+  return format;
 }
 
 // STUB: th08 0x465570
@@ -50,6 +55,57 @@ ZunResult AnmManager::CreateTextureFromFile(IDirect3DTexture8 **outTexture, i32 
 // STUB: th08 0x4655e0
 ZunResult AnmManager::CreateTextureFromAnm(IDirect3DTexture8 **outTexture, AnmTextureHeader *textureHeader, i32 format)
 {
+    u32 uVar3;
+    u16 *puVar5;
+    char *pcVar6;
+    D3DLOCKED_RECT lockedRect;
+    IDirect3DSurface8 *local_c;
+    IDirect3DSurface8 *surface;
+  
+    g_Supervisor.m_D3dDevice->CreateImageSurface(
+        (int)(short)textureHeader->width,
+        (int)(short)textureHeader->height,
+        g_TextureFormatD3D8Mapping[(short)textureHeader->format],
+        &surface
+    );
+    surface->LockRect(&lockedRect, NULL, 0);
+    for (int currentY = 0; currentY < (short)textureHeader->height; currentY = currentY + 1) {
+        uVar3 = textureHeader->width * g_TextureFormatD3D8Mapping[textureHeader->format + 6];
+        puVar5 = (u16 *)(textureHeader[1].magic + currentY * textureHeader->width * g_TextureFormatD3D8Mapping[textureHeader->format + 6]);
+        pcVar6 = (char *)lockedRect.pBits + currentY * lockedRect.Pitch;
+        for (u32 i = (uVar3 >> 2); i != 0; i = i - 1) {
+            pcVar6 = (char *)puVar5;
+            puVar5 = puVar5 + 2;
+            pcVar6 = pcVar6 + 4;
+        }
+        for (uVar3 = uVar3 & 3; uVar3 != 0; uVar3 = uVar3 - 1) {
+            *pcVar6 = *(char *)puVar5;
+            puVar5 = (u16 *)((int)puVar5 + 1);
+            pcVar6 = pcVar6 + 1;
+        }
+    }
+    surface->UnlockRect();
+    
+    if (D3DXCreateTexture(g_Supervisor.m_D3dDevice, textureHeader->width, textureHeader->height, 1, 0, g_TextureFormatD3D8Mapping[GetAnmFormat(format)], D3DPOOL_MANAGED, outTexture) == D3D_OK) {
+        (*outTexture)->GetSurfaceLevel(0, &local_c);
+        if (D3DXLoadSurfaceFromSurface(local_c, NULL, NULL, surface, NULL, NULL, 3, 0) == D3D_OK) {
+            if (surface != NULL) {
+                surface->Release();
+                surface = NULL;
+            }
+            if (local_c != NULL) {
+                local_c->Release();
+            }
+            return ZUN_SUCCESS;
+        }
+    }
+    if (surface != NULL) {
+        surface->Release();
+        surface = NULL;
+    }
+    if (local_c != NULL) {
+        local_c->Release();
+    }
     return ZUN_ERROR;
 }
 
