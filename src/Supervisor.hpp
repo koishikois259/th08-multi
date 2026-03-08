@@ -4,6 +4,7 @@
 #include <d3dx8math.h>
 #include <dinput.h>
 
+#include "AsciiManager.hpp"
 #include "Midi.hpp"
 #include "diffbuild.hpp"
 #include "inttypes.hpp"
@@ -84,8 +85,8 @@ struct GameConfiguration
     u8 effectQuality;
     u8 slowMode;
     u8 shotSlow;
-    u8 musicVolume;
-    u8 sfxVolume;
+    i8 musicVolume;
+    i8 sfxVolume;
     i8 unk29[15];
     GameConfigOpts opts;
 };
@@ -100,6 +101,7 @@ struct SupervisorFlags
     u32 unk5 : 1;
     u32 unk6 : 1; // Set if LPTITLE is NULL in the startup info, which seems to never be true?
     u32 receivedCloseMsg : 1;
+    u32 unk8 : 1;
 };
 
 /* This forward declaration is to prevent including AnmManager.hpp */
@@ -107,13 +109,15 @@ struct AnmFileDesc;
 
 struct Supervisor
 {
+    Supervisor();
     static ZunResult RegisterChain();
 
     static ChainCallbackResult OnUpdate(Supervisor *s);
     static int AddedCallback(Supervisor *s);
     static ZunResult LoadDat();
     static i32 CheckFps();
-    static void StartupThread();
+    static void StartupThread(Supervisor *s);
+    ZunResult SetupDInput();
     static ZunResult DeletedCallback(Supervisor *s);
     static ChainCallbackResult DrawFpsCounter(Supervisor *s);
     static ChainCallbackResult OnDraw2(Supervisor *s);
@@ -185,7 +189,7 @@ struct Supervisor
         return m_Cfg.opts.referenceRasterizerMode;
     }
 
-    u32 IsMusicPreloadEnabled()
+    ZunBool IsMusicPreloadEnabled()
     {
         return this->m_Cfg.opts.preloadMusic;
     }
@@ -229,7 +233,7 @@ struct Supervisor
     D3DXMATRIX m_ProjectionMatrix;
     D3DVIEWPORT8 m_Viewport;
     D3DPRESENT_PARAMETERS m_PresentParameters;
-    MidiTimer *m_MidiTimer;
+    DummyMidiTimer *m_DummyMidiTimer;
     GameConfiguration m_Cfg;
     i32 m_CalcCount;
     i32 m_WantedState;
@@ -249,7 +253,7 @@ struct Supervisor
     float m_LagNumerator;
     float m_LagDenominator;
     u32 m_Unk198;
-    u32 m_Unk19c;
+    AnmFileDesc *m_TextAnm;
     AnmFileDesc *m_LoadingAnm;
     SupervisorFlags m_Flags;
     DWORD m_TotalPlayTime;

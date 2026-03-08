@@ -13,14 +13,23 @@
 #include "Title.hpp"
 #include "utils.hpp"
 #include <WinBase.h>
-#include <stdio.h>
 #include <d3dx8.h>
+#include <stdio.h>
+#include <direct.h>
+#include <time.h>
 
 namespace th08
 {
 DIFFABLE_STATIC(Supervisor, g_Supervisor);
 DIFFABLE_STATIC_ARRAY(AnmVm, 3, g_SupervisorLoadingVms);
 
+Supervisor::Supervisor()
+{
+    memset(this, 0, sizeof(Supervisor));
+
+    this->m_Flags.unk6 = true;
+    this->m_Flags.unk8 = true;
+}
 
 #pragma var_order(elem, result, supervisor)
 ZunResult Supervisor::RegisterChain()
@@ -142,6 +151,202 @@ ZunResult Supervisor::LoadDat()
     }
 
     return ZUN_SUCCESS;
+}
+
+// STUB: th08 0x446232
+i32 Supervisor::CheckFps()
+{
+    return -1;
+}
+
+#pragma var_order(bgmVolume, scoreFileSize, scoreFile, findFile, i, fileNameBuffer, scoreBackupFileName, findData, currentLocalTime, currentTime)
+void Supervisor::StartupThread(Supervisor *s)
+{
+    float bgmVolume;
+    u8 *scoreFile;
+    i32 scoreFileSize;
+    HANDLE findFile;
+    int i;
+    char fileNameBuffer[256];       /* yes I know the buffer might be too small, but it would not match otherwise. */
+    const char *scoreBackupFileName;
+    WIN32_FIND_DATAA findData;
+    time_t currentTime;
+    tm *currentLocalTime;
+
+    g_Supervisor.m_Unk178 = 0;
+    g_Supervisor.m_Unk174 = 0;
+    g_Supervisor.m_TotalPlayTime = timeGetTime();
+
+    g_Rng.SetSeed(g_Supervisor.m_TotalPlayTime);
+
+    g_Supervisor.SetupDInput();
+
+    if (g_Supervisor.midiOutput == NULL)
+    {
+        g_Supervisor.midiOutput = new MidiOutput();
+    }
+    if (g_Supervisor.midiOutput != NULL)
+    {
+        g_Supervisor.midiOutput->ReadFileData(30, "bgm/init.mid");
+    }
+    g_SoundPlayer.InitSoundBuffers();
+    g_Supervisor.m_TextAnm = g_AnmManager->PreloadAnm(0, "text.anm");
+    if (g_Supervisor.m_TextAnm == NULL)
+    {
+        goto err;
+    }
+
+    if (AsciiManager::RegisterChain() != ZUN_SUCCESS)
+    {
+        if (g_Supervisor.m_SubthreadCloseRequestActive)
+        {
+            return;
+        }
+        g_GameErrorContext.Log(TH_ERR_FAILED_TO_INIT_ASCII);
+        goto err;
+    }
+
+    if (g_SoundPlayer.LoadFmt("bgm/thbgm.fmt") != ZUN_SUCCESS)
+    {
+        if (g_Supervisor.m_SubthreadCloseRequestActive)
+        {
+            return;
+        }
+        g_GameErrorContext.Log(TH_ERR_FAILED_TO_INIT_BGM);
+        goto err;
+    }
+
+    g_SoundPlayer.bgmVolume = g_Supervisor.m_Cfg.musicVolume;
+    g_SoundPlayer.sfxVolume = g_Supervisor.m_Cfg.sfxVolume;
+
+    bgmVolume = g_SoundPlayer.bgmVolume / 100.0f;
+
+    if (g_SoundPlayer.sfxVolume != 0)
+    {
+        /* Strangely, the parentheses affect code generation, even
+         * though they don't seem do anything?
+         */
+
+        bgmVolume = (1.0f - bgmVolume);
+        bgmVolume *= bgmVolume;
+        bgmVolume *= bgmVolume;
+        bgmVolume = (1.0f - bgmVolume);
+
+        g_SoundPlayer.unkVolume = ((int) (SOUNDPLAYER_VOLUME_RANGE * bgmVolume)) - SOUNDPLAYER_VOLUME_RANGE;
+    }
+    else
+    {
+        g_SoundPlayer.unkVolume = SOUNDPLAYER_SILENT_VOLUME;
+    }
+
+    if (g_SoundPlayer.unusedBgmSeekOffset == 0)
+    {
+        if (!g_Supervisor.IsMusicPreloadEnabled())
+        {
+            g_SoundPlayer.StartBGM("thbgm.dat");
+        }
+        else
+        {
+            strcpy(g_SoundPlayer.currentBgmFileName, "thbgm.dat");
+        }
+    }
+    else if (!g_Supervisor.IsMusicPreloadEnabled())
+    {
+        g_SoundPlayer.StartBGM("th08.dat");
+    }
+    else
+    {
+        strcpy(g_SoundPlayer.currentBgmFileName, "th08.dat");
+    }
+
+
+    if (g_Supervisor.m_Flags.unk8
+        && ((scoreFile = FileSystem::OpenFile("score.dat", &scoreFileSize, TRUE)) != NULL))
+    {
+        scoreBackupFileName = "score_4.??????.bak";
+
+        i = 0;
+
+        _mkdir("./backup");
+        _chdir("./backup");
+
+        findFile = FindFirstFileA("score_5.??????.bak", &findData);
+
+        while (findFile != INVALID_HANDLE_VALUE)
+        {
+            DeleteFileA(findData.cFileName);
+
+            if (!FindNextFileA(findFile, &findData))
+            {
+                break;
+            }
+        }
+
+        FindClose(findFile);
+
+        for (i = 4; i > 0; i--)
+        {
+            strcpy(fileNameBuffer, scoreBackupFileName);
+
+            fileNameBuffer[6] = i + '0';
+
+            findFile = FindFirstFileA(fileNameBuffer, &findData);
+
+            while (findFile != INVALID_HANDLE_VALUE)
+            {
+                strcpy(fileNameBuffer, findData.cFileName);
+
+                fileNameBuffer[6] = i + '1';
+
+                rename(findData.cFileName, fileNameBuffer);
+
+                if (!FindNextFileA(findFile, &findData))
+                {
+                    break;
+                }
+            }
+
+            FindClose(findFile);
+        }
+
+        time(&currentTime);
+        currentLocalTime = localtime(&currentTime);
+        strftime(fileNameBuffer, 128, "score_1.%y%m%d.bak", currentLocalTime);
+
+        FileSystem::WriteDataToFile(fileNameBuffer, scoreFile, scoreFileSize);
+        free(scoreFile);
+        _chdir("../");
+    }
+
+    if (g_Supervisor.m_Flags.unk6)
+    {
+        g_Supervisor.m_DummyMidiTimer = new DummyMidiTimer();
+        if (g_Supervisor.m_DummyMidiTimer != NULL)
+        {
+            g_Supervisor.m_DummyMidiTimer->StartTimer();
+        }
+    }
+
+    g_Supervisor.m_runningSubthreadHandle = NULL;
+    g_Supervisor.m_SubthreadCloseRequestActive = FALSE;
+    g_Supervisor.m_Unk290 = 0;
+    g_Supervisor.m_Unk294 = 0;
+    g_Supervisor.m_Flags.unk8 = false;
+
+    return;
+
+err:
+    g_Supervisor.m_runningSubthreadHandle = NULL;
+    g_Supervisor.m_SubthreadCloseRequestActive = FALSE;
+    g_Supervisor.m_Unk290 = 0;
+    g_Supervisor.m_Unk294 = 2;
+    g_Supervisor.m_Flags.receivedCloseMsg = true;
+}
+
+// STUB: th08 0x446a37
+ZunResult Supervisor::SetupDInput()
+{
+    return ZUN_ERROR;
 }
 
 ChainCallbackResult Supervisor::OnUpdate(Supervisor *s)
