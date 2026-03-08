@@ -838,7 +838,7 @@ loop_breakout:
         }
         else
         {
-            this->duplicateSoundBuffers[local_14]->SetVolume(-10000);
+            this->duplicateSoundBuffers[local_14]->SetVolume(SOUNDPLAYER_SILENT_VOLUME);
         }
         this->duplicateSoundBuffers[local_14]->Play(0, 0, 0);
     }

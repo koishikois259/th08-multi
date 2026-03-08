@@ -91,6 +91,7 @@ def configure(build_type):
         )
 
         cxx_flags_per_source = {
+            "AsciiManager": "/Od",
             "Background": "/Od",
             "GameManager": "/Os",
             "utils": "/Od",
@@ -115,6 +116,7 @@ def configure(build_type):
             )
 
         cxx_sources = [
+            "AsciiManager",
             "Background",
             "GameManager",
             "utils",

@@ -19,8 +19,6 @@ th08::Supervisor::DrawFpsCounter
 th08::Supervisor::OnDraw2
 th08::Supervisor::OnDraw3
 th08::Supervisor::VerifyExeIntegrity
-th08::Supervisor::CheckFps
-th08::Supervisor::StartupThread
 th08::ReplayManager::SaveReplay
 th08::ResultScreen::RegisterChain
 th08::ScreenEffect::SetViewport

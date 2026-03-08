@@ -11,6 +11,9 @@
 
 namespace th08
 {
+
+DIFFABLE_STATIC(LARGE_INTEGER, g_DummyMidiTimerPerformanceCounter);
+
 MidiDevice::MidiDevice()
 {
     handle = NULL;
@@ -704,6 +707,11 @@ void MidiOutput::FadeOutSetVolume(i32 volume)
         m_MidiOutDev.SendShortMsg(midiStatus, arg1, volumeByte);
     }
     return;
+}
+
+void DummyMidiTimer::OnTimerElapsed()
+{
+    QueryPerformanceCounter(&g_DummyMidiTimerPerformanceCounter);
 }
 
 void MidiTimer::StartTimer()
