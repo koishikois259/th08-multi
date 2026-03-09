@@ -32,7 +32,7 @@ class Lzss
         i32 right;
     };
 
-    static TreeNode m_Tree[LZSS_DICTSIZE + 1];
-    static u8 m_Dict[LZSS_DICTSIZE];
+    static TreeNode tree[LZSS_DICTSIZE + 1];
+    static u8 dict[LZSS_DICTSIZE];
 };
 }; // namespace th08

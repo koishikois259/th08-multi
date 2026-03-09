@@ -23,8 +23,8 @@ struct MidiTimer
     void StopTimer();
 
   private:
-    UINT m_TimerId;
-    TIMECAPS m_TimeCaps;
+    UINT timerId;
+    TIMECAPS timeCaps;
 };
 C_ASSERT(sizeof(MidiTimer) == 0x10);
 
@@ -97,7 +97,7 @@ class MidiDevice
     HMIDIOUT handle;
 
   private:
-    u32 m_DeviceId;
+    u32 deviceId;
 };
 C_ASSERT(sizeof(MidiDevice) == 0x8);
 
@@ -153,33 +153,33 @@ class MidiOutput : MidiTimer
     }
 
   private:
-    i32 m_MidiFileIndex;
-    LPMIDIHDR m_MidiHeaders[32];
-    i32 m_MidiHeadersCursor;
-    LPBYTE m_MidiFileData[32];
-    i32 m_NumTracks;
-    u32 m_Format;
-    i32 m_Divisions;
-    i32 m_Tempo;
-    ULONGLONG m_Volume;
-    ULONGLONG m_Unk130;
-    MidiTrack *m_Tracks;
-    MidiDevice m_MidiOutDev;
-    u8 m_Unk144[16];
-    MidiChannel m_Channels[16];
-    i8 m_Unk2c4;
-    f32 m_FadeOutVolumeMultiplier;
-    u32 m_FadeOutLastSetVolume;
-    u32 m_Unk2d0;
-    u32 m_Unk2d4;
-    u32 m_Unk2d8;
-    u32 m_Unk2dc;
-    BOOL m_FadeOutFlag;
-    i32 m_FadeOutInterval;
-    i32 m_FadeOutElapsedMS;
-    u32 m_TempoAtLoopPoint;
-    ULONGLONG m_VolumeAtLoopPoint;
-    ULONGLONG m_Unk2f8;
+    i32 midiFileIndex;
+    LPMIDIHDR midiHeaders[32];
+    i32 midiHeadersCursor;
+    LPBYTE midiFileData[32];
+    i32 numTracks;
+    u32 format;
+    i32 divisions;
+    i32 tempo;
+    ULONGLONG volume;
+    ULONGLONG unk130;
+    MidiTrack *tracks;
+    MidiDevice midiOutDev;
+    u8 unk144[16];
+    MidiChannel channels[16];
+    i8 unk2c4;
+    f32 fadeOutVolumeMultiplier;
+    u32 fadeOutLastSetVolume;
+    u32 unk2d0;
+    u32 unk2d4;
+    u32 unk2d8;
+    u32 unk2dc;
+    BOOL fadeOutFlag;
+    i32 fadeOutInterval;
+    i32 fadeOutElapsedMS;
+    u32 tempoAtLoopPoint;
+    ULONGLONG volumeAtLoopPoint;
+    ULONGLONG unk2f8;
 };
 C_ASSERT(sizeof(MidiOutput) == 0x300);
 

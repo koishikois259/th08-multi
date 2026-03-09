@@ -62,7 +62,7 @@ ZunResult AnmManager::CreateTextureFromAnm(IDirect3DTexture8 **outTexture, AnmTe
     IDirect3DSurface8 *local_c;
     IDirect3DSurface8 *surface;
   
-    g_Supervisor.m_D3dDevice->CreateImageSurface(
+    g_Supervisor.d3dDevice->CreateImageSurface(
         (int)(short)textureHeader->width,
         (int)(short)textureHeader->height,
         g_TextureFormatD3D8Mapping[(short)textureHeader->format],
@@ -86,7 +86,7 @@ ZunResult AnmManager::CreateTextureFromAnm(IDirect3DTexture8 **outTexture, AnmTe
     }
     surface->UnlockRect();
     
-    if (D3DXCreateTexture(g_Supervisor.m_D3dDevice, textureHeader->width, textureHeader->height, 1, 0, g_TextureFormatD3D8Mapping[GetAnmFormat(format)], D3DPOOL_MANAGED, outTexture) == D3D_OK) {
+    if (D3DXCreateTexture(g_Supervisor.d3dDevice, textureHeader->width, textureHeader->height, 1, 0, g_TextureFormatD3D8Mapping[GetAnmFormat(format)], D3DPOOL_MANAGED, outTexture) == D3D_OK) {
         (*outTexture)->GetSurfaceLevel(0, &local_c);
         if (D3DXLoadSurfaceFromSurface(local_c, NULL, NULL, surface, NULL, NULL, 3, 0) == D3D_OK) {
             if (surface != NULL) {
@@ -111,7 +111,7 @@ ZunResult AnmManager::CreateTextureFromAnm(IDirect3DTexture8 **outTexture, AnmTe
 
 ZunResult AnmManager::CreateEmptyTexture(IDirect3DTexture8 **outTexture, i32 width, i32 height, i32 format)
 {
-    D3DXCreateTexture(g_Supervisor.m_D3dDevice, width, height, 1, 0, g_TextureFormatD3D8Mapping[format], D3DPOOL_MANAGED, outTexture);
+    D3DXCreateTexture(g_Supervisor.d3dDevice, width, height, 1, 0, g_TextureFormatD3D8Mapping[format], D3DPOOL_MANAGED, outTexture);
 
     return ZUN_SUCCESS;
 }
@@ -155,7 +155,7 @@ AnmFileDesc *AnmManager::ReadAnmEntries(int anmIdx, const char *filename)
     i32 totalSprites = 0;
     i32 curEntryNum = 0;
 
-    AnmFileDesc *fileDesc = this->m_AnmFiles + anmIdx;
+    AnmFileDesc *fileDesc = this->anmFiles + anmIdx;
     if (entry == NULL)
     {
         return NULL;
@@ -222,13 +222,13 @@ AnmFileDesc *AnmManager::PreloadAnm(i32 anmIdx, const char *filename)
 
     fileDesc->numberEntriesToBeLoaded = 1;
     while (fileDesc->numberEntriesToBeLoaded != 0
-            && !g_Supervisor.m_SubthreadCloseRequestActive)
+            && !g_Supervisor.subthreadCloseRequestActive)
     {
         Sleep(1);
     }
     utils::DebugPrint("::preloadAnimEnd : %s\n", filename);
 
-    return g_Supervisor.m_SubthreadCloseRequestActive ? NULL : fileDesc;
+    return g_Supervisor.subthreadCloseRequestActive ? NULL : fileDesc;
 }
 
 i32 AnmManager::LoadExternalTextureData(AnmFileDesc *fileDesc, i32 entryNumber, i32 *sprites, i32 *scripts, AnmRawEntry *rawEntry)
@@ -378,10 +378,10 @@ int AnmManager::LoadTextureData(AnmFileDesc *fileDesc, i32 entryNumber, i32 curr
 
 ZunResult AnmManager::ServicePreloadedAnims()
 {
-    for (int i = 0; i < ARRAY_SIZE(this->m_AnmFiles); i++)
+    for (int i = 0; i < ARRAY_SIZE(this->anmFiles); i++)
     {
-        if (this->m_AnmFiles[i].numberEntriesToBeLoaded != 0
-            && this->PostloadAnmEntry(this->m_AnmFiles + i) == NULL)
+        if (this->anmFiles[i].numberEntriesToBeLoaded != 0
+            && this->PostloadAnmEntry(this->anmFiles + i) == NULL)
         {
             return ZUN_ERROR;
         }
@@ -392,24 +392,24 @@ ZunResult AnmManager::ServicePreloadedAnims()
 
 void AnmManager::ReleaseAnm(i32 anmIdx)
 {
-    if (anmIdx < 0 || anmIdx >= ARRAY_SIZE(this->m_AnmFiles))
+    if (anmIdx < 0 || anmIdx >= ARRAY_SIZE(this->anmFiles))
     {
         return;
     }
 
-    if (this->m_AnmFiles[anmIdx].rawData != NULL)
+    if (this->anmFiles[anmIdx].rawData != NULL)
     {
-        for (int i = 0; i < this->m_AnmFiles[anmIdx].totalEntries; i++)
+        for (int i = 0; i < this->anmFiles[anmIdx].totalEntries; i++)
         {
-            this->ReleaseAnmEntry(&this->m_AnmFiles[anmIdx].textures[i]);
+            this->ReleaseAnmEntry(&this->anmFiles[anmIdx].textures[i]);
         }
 
-        g_ZunMemory.Free(this->m_AnmFiles[anmIdx].textures);
-        g_ZunMemory.Free(this->m_AnmFiles[anmIdx].sprites);
-        g_ZunMemory.Free(this->m_AnmFiles[anmIdx].scripts);
-        g_ZunMemory.Free(this->m_AnmFiles[anmIdx].rawData);
+        g_ZunMemory.Free(this->anmFiles[anmIdx].textures);
+        g_ZunMemory.Free(this->anmFiles[anmIdx].sprites);
+        g_ZunMemory.Free(this->anmFiles[anmIdx].scripts);
+        g_ZunMemory.Free(this->anmFiles[anmIdx].rawData);
 
-        memset(&this->m_AnmFiles[anmIdx], 0, sizeof(AnmFileDesc));
+        memset(&this->anmFiles[anmIdx], 0, sizeof(AnmFileDesc));
     }
 }
 
@@ -446,12 +446,12 @@ ZunResult AnmManager::LoadSurface(i32 surfaceIdx, const char *filename)
     i32 fileSize;
     IDirect3DSurface8 *surface;
 
-    if (this->m_Surfaces[surfaceIdx] != NULL)
+    if (this->surfaces[surfaceIdx] != NULL)
     {
         this->ReleaseSurface(surfaceIdx);
     }
 
-    if (m_SurfaceData[surfaceIdx] == NULL)
+    if (surfaceData[surfaceIdx] == NULL)
     {
         fileData = FileSystem::OpenFile(filename, &fileSize, 0);
         if (fileData == NULL)
@@ -462,14 +462,14 @@ ZunResult AnmManager::LoadSurface(i32 surfaceIdx, const char *filename)
     }
     else
     {
-        fileData = this->m_SurfaceData[surfaceIdx];
-        fileSize = this->m_SurfaceDataSizes[surfaceIdx];
-        this->m_SurfaceData[surfaceIdx] = NULL;
+        fileData = this->surfaceData[surfaceIdx];
+        fileSize = this->surfaceDataSizes[surfaceIdx];
+        this->surfaceData[surfaceIdx] = NULL;
     }
 
-    if (g_Supervisor.m_D3dDevice->CreateImageSurface(640,
+    if (g_Supervisor.d3dDevice->CreateImageSurface(640,
                                                      1024,
-                                                     g_Supervisor.m_PresentParameters.BackBufferFormat,
+                                                     g_Supervisor.presentParameters.BackBufferFormat,
                                                      &surface) != D3D_OK)
     {
         return ZUN_ERROR;
@@ -483,36 +483,36 @@ ZunResult AnmManager::LoadSurface(i32 surfaceIdx, const char *filename)
                                         NULL,
                                         1,
                                         0,
-                                        (D3DXIMAGE_INFO *) &m_SurfaceInfo[surfaceIdx]) != D3D_OK)
+                                        (D3DXIMAGE_INFO *) &surfaceInfo[surfaceIdx]) != D3D_OK)
     {
         goto err;
     }
 
-    if (g_Supervisor.m_D3dDevice->CreateRenderTarget(this->m_SurfaceInfo[surfaceIdx].Width,
-                                                     m_SurfaceInfo[surfaceIdx].Height,
-                                                     g_Supervisor.m_PresentParameters.BackBufferFormat,
+    if (g_Supervisor.d3dDevice->CreateRenderTarget(this->surfaceInfo[surfaceIdx].Width,
+                                                     surfaceInfo[surfaceIdx].Height,
+                                                     g_Supervisor.presentParameters.BackBufferFormat,
                                                      D3DMULTISAMPLE_NONE,
                                                      1,
-                                                     &this->m_Surfaces[surfaceIdx]) != D3D_OK)
+                                                     &this->surfaces[surfaceIdx]) != D3D_OK)
     {
-        if (g_Supervisor.m_D3dDevice->CreateImageSurface(this->m_SurfaceInfo[surfaceIdx].Width,
-                                                         this->m_SurfaceInfo[surfaceIdx].Height,
-                                                         g_Supervisor.m_PresentParameters.BackBufferFormat,
-                                                         &this->m_Surfaces[surfaceIdx]) != D3D_OK)
+        if (g_Supervisor.d3dDevice->CreateImageSurface(this->surfaceInfo[surfaceIdx].Width,
+                                                         this->surfaceInfo[surfaceIdx].Height,
+                                                         g_Supervisor.presentParameters.BackBufferFormat,
+                                                         &this->surfaces[surfaceIdx]) != D3D_OK)
         {
             goto err;
         }
     }
 
-    if (g_Supervisor.m_D3dDevice->CreateImageSurface(this->m_SurfaceInfo[surfaceIdx].Width,
-                                                     this->m_SurfaceInfo[surfaceIdx].Height,
-                                                     g_Supervisor.m_PresentParameters.BackBufferFormat,
-                                                     &this->m_SurfacesBis[surfaceIdx]) != D3D_OK)
+    if (g_Supervisor.d3dDevice->CreateImageSurface(this->surfaceInfo[surfaceIdx].Width,
+                                                     this->surfaceInfo[surfaceIdx].Height,
+                                                     g_Supervisor.presentParameters.BackBufferFormat,
+                                                     &this->surfacesBis[surfaceIdx]) != D3D_OK)
     {
         goto err;
     }
 
-    if (D3DXLoadSurfaceFromSurface(this->m_Surfaces[surfaceIdx],
+    if (D3DXLoadSurfaceFromSurface(this->surfaces[surfaceIdx],
                                    NULL,
                                    NULL,
                                    surface,
@@ -524,7 +524,7 @@ ZunResult AnmManager::LoadSurface(i32 surfaceIdx, const char *filename)
         goto err;
     }
 
-    if (D3DXLoadSurfaceFromSurface(this->m_SurfacesBis[surfaceIdx],
+    if (D3DXLoadSurfaceFromSurface(this->surfacesBis[surfaceIdx],
                                     NULL,
                                     NULL,
                                     surface,
@@ -557,52 +557,52 @@ err:
 
 void AnmManager::ReleaseSurface(i32 surfaceIdx)
 {
-    if (this->m_Surfaces[surfaceIdx] != NULL)
+    if (this->surfaces[surfaceIdx] != NULL)
     {
-        this->m_Surfaces[surfaceIdx]->Release();
-        this->m_Surfaces[surfaceIdx] = NULL;
+        this->surfaces[surfaceIdx]->Release();
+        this->surfaces[surfaceIdx] = NULL;
     }
-    if (this->m_SurfacesBis[surfaceIdx] != NULL)
+    if (this->surfacesBis[surfaceIdx] != NULL)
     {
-        this->m_SurfacesBis[surfaceIdx]->Release();
-        this->m_SurfacesBis[surfaceIdx] = NULL;
+        this->surfacesBis[surfaceIdx]->Release();
+        this->surfacesBis[surfaceIdx] = NULL;
     }
-    if (this->m_SurfaceData[surfaceIdx] != NULL)
+    if (this->surfaceData[surfaceIdx] != NULL)
     {
-        g_ZunMemory.Free(this->m_SurfaceData[surfaceIdx]);
+        g_ZunMemory.Free(this->surfaceData[surfaceIdx]);
     }
-    this->m_SurfaceData[surfaceIdx] = NULL;
+    this->surfaceData[surfaceIdx] = NULL;
 }
 
 /* completely identical to EoSD. */
 void AnmManager::CopySurfaceToBackbuffer(i32 surfaceIdx, i32 left, i32 top, i32 x, i32 y)
 {
-    if (this->m_SurfacesBis[surfaceIdx] == NULL)
+    if (this->surfacesBis[surfaceIdx] == NULL)
     {
         return;
     }
 
     IDirect3DSurface8 *destSurface;
-    if (g_Supervisor.m_D3dDevice->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &destSurface) != D3D_OK)
+    if (g_Supervisor.d3dDevice->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &destSurface) != D3D_OK)
     {
         return;
     }
-    if (this->m_Surfaces[surfaceIdx] == NULL)
+    if (this->surfaces[surfaceIdx] == NULL)
     {
-        if (g_Supervisor.m_D3dDevice->CreateRenderTarget(
-                this->m_SurfaceInfo[surfaceIdx].Width, this->m_SurfaceInfo[surfaceIdx].Height,
-                g_Supervisor.m_PresentParameters.BackBufferFormat, D3DMULTISAMPLE_NONE, TRUE,
-                &this->m_Surfaces[surfaceIdx]) != D3D_OK)
+        if (g_Supervisor.d3dDevice->CreateRenderTarget(
+                this->surfaceInfo[surfaceIdx].Width, this->surfaceInfo[surfaceIdx].Height,
+                g_Supervisor.presentParameters.BackBufferFormat, D3DMULTISAMPLE_NONE, TRUE,
+                &this->surfaces[surfaceIdx]) != D3D_OK)
         {
-            if (g_Supervisor.m_D3dDevice->CreateImageSurface(
-                    this->m_SurfaceInfo[surfaceIdx].Width, this->m_SurfaceInfo[surfaceIdx].Height,
-                    g_Supervisor.m_PresentParameters.BackBufferFormat, &this->m_Surfaces[surfaceIdx]) != D3D_OK)
+            if (g_Supervisor.d3dDevice->CreateImageSurface(
+                    this->surfaceInfo[surfaceIdx].Width, this->surfaceInfo[surfaceIdx].Height,
+                    g_Supervisor.presentParameters.BackBufferFormat, &this->surfaces[surfaceIdx]) != D3D_OK)
             {
                 destSurface->Release();
                 return;
             }
         }
-        if (D3DXLoadSurfaceFromSurface(this->m_Surfaces[surfaceIdx], NULL, NULL, this->m_SurfacesBis[surfaceIdx], NULL,
+        if (D3DXLoadSurfaceFromSurface(this->surfaces[surfaceIdx], NULL, NULL, this->surfacesBis[surfaceIdx], NULL,
                                        NULL, D3DX_FILTER_NONE, 0) != D3D_OK)
         {
             destSurface->Release();
@@ -614,11 +614,11 @@ void AnmManager::CopySurfaceToBackbuffer(i32 surfaceIdx, i32 left, i32 top, i32 
     POINT destPoint;
     sourceRect.left = left;
     sourceRect.top = top;
-    sourceRect.right = this->m_SurfaceInfo[surfaceIdx].Width;
-    sourceRect.bottom = this->m_SurfaceInfo[surfaceIdx].Height;
+    sourceRect.right = this->surfaceInfo[surfaceIdx].Width;
+    sourceRect.bottom = this->surfaceInfo[surfaceIdx].Height;
     destPoint.x = x;
     destPoint.y = y;
-    g_Supervisor.m_D3dDevice->CopyRects(this->m_Surfaces[surfaceIdx], &sourceRect, 1, destSurface, &destPoint);
+    g_Supervisor.d3dDevice->CopyRects(this->surfaces[surfaceIdx], &sourceRect, 1, destSurface, &destPoint);
     destSurface->Release();
 }
 }; // Namespace th08

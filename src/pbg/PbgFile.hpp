@@ -46,10 +46,10 @@ class CPbgFile : public IPbgFile
     }
 
   protected:
-    HANDLE m_Handle;
+    HANDLE handle;
 
   private:
-    DWORD m_Access;
+    DWORD access;
 };
 
 DIFFABLE_EXTERN_ARRAY(char *, 3, g_PbgFileOpenModes);

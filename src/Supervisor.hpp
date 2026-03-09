@@ -141,150 +141,150 @@ struct Supervisor
 
     ZunBool IsShotSlowEnabled()
     {
-        return this->m_Cfg.shotSlow;
+        return this->cfg.shotSlow;
     }
 
     ZunBool ShouldForceBackbufferClear()
     {
-        return this->m_Cfg.opts.clearBackBufferOnRefresh | this->m_Cfg.opts.displayMinimumGraphics;
+        return this->cfg.opts.clearBackBufferOnRefresh | this->cfg.opts.displayMinimumGraphics;
     }
 
     ZunBool IsHardwareBlendingDisabled()
     {
-        return m_Cfg.opts.useSwTextureBlending;
+        return this->cfg.opts.useSwTextureBlending;
     }
 
     ZunBool IsVertexBufferDisabled()
     {
-        return m_Cfg.opts.dontUseVertexBuf;
+        return this->cfg.opts.dontUseVertexBuf;
     }
 
     ZunBool Is16bitColorMode()
     {
-        return m_Cfg.opts.force16bitTextures;
+        return this->cfg.opts.force16bitTextures;
     }
 
     ZunBool IsDepthTestDisabled()
     {
-        return m_Cfg.opts.disableDepthTest;
+        return this->cfg.opts.disableDepthTest;
     }
 
     ZunBool IsColorCompositingDisabled()
     {
-        return m_Cfg.opts.disableColorCompositing;
+        return this->cfg.opts.disableColorCompositing;
     }
 
     ZunBool IsFogDisabled()
     {
-        return m_Cfg.opts.disableFog;
+        return this->cfg.opts.disableFog;
     }
 
     ZunBool Supervisor::IsHUDRedrawEnabled()
     {
-        return this->m_Cfg.opts.redrawHUDEveryFrame;
+        return this->cfg.opts.redrawHUDEveryFrame;
     }
 
     ZunBool IsReferenceRasterizerMode()
     {
-        return m_Cfg.opts.referenceRasterizerMode;
+        return this->cfg.opts.referenceRasterizerMode;
     }
 
     ZunBool IsMusicPreloadEnabled()
     {
-        return this->m_Cfg.opts.preloadMusic;
+        return this->cfg.opts.preloadMusic;
     }
 
     ZunBool IsWindowed()
     {
-        return m_Cfg.windowed;
+        return this->cfg.windowed;
     }
 
     ZunBool IsSubthreadRunning()
     {
-        return m_runningSubthreadHandle != NULL;
+        return this->runningSubthreadHandle != NULL;
     }
 
     void EnterCriticalSectionWrapper(int id)
     {
-        EnterCriticalSection(&m_CriticalSections[id]);
-        m_LockCounts[id]++;
+        EnterCriticalSection(&this->criticalSections[id]);
+        this->lockCounts[id]++;
     }
 
     void LeaveCriticalSectionWrapper(int id)
     {
-        LeaveCriticalSection(&m_CriticalSections[id]);
-        m_LockCounts[id]--;
+        LeaveCriticalSection(&this->criticalSections[id]);
+        this->lockCounts[id]--;
     }
 
     void ClearFogState()
     {
-        m_FogState = FOG_UNSET;
+        this->fogState = FOG_UNSET;
     }
 
-    HINSTANCE m_hInstance;
-    PDIRECT3D8 m_D3dIface;
-    PDIRECT3DDEVICE8 m_D3dDevice;
-    LPDIRECTINPUT8A m_DInputIface;
-    LPDIRECTINPUTDEVICE8A m_Keyboard;
-    LPDIRECTINPUTDEVICE8A m_Controller;
-    DIDEVCAPS m_ControllerCaps;
-    HWND m_HwndGameWindow;
-    D3DXMATRIX m_ViewMatrix;
-    D3DXMATRIX m_ProjectionMatrix;
-    D3DVIEWPORT8 m_Viewport;
-    D3DPRESENT_PARAMETERS m_PresentParameters;
-    DummyMidiTimer *m_DummyMidiTimer;
-    GameConfiguration m_Cfg;
-    i32 m_CalcCount;
-    i32 m_WantedState;
-    i32 m_CurState;
-    i32 m_WantedState2;
-    i32 m_Unk164;
-    i32 m_Unk168;
-    i32 m_Unk16c;
-    i32 m_Unk170;
-    i32 m_Unk174; // Commonly set for screen transitions and decremented once per frame, but never actually used for anything
-    i32 m_Unk178;
-    BOOL m_DisableVsync;
-    ZunBool m_CouldSetRefreshRate;
-    i32 m_LastFrameTime; // Unused in IN
+    HINSTANCE hInstance;
+    PDIRECT3D8 d3dIface;
+    PDIRECT3DDEVICE8 d3dDevice;
+    LPDIRECTINPUT8A dInputIface;
+    LPDIRECTINPUTDEVICE8A keyboard;
+    LPDIRECTINPUTDEVICE8A controller;
+    DIDEVCAPS controllerCaps;
+    HWND hwndGameWindow;
+    D3DXMATRIX viewMatrix;
+    D3DXMATRIX projectionMatrix;
+    D3DVIEWPORT8 viewport;
+    D3DPRESENT_PARAMETERS presentParameters;
+    DummyMidiTimer *dummyMidiTimer;
+    GameConfiguration cfg;
+    i32 calcCount;
+    i32 wantedState;
+    i32 curState;
+    i32 wantedState2;
+    i32 unk164;
+    i32 unk168;
+    i32 unk16c;
+    i32 unk170;
+    i32 unk174; // Commonly set for screen transitions and decremented once per frame, but never actually used for anything
+    i32 unk178;
+    BOOL disableVsync;
+    ZunBool couldSetRefreshRate;
+    i32 lastFrameTime; // Unused in IN
     f32 framerateMultiplier;
     MidiOutput *midiOutput;
-    float m_LagNumerator;
-    float m_LagDenominator;
-    u32 m_Unk198;
-    AnmFileDesc *m_TextAnm;
-    AnmFileDesc *m_LoadingAnm;
-    SupervisorFlags m_Flags;
-    DWORD m_TotalPlayTime;
-    DWORD m_SystemTime;
-    D3DCAPS8 m_D3dCaps;
-    HANDLE m_runningSubthreadHandle;
-    DWORD m_runningSubthreadID;
-    BOOL m_SubthreadCloseRequestActive;
-    BOOL m_Unk290;
-    u32 m_Unk294;
-    CRITICAL_SECTION m_CriticalSections[4];
-    u8 m_LockCounts[4];
-    DWORD m_LoadingVmsHaveBeenSetup;
+    float lagNumerator;
+    float lagDenominator;
+    u32 unk198;
+    AnmFileDesc *textAnm;
+    AnmFileDesc *loadingAnm;
+    SupervisorFlags flags;
+    DWORD totalPlayTime;
+    DWORD systemTime;
+    D3DCAPS8 d3dCaps;
+    HANDLE runningSubthreadHandle;
+    DWORD runningSubthreadID;
+    BOOL subthreadCloseRequestActive;
+    BOOL unk290;
+    u32 unk294;
+    CRITICAL_SECTION criticalSections[4];
+    u8 lockCounts[4];
+    DWORD loadingVmsHaveBeenSetup;
 
     unknown_fields(0x300, 0x50);
 
-    FogState m_FogState;
-    u32 m_ExeChecksum;
-    u32 m_ExeSize;
+    FogState fogState;
+    u32 exeChecksum;
+    u32 exeSize;
 
-    i32 m_VersionDataSize;
-    void *m_VersionData;
+    i32 versionDataSize;
+    void *versionData;
 };
 C_ASSERT(sizeof(Supervisor) == 0x364);
 DIFFABLE_EXTERN(Supervisor, g_Supervisor);
 
 struct ZunTimer
 {
-    int m_Previous;
-    float m_SubFrame;
-    int m_Current;
+    int previous;
+    float subFrame;
+    int current;
 
     ZunTimer()
     {
@@ -293,19 +293,19 @@ struct ZunTimer
 
     void Initialize()
     {
-        this->m_Current = 0;
-        this->m_Previous = -999;
-        this->m_SubFrame = 0.0;
+        this->current = 0;
+        this->previous = -999;
+        this->subFrame = 0.0;
     }
 
     operator int()
     {
-        return this->m_Current;
+        return this->current;
     }
 
     operator float()
     {
-        return (float)this->m_Current + (float)this->m_SubFrame;
+        return (float)this->current + (float)this->subFrame;
     }
 
     void operator++(int)
@@ -315,8 +315,8 @@ struct ZunTimer
 
     void Tick()
     {
-        this->m_Previous = this->m_Current;
-        g_Supervisor.TickTimer(&m_Current, &this->m_SubFrame);
+        this->previous = this->current;
+        g_Supervisor.TickTimer(&this->current, &this->subFrame);
     }
 
     void operator--(int)
@@ -336,22 +336,22 @@ struct ZunTimer
 
     bool operator < (int value)
     {
-        return this->m_Current < value;
+        return this->current < value;
     }
 
     bool operator <= (int value)
     {
-        return this->m_Current <= value;
+        return this->current <= value;
     }
 
     bool operator > (int value)
     {
-        return this->m_Current > value;
+        return this->current > value;
     }
 
     bool operator >= (int value)
     {
-        return this->m_Current >= value;
+        return this->current >= value;
     }
 
     void Increment(i32 value);
@@ -364,9 +364,9 @@ struct ZunTimer
 
     void SetCurrent(i32 value)
     {
-        this->m_Current = value;
-        this->m_Previous = -999;
-        this->m_SubFrame = 0.0;
+        this->current = value;
+        this->previous = -999;
+        this->subFrame = 0.0;
     }
 };
 }; // namespace th08

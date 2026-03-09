@@ -51,10 +51,10 @@ class PbgArchive
     static LPVOID SeekPastString(LPVOID *ptr);
 
   private:
-    PbgArchiveEntry *m_Entries;
-    i32 m_NumOfEntries;
-    char *m_Filename;
-    CPbgFile *m_FileAbstraction;
+    PbgArchiveEntry *entries;
+    i32 numOfEntries;
+    char *filename;
+    CPbgFile *fileAbstraction;
 };
 
 }; // namespace th08
