@@ -8,10 +8,10 @@ namespace th08
 {
 PbgArchive::PbgArchive()
 {
-    this->entries = NULL;
-    this->numOfEntries = 0;
-    this->filename = NULL;
-    this->fileAbstraction = NULL;
+    m_Entries = NULL;
+    m_NumOfEntries = 0;
+    m_Filename = NULL;
+    m_FileAbstraction = NULL;
 }
 
 PbgArchive::~PbgArchive()
@@ -24,16 +24,16 @@ bool PbgArchive::Load(LPCSTR filename)
     Release();
     utils::DebugPrint("info : %s open arcfile\r\n", filename);
 
-    this->fileAbstraction = NewEx(CPbgFile());
-    if (this->fileAbstraction == NULL)
+    m_FileAbstraction = NewEx(CPbgFile());
+    if (m_FileAbstraction == NULL)
     {
         return false;
     }
 
     if (ParseHeader(filename))
     {
-        this->filename = CopyFileName(filename);
-        if (this->filename != NULL)
+        m_Filename = CopyFileName(filename);
+        if (m_Filename != NULL)
         {
             return true;
         }
@@ -46,14 +46,14 @@ bool PbgArchive::Load(LPCSTR filename)
 
 void PbgArchive::Release()
 {
-    if (this->filename != NULL)
+    if (m_Filename != NULL)
     {
-        utils::DebugPrint("info : %s close arcfile\r\n", this->filename);
+        utils::DebugPrint("info : %s close arcfile\r\n", m_Filename);
     }
-    MemFree(this->filename);
-    DeleteArray(this->entries);
-    DeleteEx(this->fileAbstraction);
-    this->numOfEntries = 0;
+    MemFree(m_Filename);
+    DeleteArray(m_Entries);
+    DeleteEx(m_FileAbstraction);
+    m_NumOfEntries = 0;
 }
 
 #pragma var_order(entry, decompressedSize, decompressedData, compressedData, compressedSize)
@@ -64,7 +64,7 @@ LPBYTE PbgArchive::ReadDecompressEntry(LPCSTR filename, LPBYTE outBuffer)
     u32 compressedSize;
     u32 decompressedSize;
 
-    if (this->fileAbstraction == NULL)
+    if (m_FileAbstraction == NULL)
     {
         return NULL;
     }
@@ -75,7 +75,7 @@ LPBYTE PbgArchive::ReadDecompressEntry(LPCSTR filename, LPBYTE outBuffer)
         goto entry_read_error;
     }
 
-    if (this->fileAbstraction->Open(this->filename, g_PbgFileOpenModes[0]) == false)
+    if (m_FileAbstraction->Open(m_Filename, g_PbgFileOpenModes[0]) == false)
     {
         goto entry_read_error;
     }
@@ -88,11 +88,11 @@ LPBYTE PbgArchive::ReadDecompressEntry(LPCSTR filename, LPBYTE outBuffer)
     {
         goto entry_read_error;
     }
-    if (this->fileAbstraction->Seek(entry->dataOffset, g_PbgFileSeekModes[0]) == false)
+    if (m_FileAbstraction->Seek(entry->dataOffset, g_PbgFileSeekModes[0]) == false)
     {
         goto entry_read_error;
     }
-    if (this->fileAbstraction->Read(compressedData, compressedSize) == 0)
+    if (m_FileAbstraction->Read(compressedData, compressedSize) == 0)
     {
         goto entry_read_error;
     }
@@ -102,7 +102,7 @@ LPBYTE PbgArchive::ReadDecompressEntry(LPCSTR filename, LPBYTE outBuffer)
     return decompressedData;
 
 entry_read_error:
-    utils::DebugPrint("info : %s error\r\n", this->filename);
+    utils::DebugPrint("info : %s error\r\n", m_Filename);
     MemFree(compressedData);
     return NULL;
 }
@@ -117,13 +117,13 @@ DWORD PbgArchive::GetEntryDecompressedSize(LPCSTR filename)
 
 PbgArchiveEntry *PbgArchive::FindEntry(LPCSTR filename)
 {
-    if (this->entries == NULL)
+    if (m_Entries == NULL)
     {
         return NULL;
     }
 
-    PbgArchiveEntry *entry = this->entries;
-    for (i32 i = this->numOfEntries; i > 0; i--, entry++ /* PBG why */)
+    PbgArchiveEntry *entry = m_Entries;
+    for (i32 i = m_NumOfEntries; i > 0; i--, entry++ /* PBG why */)
     {
         if (_stricmp(filename, entry->filename) == 0)
             return entry;
@@ -151,15 +151,15 @@ bool PbgArchive::ParseHeader(LPCSTR filename)
     fileTableBuffer = NULL;
     entryBuffer = NULL;
 
-    if (this->fileAbstraction == NULL)
+    if (m_FileAbstraction == NULL)
     {
         return false;
     }
-    if (!this->fileAbstraction->Open(filename, g_PbgFileOpenModes[0]))
+    if (!m_FileAbstraction->Open(filename, g_PbgFileOpenModes[0]))
     {
         goto parse_error;
     }
-    if (this->fileAbstraction->ReadInt(&magic) == 0)
+    if (m_FileAbstraction->ReadInt(&magic) == 0)
     {
         goto parse_error;
     }
@@ -167,7 +167,7 @@ bool PbgArchive::ParseHeader(LPCSTR filename)
     {
         goto parse_error;
     }
-    if (this->fileAbstraction->Read(header.asBytes, sizeof(header)) == 0)
+    if (m_FileAbstraction->Read(header.asBytes, sizeof(header)) == 0)
     {
         goto parse_error;
     }
@@ -176,30 +176,30 @@ bool PbgArchive::ParseHeader(LPCSTR filename)
     memcpy(&header.asStruct, decryptedHeader, sizeof(header));
     g_ZunMemory.Free(decryptedHeader);
 
-    this->numOfEntries = header.asStruct.numOfEntries - 123456;
+    m_NumOfEntries = header.asStruct.numOfEntries - 123456;
     fileTableOffset = header.asStruct.fileTableOffset - 345678;
     decompressedSize = header.asStruct.unk - 567891;
 
-    if (this->numOfEntries <= 0)
+    if (m_NumOfEntries <= 0)
     {
         goto parse_error;
     }
 
-    size = this->fileAbstraction->GetSize();
+    size = m_FileAbstraction->GetSize();
     if (fileTableOffset >= size)
     {
         goto parse_error;
     }
     size -= fileTableOffset;
 
-    this->fileAbstraction->Seek(fileTableOffset, g_PbgFileSeekModes[0]);
+    m_FileAbstraction->Seek(fileTableOffset, g_PbgFileSeekModes[0]);
 
     fileTableBuffer = (LPBYTE)MemAlloc(size);
     if (fileTableBuffer == NULL)
     {
         goto parse_error;
     }
-    if (this->fileAbstraction->Read(fileTableBuffer, size) == 0)
+    if (m_FileAbstraction->Read(fileTableBuffer, size) == 0)
     {
         goto parse_error;
     }
@@ -214,8 +214,8 @@ bool PbgArchive::ParseHeader(LPCSTR filename)
         goto parse_error;
     }
 
-    this->entries = AllocEntries(entryBuffer, this->numOfEntries, fileTableOffset);
-    if (this->entries == NULL)
+    m_Entries = AllocEntries(entryBuffer, m_NumOfEntries, fileTableOffset);
+    if (m_Entries == NULL)
     {
         goto parse_error;
     }
@@ -227,7 +227,7 @@ bool PbgArchive::ParseHeader(LPCSTR filename)
 parse_error:
     g_ZunMemory.Free(fileTableBuffer);
     MemFree(entryBuffer);
-    DeleteEx(this->fileAbstraction);
+    DeleteEx(m_FileAbstraction);
     utils::DebugPrint(TH_ERR_ARCFILE_CORRUPTED, filename);
 
     while (false)

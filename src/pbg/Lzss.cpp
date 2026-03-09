@@ -7,8 +7,8 @@
 
 namespace th08
 {
-Lzss::TreeNode Lzss::tree[LZSS_DICTSIZE + 1];
-u8 Lzss::dict[LZSS_DICTSIZE];
+Lzss::TreeNode Lzss::m_Tree[LZSS_DICTSIZE + 1];
+u8 Lzss::m_Dict[LZSS_DICTSIZE];
 
 #define ENC_NEXT_BIT()                                                                                                 \
     inBitMask >>= 1;                                                                                                   \
@@ -82,7 +82,7 @@ LPBYTE Lzss::Encode(LPBYTE in, i32 uncompressedSize, i32 *compressedSize)
             break;
         }
 
-        dict[dictHead + i] = dictValue;
+        m_Dict[dictHead + i] = dictValue;
     }
 
     lookAheadBytes = i;
@@ -102,7 +102,7 @@ LPBYTE Lzss::Encode(LPBYTE in, i32 uncompressedSize, i32 *compressedSize)
             bytesToCopyToDict = 1;
 
             ENC_WRITE_FLAG_BIT(1);
-            ENC_WRITE_BITS(8, (bitfieldMask & dict[dictHead]) != 0);
+            ENC_WRITE_BITS(8, (bitfieldMask & m_Dict[dictHead]) != 0);
         }
         else
         {
@@ -132,7 +132,7 @@ LPBYTE Lzss::Encode(LPBYTE in, i32 uncompressedSize, i32 *compressedSize)
             }
             else
             {
-                dict[LZSS_DICTPOS_MOD(dictHead, LZSS_LOOKAHEAD_SIZE)] = dictValue;
+                m_Dict[LZSS_DICTPOS_MOD(dictHead, LZSS_LOOKAHEAD_SIZE)] = dictValue;
             }
 
             dictHead = LZSS_DICTPOS_MOD(dictHead, 1);
@@ -160,7 +160,7 @@ LPBYTE Lzss::Encode(LPBYTE in, i32 uncompressedSize, i32 *compressedSize)
 
 #define DEC_WRITE_BYTE(data)                                                                                           \
     *outCursor++ = data;                                                                                               \
-    dict[dictHead] = data;                                                                                           \
+    m_Dict[dictHead] = data;                                                                                           \
     dictHead = LZSS_DICTPOS_MOD(dictHead, 1);
 
 #define DEC_HANDLE_FETCH_NEW_BYTE()                                                                                    \
@@ -254,7 +254,7 @@ LPBYTE Lzss::Decode(LPBYTE in, i32 compressedSize, LPBYTE out, i32 decompressedS
             matchLength = inBits + 2;
             for (i = 0; i <= matchLength; i++)
             {
-                dictValue = dict[LZSS_DICTPOS_MOD(matchOffset, i)];
+                dictValue = m_Dict[LZSS_DICTPOS_MOD(matchOffset, i)];
                 DEC_WRITE_BYTE(dictValue);
             }
         }
@@ -271,10 +271,10 @@ LPBYTE Lzss::Decode(LPBYTE in, i32 compressedSize, LPBYTE out, i32 decompressedS
 
 void Lzss::InitTree(i32 root)
 {
-    tree[LZSS_DICTSIZE].right = root;
-    tree[root].parent = LZSS_DICTSIZE;
-    tree[root].right = 0;
-    tree[root].left = 0;
+    m_Tree[LZSS_DICTSIZE].right = root;
+    m_Tree[root].parent = LZSS_DICTSIZE;
+    m_Tree[root].right = 0;
+    m_Tree[root].left = 0;
 }
 
 void Lzss::InitEncoderState()
@@ -283,13 +283,13 @@ void Lzss::InitEncoderState()
 
     for (i = 0; i < LZSS_DICTSIZE; i++)
     {
-        dict[i] = 0;
+        m_Dict[i] = 0;
     }
     for (i = 0; i < LZSS_DICTSIZE + 1; i++)
     {
-        tree[i].parent = 0;
-        tree[i].left = 0;
-        tree[i].right = 0;
+        m_Tree[i].parent = 0;
+        m_Tree[i].left = 0;
+        m_Tree[i].right = 0;
     }
 }
 
@@ -305,14 +305,14 @@ i32 Lzss::AddString(i32 newNode, i32 *matchPosition)
         return 0;
     }
 
-    i32 testNode = tree[LZSS_DICTSIZE].right;
+    i32 testNode = m_Tree[LZSS_DICTSIZE].right;
     i32 matchLength = 0;
 
     for (;;)
     {
         for (i = 0; i < LZSS_LOOKAHEAD_SIZE; i++)
         {
-            delta = dict[LZSS_DICTPOS_MOD(newNode, i)] - dict[LZSS_DICTPOS_MOD(testNode, i)];
+            delta = m_Dict[LZSS_DICTPOS_MOD(newNode, i)] - m_Dict[LZSS_DICTPOS_MOD(testNode, i)];
 
             if (delta != 0)
             {
@@ -334,19 +334,19 @@ i32 Lzss::AddString(i32 newNode, i32 *matchPosition)
 
         if (delta >= 0)
         {
-            child = &tree[testNode].right;
+            child = &m_Tree[testNode].right;
         }
         else
         {
-            child = &tree[testNode].left;
+            child = &m_Tree[testNode].left;
         }
 
         if (*child == 0)
         {
             *child = newNode;
-            tree[newNode].parent = testNode;
-            tree[newNode].right = 0;
-            tree[newNode].left = 0;
+            m_Tree[newNode].parent = testNode;
+            m_Tree[newNode].right = 0;
+            m_Tree[newNode].left = 0;
             return matchLength;
         }
 
@@ -356,18 +356,18 @@ i32 Lzss::AddString(i32 newNode, i32 *matchPosition)
 
 void Lzss::DeleteString(i32 p)
 {
-    if (tree[p].parent == 0)
+    if (m_Tree[p].parent == 0)
     {
         return;
     }
 
-    if (tree[p].right == 0)
+    if (m_Tree[p].right == 0)
     {
-        ContractNode(p, tree[p].left);
+        ContractNode(p, m_Tree[p].left);
     }
-    else if (tree[p].left == 0)
+    else if (m_Tree[p].left == 0)
     {
-        ContractNode(p, tree[p].right);
+        ContractNode(p, m_Tree[p].right);
     }
     else
     {
@@ -379,44 +379,44 @@ void Lzss::DeleteString(i32 p)
 
 void Lzss::ContractNode(i32 oldNode, i32 newNode)
 {
-    tree[newNode].parent = tree[oldNode].parent;
+    m_Tree[newNode].parent = m_Tree[oldNode].parent;
 
-    if (tree[tree[oldNode].parent].right == oldNode)
+    if (m_Tree[m_Tree[oldNode].parent].right == oldNode)
     {
-        tree[tree[oldNode].parent].right = newNode;
+        m_Tree[m_Tree[oldNode].parent].right = newNode;
     }
     else
     {
-        tree[tree[oldNode].parent].left = newNode;
+        m_Tree[m_Tree[oldNode].parent].left = newNode;
     }
-    tree[oldNode].parent = 0;
+    m_Tree[oldNode].parent = 0;
 }
 
 void Lzss::ReplaceNode(i32 oldNode, i32 newNode)
 {
-    i32 parent = tree[oldNode].parent;
+    i32 parent = m_Tree[oldNode].parent;
 
-    if (tree[parent].left == oldNode)
+    if (m_Tree[parent].left == oldNode)
     {
-        tree[parent].left = newNode;
+        m_Tree[parent].left = newNode;
     }
     else
     {
-        tree[parent].right = newNode;
+        m_Tree[parent].right = newNode;
     }
-    tree[newNode] = tree[oldNode];
-    tree[tree[newNode].left].parent = newNode;
-    tree[tree[newNode].right].parent = newNode;
-    tree[oldNode].parent = 0;
+    m_Tree[newNode] = m_Tree[oldNode];
+    m_Tree[m_Tree[newNode].left].parent = newNode;
+    m_Tree[m_Tree[newNode].right].parent = newNode;
+    m_Tree[oldNode].parent = 0;
 }
 
 i32 Lzss::FindNextNode(i32 node)
 {
-    i32 next = tree[node].left;
+    i32 next = m_Tree[node].left;
 
-    while (tree[next].right != 0)
+    while (m_Tree[next].right != 0)
     {
-        next = tree[next].right;
+        next = m_Tree[next].right;
     }
     return next;
 }

@@ -7,8 +7,8 @@ DIFFABLE_STATIC_ARRAY_ASSIGN(char *, 3, g_PbgFileOpenModes) = {"r", "w", "a"};
 
 CPbgFile::CPbgFile()
 {
-    this->handle = INVALID_HANDLE_VALUE;
-    this->access = 0;
+    m_hFile = INVALID_HANDLE_VALUE;
+    m_DesiredAccess = 0;
 }
 
 CPbgFile::~CPbgFile()
@@ -30,21 +30,21 @@ bool CPbgFile::Open(const char *filename, char *mode)
     {
         if (*curMode == 'r')
         {
-            this->access = GENERIC_READ;
+            m_DesiredAccess = GENERIC_READ;
             creationDisposition = OPEN_EXISTING;
             break;
         }
         if (*curMode == 'w')
         {
             DeleteFileA(filename);
-            this->access = GENERIC_WRITE;
+            m_DesiredAccess = GENERIC_WRITE;
             creationDisposition = CREATE_ALWAYS;
             break;
         }
         if (*curMode == 'a')
         {
             goToEnd = TRUE;
-            this->access = GENERIC_WRITE;
+            m_DesiredAccess = GENERIC_WRITE;
             creationDisposition = OPEN_ALWAYS;
             break;
         }
@@ -56,28 +56,28 @@ bool CPbgFile::Open(const char *filename, char *mode)
     }
 
     GetFullFilePath(filePathBuffer, filename);
-    this->handle = CreateFileA(filePathBuffer, this->access, FILE_SHARE_READ, NULL, creationDisposition,
+    m_hFile = CreateFileA(filePathBuffer, m_DesiredAccess, FILE_SHARE_READ, NULL, creationDisposition,
                            FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
 
-    if (this->handle == INVALID_HANDLE_VALUE)
+    if (m_hFile == INVALID_HANDLE_VALUE)
     {
         return false;
     }
 
     if (goToEnd)
     {
-        SetFilePointer(this->handle, 0, NULL, FILE_END);
+        SetFilePointer(m_hFile, 0, NULL, FILE_END);
     }
     return true;
 }
 
 void CPbgFile::Close()
 {
-    if (this->handle != INVALID_HANDLE_VALUE)
+    if (m_hFile != INVALID_HANDLE_VALUE)
     {
-        CloseHandle(this->handle);
-        this->handle = INVALID_HANDLE_VALUE;
-        this->access = 0;
+        CloseHandle(m_hFile);
+        m_hFile = INVALID_HANDLE_VALUE;
+        m_DesiredAccess = 0;
     }
 }
 
@@ -85,12 +85,12 @@ DWORD CPbgFile::Read(LPVOID data, DWORD dataLen)
 {
     DWORD numBytesRead = 0;
 
-    if (this->access != GENERIC_READ)
+    if (m_DesiredAccess != GENERIC_READ)
     {
         return 0;
     }
 
-    ReadFile(this->handle, data, dataLen, &numBytesRead, NULL);
+    ReadFile(m_hFile, data, dataLen, &numBytesRead, NULL);
     return numBytesRead;
 }
 
@@ -98,50 +98,50 @@ bool CPbgFile::Write(LPVOID data, DWORD dataLen)
 {
     DWORD outWritten = 0;
 
-    if (this->access != GENERIC_WRITE)
+    if (m_DesiredAccess != GENERIC_WRITE)
     {
         return false;
     }
 
-    WriteFile(this->handle, data, dataLen, &outWritten, NULL);
+    WriteFile(m_hFile, data, dataLen, &outWritten, NULL);
     return dataLen == outWritten ? true : false;
 }
 
 DWORD CPbgFile::Tell()
 {
-    if (this->handle == INVALID_HANDLE_VALUE)
+    if (m_hFile == INVALID_HANDLE_VALUE)
     {
         return 0;
     }
 
-    return SetFilePointer(this->handle, 0, NULL, FILE_CURRENT);
+    return SetFilePointer(m_hFile, 0, NULL, FILE_CURRENT);
 }
 
 DWORD CPbgFile::GetSize()
 {
-    if (this->handle == INVALID_HANDLE_VALUE)
+    if (m_hFile == INVALID_HANDLE_VALUE)
     {
         return 0;
     }
 
-    return GetFileSize(this->handle, NULL);
+    return GetFileSize(m_hFile, NULL);
 }
 
 bool CPbgFile::Seek(DWORD offset, DWORD seekFrom)
 {
-    if (this->handle == INVALID_HANDLE_VALUE)
+    if (m_hFile == INVALID_HANDLE_VALUE)
     {
         return false;
     }
 
-    SetFilePointer(this->handle, offset, NULL, seekFrom);
+    SetFilePointer(m_hFile, offset, NULL, seekFrom);
     return true;
 }
 
 #pragma var_order(data, dataLen, oldLocation)
 HGLOBAL CPbgFile::ReadWholeFile(DWORD maxSize)
 {
-    if (this->access != GENERIC_READ)
+    if (m_DesiredAccess != GENERIC_READ)
     {
         return NULL;
     }
