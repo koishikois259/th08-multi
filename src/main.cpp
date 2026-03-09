@@ -37,19 +37,19 @@ enum RenderResult {
 #pragma pack(4)
 struct GameWindow
 {
-    HWND m_Window;
-    ZunBool m_WindowIsClosing; // Kept from previous games, but never set to true in IN
-    ZunBool m_WindowIsActive;
-    ZunBool m_WindowIsInactive;
-    i8 m_FramesSinceRedraw;
-    LARGE_INTEGER m_PCFrequency;
-    u8 m_UsesRelativePath; // Disables vsync when set
-    ZunBool m_ScreenSaveActive;
-    ZunBool m_LowPowerActive;
-    ZunBool m_PowerOffActive;
-    f64 m_CurTimestamp;
-    f64 m_LastTimestamp;
-    f64 m_LastFrameTime;
+    HWND window;
+    ZunBool windowIsClosing; // Kept from previous games, but never set to true in IN
+    ZunBool windowIsActive;
+    ZunBool windowIsInactive;
+    i8 framesSinceRedraw;
+    LARGE_INTEGER pcFrequency;
+    u8 usesRelativePath; // Disables vsync when set
+    ZunBool screenSaveActive;
+    ZunBool lowPowerActive;
+    ZunBool powerOffActive;
+    f64 curTimestamp;
+    f64 lastTimestamp;
+    f64 lastFrameTime;
 
     GameWindow() {
         memset(this, 0, sizeof(*this));
@@ -88,11 +88,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR pCmdLine
 
     renderResult = RENDER_RESULT_KEEP_RUNNING;
 
-    g_Supervisor.m_hInstance = hInstance;
+    g_Supervisor.hInstance = hInstance;
 
-    SystemParametersInfoA(SPI_GETSCREENSAVEACTIVE, 0, &g_GameWindow.m_ScreenSaveActive, 0);
-    SystemParametersInfoA(SPI_GETLOWPOWERACTIVE, 0, &g_GameWindow.m_LowPowerActive, 0);
-    SystemParametersInfoA(SPI_GETPOWEROFFACTIVE, 0, &g_GameWindow.m_PowerOffActive, 0);
+    SystemParametersInfoA(SPI_GETSCREENSAVEACTIVE, 0, &g_GameWindow.screenSaveActive, 0);
+    SystemParametersInfoA(SPI_GETLOWPOWERACTIVE, 0, &g_GameWindow.lowPowerActive, 0);
+    SystemParametersInfoA(SPI_GETPOWEROFFACTIVE, 0, &g_GameWindow.powerOffActive, 0);
     SystemParametersInfoA(SPI_SETSCREENSAVEACTIVE, 0, (LPVOID *) false, SPIF_SENDCHANGE);
     SystemParametersInfoA(SPI_SETLOWPOWERACTIVE, 0, (LPVOID *) false, SPIF_SENDCHANGE);
     SystemParametersInfoA(SPI_SETPOWEROFFACTIVE, 0, (LPVOID *) false, SPIF_SENDCHANGE);
@@ -111,7 +111,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR pCmdLine
     }
 
     GameWindow::CalcExecutableChecksum();
-    QueryPerformanceFrequency(&g_GameWindow.m_PCFrequency);
+    QueryPerformanceFrequency(&g_GameWindow.pcFrequency);
 
 restart:
     if (GameWindow::InitD3DInterface())
@@ -129,7 +129,7 @@ restart:
         goto stop;
     }
 
-    g_SoundPlayer.InitializeDSound(g_GameWindow.m_Window);
+    g_SoundPlayer.InitializeDSound(g_GameWindow.window);
     Controller::GetJoystickCaps();
     Controller::ResetKeyboard();
 
@@ -158,12 +158,12 @@ restart:
     {
         renderResult = RENDER_RESULT_KEEP_RUNNING;
 
-        g_GameWindow.m_FramesSinceRedraw = -4;
-        g_GameWindow.m_LastFrameTime = 0;
-        g_GameWindow.m_LastTimestamp = g_GameWindow.m_LastFrameTime;
-        g_GameWindow.m_CurTimestamp = g_GameWindow.m_LastTimestamp;
+        g_GameWindow.framesSinceRedraw = -4;
+        g_GameWindow.lastFrameTime = 0;
+        g_GameWindow.lastTimestamp = g_GameWindow.lastFrameTime;
+        g_GameWindow.curTimestamp = g_GameWindow.lastTimestamp;
 
-        while (!g_GameWindow.m_WindowIsClosing)
+        while (!g_GameWindow.windowIsClosing)
         {
             if (PeekMessageA(&msg, NULL, 0, 0, PM_REMOVE))
             {
@@ -172,7 +172,7 @@ restart:
             }
             else
             {
-                d3dDeviceStatus = g_Supervisor.m_D3dDevice->TestCooperativeLevel();
+                d3dDeviceStatus = g_Supervisor.d3dDevice->TestCooperativeLevel();
 
                 if (d3dDeviceStatus == D3D_OK)
                 {
@@ -183,20 +183,20 @@ restart:
                         break;
                     }
 
-                    g_Supervisor.m_Flags.d3dDevDisconnectFlag = 0;
+                    g_Supervisor.flags.d3dDevDisconnectFlag = 0;
                 }
                 else if (d3dDeviceStatus == D3DERR_DEVICENOTRESET)
                 {
                     g_AnmManager->ReleaseSurfaces();
 
-                    if (g_Supervisor.m_D3dDevice->Reset(&g_Supervisor.m_PresentParameters) != D3D_OK)
+                    if (g_Supervisor.d3dDevice->Reset(&g_Supervisor.presentParameters) != D3D_OK)
                     {
                         break;
                     }
 
                     GameWindow::ResetRenderState();
-                    g_Supervisor.m_Unk174 = 3;
-                    g_Supervisor.m_Flags.d3dDevDisconnectFlag = 1;
+                    g_Supervisor.unk174 = 3;
+                    g_Supervisor.flags.d3dDevDisconnectFlag = 1;
                 }
             }
         }
@@ -218,29 +218,29 @@ stop:
     g_SoundPlayer.Release();
     ZUN_DELETE(g_AnmManager);
     
-    if (g_Supervisor.m_D3dDevice != NULL)
+    if (g_Supervisor.d3dDevice != NULL)
     {
-        g_Supervisor.m_D3dDevice->Reset(&g_Supervisor.m_PresentParameters);
+        g_Supervisor.d3dDevice->Reset(&g_Supervisor.presentParameters);
     }
 
-    if (g_Supervisor.m_D3dDevice != NULL)
+    if (g_Supervisor.d3dDevice != NULL)
     {
-        g_Supervisor.m_D3dDevice->Release();
-        g_Supervisor.m_D3dDevice = NULL;
+        g_Supervisor.d3dDevice->Release();
+        g_Supervisor.d3dDevice = NULL;
     }
 
-    if (g_Supervisor.m_D3dIface != NULL)
+    if (g_Supervisor.d3dIface != NULL)
     {
-        g_Supervisor.m_D3dIface->Release();
-        g_Supervisor.m_D3dIface = NULL;
+        g_Supervisor.d3dIface->Release();
+        g_Supervisor.d3dIface = NULL;
     }
 
-    if (g_GameWindow.m_Window != NULL)
+    if (g_GameWindow.window != NULL)
     {
-        ShowWindow(g_GameWindow.m_Window, SW_HIDE);
-        MoveWindow(g_GameWindow.m_Window, 0, 0, 0, 0, FALSE);
-        DestroyWindow(g_GameWindow.m_Window);
-        g_GameWindow.m_Window = NULL;
+        ShowWindow(g_GameWindow.window, SW_HIDE);
+        MoveWindow(g_GameWindow.window, 0, 0, 0, 0, FALSE);
+        DestroyWindow(g_GameWindow.window);
+        g_GameWindow.window = NULL;
     }
 
     ShowCursor(TRUE);
@@ -269,7 +269,7 @@ stop:
         goto restart;
     }
 
-    FileSystem::WriteDataToFile("th08.cfg", &g_Supervisor.m_Cfg, 60);
+    FileSystem::WriteDataToFile("th08.cfg", &g_Supervisor.cfg, 60);
 
     if (g_Supervisor.midiOutput != NULL)
     {
@@ -282,9 +282,9 @@ stop:
     g_GameErrorContext.Flush();
     g_Supervisor.DeleteCriticalSections();
 
-    SystemParametersInfoA(SPI_SETSCREENSAVEACTIVE, g_GameWindow.m_ScreenSaveActive, NULL, SPIF_SENDCHANGE);
-    SystemParametersInfoA(SPI_SETLOWPOWERACTIVE, g_GameWindow.m_LowPowerActive, NULL, SPIF_SENDCHANGE);
-    SystemParametersInfoA(SPI_SETPOWEROFFACTIVE, g_GameWindow.m_PowerOffActive, NULL, SPIF_SENDCHANGE);
+    SystemParametersInfoA(SPI_SETSCREENSAVEACTIVE, g_GameWindow.screenSaveActive, NULL, SPIF_SENDCHANGE);
+    SystemParametersInfoA(SPI_SETLOWPOWERACTIVE, g_GameWindow.lowPowerActive, NULL, SPIF_SENDCHANGE);
+    SystemParametersInfoA(SPI_SETPOWEROFFACTIVE, g_GameWindow.powerOffActive, NULL, SPIF_SENDCHANGE);
     WINNLSEnableIME(NULL, TRUE);
 
     return 0;
@@ -294,32 +294,32 @@ RenderResult GameWindow::Render()
 {
     i32 calcChainResult;
 
-    m_CurTimestamp = this->GetTimestamp();
+    this->curTimestamp = this->GetTimestamp();
 
     // Safeguard in case of timestamp overflow or other weirdness
-    if (m_LastTimestamp > m_CurTimestamp)
+    if (this->lastTimestamp > this->curTimestamp)
     {
-        m_LastFrameTime = m_CurTimestamp;
+        this->lastFrameTime = this->curTimestamp;
     }
 
-    m_LastTimestamp = m_CurTimestamp;
+    this->lastTimestamp = this->curTimestamp;
 
-    if (m_LastFrameTime < m_CurTimestamp)
+    if (this->lastFrameTime < this->curTimestamp)
     {
 
-        while (m_LastFrameTime < m_CurTimestamp)
+        while (this->lastFrameTime < this->curTimestamp)
         {
-            m_LastFrameTime += (1.0f / 60);
+            this->lastFrameTime += (1.0f / 60);
         }
 
         g_AnmManager->FlushVertexBuffer();
 
-        g_Supervisor.m_Viewport.X = 0;
-        g_Supervisor.m_Viewport.Y = 0;
-        g_Supervisor.m_Viewport.Width = GAME_WINDOW_WIDTH;
-        g_Supervisor.m_Viewport.Height = GAME_WINDOW_HEIGHT;
+        g_Supervisor.viewport.X = 0;
+        g_Supervisor.viewport.Y = 0;
+        g_Supervisor.viewport.Width = GAME_WINDOW_WIDTH;
+        g_Supervisor.viewport.Height = GAME_WINDOW_HEIGHT;
 
-        g_Supervisor.m_D3dDevice->SetViewport(&g_Supervisor.m_Viewport);
+        g_Supervisor.d3dDevice->SetViewport(&g_Supervisor.viewport);
 
         calcChainResult = g_Chain.RunCalcChain();
         g_SoundPlayer.ProcessQueues();
@@ -335,22 +335,22 @@ RenderResult GameWindow::Render()
             return RENDER_RESULT_EXIT_ERROR;
         }
 
-        m_FramesSinceRedraw++;
+        this->framesSinceRedraw++;
 
-        if (g_Supervisor.m_Cfg.frameskipConfig <= m_FramesSinceRedraw)
+        if (g_Supervisor.cfg.frameskipConfig <= this->framesSinceRedraw)
         {
-            g_Supervisor.m_D3dDevice->BeginScene();
+            g_Supervisor.d3dDevice->BeginScene();
             g_AnmManager->ClearVertexBuffer();
-            g_Supervisor.m_FogState = FOG_UNSET;
+            g_Supervisor.fogState = FOG_UNSET;
             g_Supervisor.DisableFog();
             g_Chain.RunDrawChain();
             g_AnmManager->FlushVertexBuffer();
-            g_Supervisor.m_D3dDevice->SetTexture(0, NULL);
-            g_Supervisor.m_D3dDevice->EndScene();
-            m_FramesSinceRedraw = 0;
+            g_Supervisor.d3dDevice->SetTexture(0, NULL);
+            g_Supervisor.d3dDevice->EndScene();
+            this->framesSinceRedraw = 0;
         }
 
-        m_CurTimestamp = this->GetTimestamp();
+        this->curTimestamp = this->GetTimestamp();
         Present();
     }
     else
@@ -367,13 +367,13 @@ void GameWindow::Present()
     i32 i;
     char snapshotPath[0x100];
 
-    if (g_Supervisor.m_D3dDevice->Present(NULL, NULL, NULL, NULL) < 0)
+    if (g_Supervisor.d3dDevice->Present(NULL, NULL, NULL, NULL) < 0)
     {
         g_AnmManager->ReleaseSurfaces();
-        g_Supervisor.m_D3dDevice->Reset(&g_Supervisor.m_PresentParameters);
+        g_Supervisor.d3dDevice->Reset(&g_Supervisor.presentParameters);
         ResetRenderState();
 
-        g_Supervisor.m_Unk174 = 2;
+        g_Supervisor.unk174 = 2;
     }
 
     g_AnmManager->TakeScreencaptures();
@@ -398,9 +398,9 @@ void GameWindow::Present()
         }
     }
 
-    if (g_Supervisor.m_Unk174 != 0 && !g_GameManager.m_IsInGameMenu)
+    if (g_Supervisor.unk174 != 0 && !g_GameManager.isInGameMenu)
     {
-        g_Supervisor.m_Unk174--;
+        g_Supervisor.unk174--;
     }
 }
 
@@ -410,10 +410,10 @@ f64 GameWindow::GetTimestamp()
     LARGE_INTEGER performanceCounterValue;
     f64 timestamp;
 
-    if (g_GameWindow.m_PCFrequency.LowPart != 0)
+    if (g_GameWindow.pcFrequency.LowPart != 0)
     {
         QueryPerformanceCounter(&performanceCounterValue);
-        return (f64) performanceCounterValue.LowPart / (f64) g_GameWindow.m_PCFrequency.LowPart;
+        return (f64) performanceCounterValue.LowPart / (f64) g_GameWindow.pcFrequency.LowPart;
     }
 
     timeBeginPeriod(1);
@@ -425,9 +425,9 @@ f64 GameWindow::GetTimestamp()
 
 ZunBool GameWindow::InitD3DInterface()
 {
-    g_Supervisor.m_D3dIface = Direct3DCreate8(D3D_SDK_VERSION);
+    g_Supervisor.d3dIface = Direct3DCreate8(D3D_SDK_VERSION);
 
-    if (g_Supervisor.m_D3dIface == NULL)
+    if (g_Supervisor.d3dIface == NULL)
     {
         g_GameErrorContext.Fatal(TH_ERR_D3D_ERR_COULD_NOT_CREATE_OBJ);
         return true;
@@ -449,8 +449,8 @@ ZunBool GameWindow::CreateGameWindow(HINSTANCE hInstance)
     baseClass.hCursor = LoadCursorA(NULL, IDC_ARROW);
     baseClass.hInstance = hInstance;
     baseClass.lpfnWndProc = WindowProc;
-    g_GameWindow.m_WindowIsActive = true;
-    g_GameWindow.m_WindowIsInactive = false;
+    g_GameWindow.windowIsActive = true;
+    g_GameWindow.windowIsInactive = false;
     baseClass.lpszClassName = "BASE";
     RegisterClassA(&baseClass);
 
@@ -459,7 +459,7 @@ ZunBool GameWindow::CreateGameWindow(HINSTANCE hInstance)
         width = GAME_WINDOW_WIDTH;
         height = GAME_WINDOW_HEIGHT;
 
-        g_GameWindow.m_Window = CreateWindowExA(0, "BASE", TH_WINDOW_TITLE, WS_OVERLAPPEDWINDOW, 0, 0, width,
+        g_GameWindow.window = CreateWindowExA(0, "BASE", TH_WINDOW_TITLE, WS_OVERLAPPEDWINDOW, 0, 0, width,
                                                 height, NULL, NULL, hInstance, NULL);
     }
     else
@@ -467,18 +467,18 @@ ZunBool GameWindow::CreateGameWindow(HINSTANCE hInstance)
         width = GetSystemMetrics(SM_CXDLGFRAME) * 2 + GAME_WINDOW_WIDTH;
         height = GetSystemMetrics(SM_CYDLGFRAME) * 2 + GetSystemMetrics(SM_CYCAPTION) + GAME_WINDOW_HEIGHT;
 
-        g_GameWindow.m_Window = CreateWindowExA(0, "BASE", TH_WINDOW_TITLE, WS_VISIBLE | WS_MINIMIZEBOX | WS_SYSMENU,
+        g_GameWindow.window = CreateWindowExA(0, "BASE", TH_WINDOW_TITLE, WS_VISIBLE | WS_MINIMIZEBOX | WS_SYSMENU,
                                                 CW_USEDEFAULT, CW_USEDEFAULT, width, height, NULL, NULL, hInstance, NULL);
     }
 
-    g_Supervisor.m_HwndGameWindow = g_GameWindow.m_Window;
+    g_Supervisor.hwndGameWindow = g_GameWindow.window;
 
-    if (g_GameWindow.m_Window == NULL)
+    if (g_GameWindow.window == NULL)
     {
         return true;
     }
 
-    ActivateWindow(g_GameWindow.m_Window);
+    ActivateWindow(g_GameWindow.window);
     return false;
 }
 
@@ -496,22 +496,22 @@ LRESULT __stdcall GameWindow::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LP
 
             break;
         case WM_ACTIVATEAPP:
-            g_GameWindow.m_WindowIsActive = wParam;
+            g_GameWindow.windowIsActive = wParam;
 
-            if (g_GameWindow.m_WindowIsActive)
+            if (g_GameWindow.windowIsActive)
             {
-                g_GameWindow.m_WindowIsInactive = false;
+                g_GameWindow.windowIsInactive = false;
             }
             else
             {
-                g_GameWindow.m_WindowIsInactive = true;
+                g_GameWindow.windowIsInactive = true;
             }
 
             break;
         case WM_SETCURSOR:
             if (!g_Supervisor.IsWindowed())
             {
-                if (g_GameWindow.m_WindowIsInactive)
+                if (g_GameWindow.windowIsInactive)
                 {
                     SetCursor(LoadCursorA(NULL, IDC_ARROW));
                     ShowCursor(TRUE);
@@ -530,7 +530,7 @@ LRESULT __stdcall GameWindow::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LP
 
             return TRUE;
         case WM_CLOSE:
-            g_Supervisor.m_Flags.receivedCloseMsg = true;
+            g_Supervisor.flags.receivedCloseMsg = true;
             return 1;
     }
 
@@ -555,22 +555,22 @@ ZunBool GameWindow::InitD3DRendering()
 
     memset(&presentParams, 0, sizeof(presentParams));
 
-    g_Supervisor.m_D3dIface->GetAdapterDisplayMode(D3DADAPTER_DEFAULT, &displayMode);
-    if (!g_Supervisor.m_Cfg.windowed)
+    g_Supervisor.d3dIface->GetAdapterDisplayMode(D3DADAPTER_DEFAULT, &displayMode);
+    if (!g_Supervisor.cfg.windowed)
     {
         if (g_Supervisor.Is16bitColorMode() == true)
         {
             presentParams.BackBufferFormat = D3DFMT_R5G6B5;
-            g_Supervisor.m_Cfg.colorMode16bit = 1;
+            g_Supervisor.cfg.colorMode16bit = 1;
         }
         // Used in cases of corrupt or missing config files in earlier games. Dead code in IN
-        else if (g_Supervisor.m_Cfg.colorMode16bit == 0xff)
+        else if (g_Supervisor.cfg.colorMode16bit == 0xff)
         {
             presentParams.BackBufferFormat = D3DFMT_X8R8G8B8;
-            g_Supervisor.m_Cfg.colorMode16bit = 0;
+            g_Supervisor.cfg.colorMode16bit = 0;
             g_GameErrorContext.Log(TH_DBG_SCREEN_INIT_32BITS);
         }
-        else if (g_Supervisor.m_Cfg.colorMode16bit == 0)
+        else if (g_Supervisor.cfg.colorMode16bit == 0)
         {
             presentParams.BackBufferFormat = D3DFMT_X8R8G8B8;
         }
@@ -580,18 +580,18 @@ ZunBool GameWindow::InitD3DRendering()
         }
 
         // ?????? Not sure why this is here
-        if (g_GameWindow.m_UsesRelativePath)
+        if (g_GameWindow.usesRelativePath)
         {
-            g_Supervisor.m_DisableVsync = true;
+            g_Supervisor.disableVsync = true;
         }
 
-        if (!g_Supervisor.m_DisableVsync)
+        if (!g_Supervisor.disableVsync)
         {
             presentParams.FullScreen_RefreshRateInHz = 60;
             presentParams.FullScreen_PresentationInterval = D3DPRESENT_INTERVAL_ONE;
             g_GameErrorContext.Log(TH_DBG_SET_REFRESH_RATE_60HZ);
 
-            if (g_Supervisor.m_Cfg.frameskipConfig == 0)
+            if (g_Supervisor.cfg.frameskipConfig == 0)
             {
                 presentParams.SwapEffect = D3DSWAPEFFECT_FLIP;
             }
@@ -621,8 +621,8 @@ ZunBool GameWindow::InitD3DRendering()
     presentParams.AutoDepthStencilFormat = D3DFMT_D16;
     presentParams.Flags = D3DPRESENTFLAG_LOCKABLE_BACKBUFFER;
 
-    g_Supervisor.m_Flags.unk1 = true;
-    g_Supervisor.m_CouldSetRefreshRate = true;
+    g_Supervisor.flags.unk1 = true;
+    g_Supervisor.couldSetRefreshRate = true;
     failedToSetFramerate = false;
 
     for (;;)
@@ -634,18 +634,18 @@ ZunBool GameWindow::InitD3DRendering()
         else
         {
             
-            if (g_Supervisor.m_D3dIface->CreateDevice(0, D3DDEVTYPE_HAL, g_GameWindow.m_Window,
+            if (g_Supervisor.d3dIface->CreateDevice(0, D3DDEVTYPE_HAL, g_GameWindow.window,
                                                     D3DCREATE_HARDWARE_VERTEXPROCESSING, &presentParams,
-                                                    &g_Supervisor.m_D3dDevice) < 0)
+                                                    &g_Supervisor.d3dDevice) < 0)
             {
                 if (failedToSetFramerate)
                 {
                     g_GameErrorContext.Log(TH_DBG_TL_HAL_UNAVAILABLE);
                 }
                 
-                if (g_Supervisor.m_D3dIface->CreateDevice(0, D3DDEVTYPE_HAL, g_GameWindow.m_Window,
+                if (g_Supervisor.d3dIface->CreateDevice(0, D3DDEVTYPE_HAL, g_GameWindow.window,
                                                         D3DCREATE_SOFTWARE_VERTEXPROCESSING, &presentParams,
-                                                        &g_Supervisor.m_D3dDevice) < 0)
+                                                        &g_Supervisor.d3dDevice) < 0)
                 {
                     if (failedToSetFramerate)
                     {
@@ -653,15 +653,15 @@ ZunBool GameWindow::InitD3DRendering()
                     }
 
                 REFERENCE_RASTERIZER_MODE:
-                    if (g_Supervisor.m_D3dIface->CreateDevice(0, D3DDEVTYPE_REF, g_GameWindow.m_Window,
+                    if (g_Supervisor.d3dIface->CreateDevice(0, D3DDEVTYPE_REF, g_GameWindow.window,
                                                             D3DCREATE_SOFTWARE_VERTEXPROCESSING, &presentParams,
-                                                            &g_Supervisor.m_D3dDevice) < 0)
+                                                            &g_Supervisor.d3dDevice) < 0)
                     {
-                        if (!g_Supervisor.m_DisableVsync)
+                        if (!g_Supervisor.disableVsync)
                         {
                             g_GameErrorContext.Log(TH_DBG_CANT_SET_REFRESH_RATE);
                             presentParams.FullScreen_RefreshRateInHz = D3DPRESENT_RATE_DEFAULT;
-                            g_Supervisor.m_CouldSetRefreshRate = false;
+                            g_Supervisor.couldSetRefreshRate = false;
                             failedToSetFramerate = true;
 
                             continue;
@@ -681,10 +681,10 @@ ZunBool GameWindow::InitD3DRendering()
                             {
                                 g_GameErrorContext.Fatal(TH_ERR_D3D_INIT_FAILED);
                             
-                                if (g_Supervisor.m_D3dIface != NULL)
+                                if (g_Supervisor.d3dIface != NULL)
                                 {
-                                    g_Supervisor.m_D3dIface->Release();
-                                    g_Supervisor.m_D3dIface = NULL;
+                                    g_Supervisor.d3dIface->Release();
+                                    g_Supervisor.d3dIface = NULL;
                                 }
 
                                 return true;
@@ -694,27 +694,27 @@ ZunBool GameWindow::InitD3DRendering()
                     else
                     {
                         g_GameErrorContext.Log(TH_DBG_USING_REF_MODE);
-                        g_Supervisor.m_Flags.usingHardwareTL = false;
+                        g_Supervisor.flags.usingHardwareTL = false;
                         usingHardwareRenderer = false;
                     }
                 }
                 else
                 {
                     g_GameErrorContext.Log(TH_DBG_USING_HAL_MODE);
-                    g_Supervisor.m_Flags.usingHardwareTL = false;
+                    g_Supervisor.flags.usingHardwareTL = false;
                 }
             }
             else
             {
                 g_GameErrorContext.Log(TH_DBG_USING_TL_HAL_MODE);
-                g_Supervisor.m_Flags.usingHardwareTL = true;
+                g_Supervisor.flags.usingHardwareTL = true;
             }
 
             break;
         }
     }
 
-    memcpy(&g_Supervisor.m_PresentParameters, &presentParams, sizeof(presentParams));
+    memcpy(&g_Supervisor.presentParameters, &presentParams, sizeof(presentParams));
 
     halfWidth = GAME_WINDOW_WIDTH / 2.0f;
     halfHeight = GAME_WINDOW_HEIGHT / 2.0f;
@@ -722,50 +722,50 @@ ZunBool GameWindow::InitD3DRendering()
     fov = ZUN_PI / 6;
     cameraDistance = halfHeight / ZUN_TAN(fov / 2.0f);
 
-    D3DXMatrixLookAtLH(&g_Supervisor.m_ViewMatrix, &D3DXVECTOR3(halfWidth, -halfHeight, -cameraDistance), 
+    D3DXMatrixLookAtLH(&g_Supervisor.viewMatrix, &D3DXVECTOR3(halfWidth, -halfHeight, -cameraDistance), 
                     &D3DXVECTOR3(halfWidth, -halfHeight, 0.0f), &D3DXVECTOR3(0.0f, 1.0f, 0.0f));
-    D3DXMatrixPerspectiveFovLH(&g_Supervisor.m_ProjectionMatrix, fov, aspectRatio, 100.0f, 10000.0f);
-    g_Supervisor.m_D3dDevice->SetTransform(D3DTS_VIEW, &g_Supervisor.m_ViewMatrix);
-    g_Supervisor.m_D3dDevice->SetTransform(D3DTS_PROJECTION, &g_Supervisor.m_ProjectionMatrix);
-    g_Supervisor.m_D3dDevice->GetViewport(&g_Supervisor.m_Viewport);
-    g_Supervisor.m_D3dDevice->GetDeviceCaps(&g_Supervisor.m_D3dCaps);
+    D3DXMatrixPerspectiveFovLH(&g_Supervisor.projectionMatrix, fov, aspectRatio, 100.0f, 10000.0f);
+    g_Supervisor.d3dDevice->SetTransform(D3DTS_VIEW, &g_Supervisor.viewMatrix);
+    g_Supervisor.d3dDevice->SetTransform(D3DTS_PROJECTION, &g_Supervisor.projectionMatrix);
+    g_Supervisor.d3dDevice->GetViewport(&g_Supervisor.viewport);
+    g_Supervisor.d3dDevice->GetDeviceCaps(&g_Supervisor.d3dCaps);
 
     // This is dead code because from PCB onwards the bit that indicated software texture blending in EoSD
     //   is set true unconditionally in the config load function and then ignored (HW blending is always used)
     //   Therefore IsHardwareBlendingDisabled will always return true here
-    if (!g_Supervisor.IsHardwareBlendingDisabled() && !(g_Supervisor.m_D3dCaps.TextureOpCaps & D3DTEXOPCAPS_ADD))
+    if (!g_Supervisor.IsHardwareBlendingDisabled() && !(g_Supervisor.d3dCaps.TextureOpCaps & D3DTEXOPCAPS_ADD))
     {
         g_GameErrorContext.Log(TH_ERR_NO_SUPPORT_FOR_D3DTEXOPCAPS_ADD);
-        g_Supervisor.m_Cfg.opts.useSwTextureBlending = true;
+        g_Supervisor.cfg.opts.useSwTextureBlending = true;
     }
 
-    if (g_Supervisor.m_D3dCaps.MaxTextureWidth <= 256)
+    if (g_Supervisor.d3dCaps.MaxTextureWidth <= 256)
     {
         g_GameErrorContext.Log(TH_ERR_NO_LARGE_TEXTURE_SUPPORT);
     }
 
-    FormatD3DCapabilities(&g_Supervisor.m_D3dCaps, capabilitiesBuf);
+    FormatD3DCapabilities(&g_Supervisor.d3dCaps, capabilitiesBuf);
     g_GameErrorContext.Log(capabilitiesBuf);
 
     if (!g_Supervisor.Is16bitColorMode() && usingHardwareRenderer)
     {
-        if (g_Supervisor.m_D3dIface->CheckDeviceFormat(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, presentParams.BackBufferFormat, 
+        if (g_Supervisor.d3dIface->CheckDeviceFormat(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, presentParams.BackBufferFormat, 
                                                         0, D3DRTYPE_TEXTURE, D3DFMT_A8R8G8B8) == D3D_OK)
         {
-            g_Supervisor.m_Flags.using32BitGraphics = true;
+            g_Supervisor.flags.using32BitGraphics = true;
         }
         else
         {
-            g_Supervisor.m_Flags.using32BitGraphics = false;
-            g_Supervisor.m_Cfg.opts.force16bitTextures = true;
+            g_Supervisor.flags.using32BitGraphics = false;
+            g_Supervisor.cfg.opts.force16bitTextures = true;
             g_GameErrorContext.Log(TH_ERR_D3DFMT_A8R8G8B8_UNSUPPORTED);
         }
     }
 
     ResetRenderState();
     ScreenEffect::SetViewport(COLOR_BLACK);
-    g_GameWindow.m_WindowIsClosing = false;
-    g_Supervisor.m_LastFrameTime = 0;
+    g_GameWindow.windowIsClosing = false;
+    g_Supervisor.lastFrameTime = 0;
     return false;
 }
 
@@ -850,102 +850,102 @@ void GameWindow::ResetRenderState()
 
     if (!g_Supervisor.IsDepthTestDisabled())
     {
-        g_Supervisor.m_D3dDevice->SetRenderState(D3DRS_ZENABLE, true);
+        g_Supervisor.d3dDevice->SetRenderState(D3DRS_ZENABLE, true);
     }
     else
     {
-        g_Supervisor.m_D3dDevice->SetRenderState(D3DRS_ZENABLE, false);
+        g_Supervisor.d3dDevice->SetRenderState(D3DRS_ZENABLE, false);
     }
 
-    g_Supervisor.m_D3dDevice->SetRenderState(D3DRS_LIGHTING, false);
-    g_Supervisor.m_D3dDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
-    g_Supervisor.m_D3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, true);
-    g_Supervisor.m_D3dDevice->SetRenderState(D3DRS_SHADEMODE, D3DSHADE_GOURAUD);
-    g_Supervisor.m_D3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-    g_Supervisor.m_D3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
-    g_Supervisor.m_D3dDevice->SetRenderState(D3DRS_ZFUNC, D3DCMP_ALWAYS);
-    g_Supervisor.m_D3dDevice->SetRenderState(D3DRS_ALPHATESTENABLE, true);
-    g_Supervisor.m_D3dDevice->SetRenderState(D3DRS_ALPHAREF, 4);
-    g_Supervisor.m_D3dDevice->SetRenderState(D3DRS_ALPHAFUNC, D3DCMP_GREATEREQUAL);
+    g_Supervisor.d3dDevice->SetRenderState(D3DRS_LIGHTING, false);
+    g_Supervisor.d3dDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
+    g_Supervisor.d3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, true);
+    g_Supervisor.d3dDevice->SetRenderState(D3DRS_SHADEMODE, D3DSHADE_GOURAUD);
+    g_Supervisor.d3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+    g_Supervisor.d3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+    g_Supervisor.d3dDevice->SetRenderState(D3DRS_ZFUNC, D3DCMP_ALWAYS);
+    g_Supervisor.d3dDevice->SetRenderState(D3DRS_ALPHATESTENABLE, true);
+    g_Supervisor.d3dDevice->SetRenderState(D3DRS_ALPHAREF, 4);
+    g_Supervisor.d3dDevice->SetRenderState(D3DRS_ALPHAFUNC, D3DCMP_GREATEREQUAL);
     
     if (!g_Supervisor.IsFogDisabled())
     {
-        g_Supervisor.m_D3dDevice->SetRenderState(D3DRS_FOGENABLE, true);
+        g_Supervisor.d3dDevice->SetRenderState(D3DRS_FOGENABLE, true);
     }
     else
     {
-        g_Supervisor.m_D3dDevice->SetRenderState(D3DRS_FOGENABLE, false);
+        g_Supervisor.d3dDevice->SetRenderState(D3DRS_FOGENABLE, false);
     }
 
     fogDensity = 1.0f;
-    g_Supervisor.m_D3dDevice->SetRenderState(D3DRS_FOGDENSITY, *(u32 *) &fogDensity);
-    g_Supervisor.m_D3dDevice->SetRenderState(D3DRS_FOGTABLEMODE, D3DFOG_NONE);
-    g_Supervisor.m_D3dDevice->SetRenderState(D3DRS_FOGVERTEXMODE, D3DFOG_LINEAR);
-    g_Supervisor.m_D3dDevice->SetRenderState(D3DRS_FOGCOLOR, COLOR_LIGHT_GREY);
+    g_Supervisor.d3dDevice->SetRenderState(D3DRS_FOGDENSITY, *(u32 *) &fogDensity);
+    g_Supervisor.d3dDevice->SetRenderState(D3DRS_FOGTABLEMODE, D3DFOG_NONE);
+    g_Supervisor.d3dDevice->SetRenderState(D3DRS_FOGVERTEXMODE, D3DFOG_LINEAR);
+    g_Supervisor.d3dDevice->SetRenderState(D3DRS_FOGCOLOR, COLOR_LIGHT_GREY);
 
     fogVal = 1000.0f;
-    g_Supervisor.m_D3dDevice->SetRenderState(D3DRS_FOGSTART, *(u32 *) &fogVal);
+    g_Supervisor.d3dDevice->SetRenderState(D3DRS_FOGSTART, *(u32 *) &fogVal);
     fogVal = 5000.0f;
-    g_Supervisor.m_D3dDevice->SetRenderState(D3DRS_FOGEND, *(u32 *) &fogVal);
+    g_Supervisor.d3dDevice->SetRenderState(D3DRS_FOGEND, *(u32 *) &fogVal);
 
     // Always evaluates true because Zun mistakenly used bitwise or instead of and
     // Doesn't matter, because it disables what it tried to test for anyway
-    if (g_Supervisor.m_D3dCaps.RasterCaps | D3DPRASTERCAPS_ANTIALIASEDGES)
+    if (g_Supervisor.d3dCaps.RasterCaps | D3DPRASTERCAPS_ANTIALIASEDGES)
     {
-        g_Supervisor.m_D3dDevice->SetRenderState(D3DRS_EDGEANTIALIAS, false);
+        g_Supervisor.d3dDevice->SetRenderState(D3DRS_EDGEANTIALIAS, false);
     }
 
-    g_Supervisor.m_D3dDevice->SetRenderState(D3DRS_MULTISAMPLEANTIALIAS, false);
+    g_Supervisor.d3dDevice->SetRenderState(D3DRS_MULTISAMPLEANTIALIAS, false);
 
     // Alpha texture settings
     if (!g_Supervisor.IsColorCompositingDisabled())
     {
-        g_Supervisor.m_D3dDevice->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
+        g_Supervisor.d3dDevice->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
     }
     else
     {
-        g_Supervisor.m_D3dDevice->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
+        g_Supervisor.d3dDevice->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
     }
 
-    g_Supervisor.m_D3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
+    g_Supervisor.d3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
 
     if (!g_Supervisor.IsVertexBufferDisabled())
     {
-        g_Supervisor.m_D3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_TFACTOR);
+        g_Supervisor.d3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_TFACTOR);
     }
     else
     {
-        g_Supervisor.m_D3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
+        g_Supervisor.d3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
     }
 
     // Color texture settings
     if (!g_Supervisor.IsColorCompositingDisabled())
     {
-        g_Supervisor.m_D3dDevice->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
+        g_Supervisor.d3dDevice->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
     }
     else
     {
-        g_Supervisor.m_D3dDevice->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_SELECTARG1);
+        g_Supervisor.d3dDevice->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_SELECTARG1);
     }
 
-    g_Supervisor.m_D3dDevice->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
+    g_Supervisor.d3dDevice->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
 
     if (!g_Supervisor.IsVertexBufferDisabled())
     {
-        g_Supervisor.m_D3dDevice->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_TFACTOR);
+        g_Supervisor.d3dDevice->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_TFACTOR);
     }
     else
     {
-        g_Supervisor.m_D3dDevice->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
+        g_Supervisor.d3dDevice->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
     }
 
-    g_Supervisor.m_D3dDevice->SetTextureStageState(0, D3DTSS_MIPFILTER, D3DTEXF_NONE);
-    g_Supervisor.m_D3dDevice->SetTextureStageState(0, D3DTSS_MAGFILTER, D3DTEXF_LINEAR);
-    g_Supervisor.m_D3dDevice->SetTextureStageState(0, D3DTSS_MINFILTER, D3DTEXF_LINEAR);
-    g_Supervisor.m_D3dDevice->SetTextureStageState(0, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_COUNT2);
-    g_Supervisor.m_D3dDevice->SetTextureStageState(0, D3DTSS_ADDRESSW, D3DTADDRESS_CLAMP);
-    g_Supervisor.m_D3dDevice->SetTextureStageState(0, D3DTSS_ADDRESSU, D3DTADDRESS_WRAP);
-    g_Supervisor.m_D3dDevice->SetTextureStageState(0, D3DTSS_ADDRESSV, D3DTADDRESS_WRAP);
+    g_Supervisor.d3dDevice->SetTextureStageState(0, D3DTSS_MIPFILTER, D3DTEXF_NONE);
+    g_Supervisor.d3dDevice->SetTextureStageState(0, D3DTSS_MAGFILTER, D3DTEXF_LINEAR);
+    g_Supervisor.d3dDevice->SetTextureStageState(0, D3DTSS_MINFILTER, D3DTEXF_LINEAR);
+    g_Supervisor.d3dDevice->SetTextureStageState(0, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_COUNT2);
+    g_Supervisor.d3dDevice->SetTextureStageState(0, D3DTSS_ADDRESSW, D3DTADDRESS_CLAMP);
+    g_Supervisor.d3dDevice->SetTextureStageState(0, D3DTSS_ADDRESSU, D3DTADDRESS_WRAP);
+    g_Supervisor.d3dDevice->SetTextureStageState(0, D3DTSS_ADDRESSV, D3DTADDRESS_WRAP);
 
     if (g_AnmManager != NULL)
     {
@@ -956,7 +956,7 @@ void GameWindow::ResetRenderState()
         g_AnmManager->ClearCameraSettings();
     }
 
-    g_Background.m_SkyFogNeedsSetup = true;
+    g_Background.skyFogNeedsSetup = true;
 }
 
 #pragma var_order(moduleFilenameBuf, startupInfo, consoleTitleBuf, fileExtension)
@@ -1006,15 +1006,15 @@ ZunResult GameWindow::CheckForRunningGameInstance(HINSTANCE hInstance)
 
             if (strcmp(moduleFilenameBuf, consoleTitleBuf) != 0)
             {
-                g_GameWindow.m_UsesRelativePath = true;
+                g_GameWindow.usesRelativePath = true;
             }
         }
 
-        g_Supervisor.m_Flags.unk6 = false;
+        g_Supervisor.flags.unk6 = false;
     }
     else
     {
-        g_Supervisor.m_Flags.unk6 = true;
+        g_Supervisor.flags.unk6 = true;
     }
 
     if (g_ExclusiveMutex == NULL)
@@ -1072,8 +1072,8 @@ i32 GameWindow::CalcExecutableChecksum()
 
         utils::DebugPrint("main sum %d\r\n", checksum);
         g_ZunMemory.Free(dataBase);
-        g_Supervisor.m_ExeChecksum = checksum;
-        g_Supervisor.m_ExeSize = fileSize;
+        g_Supervisor.exeChecksum = checksum;
+        g_Supervisor.exeSize = fileSize;
 
         return checksum;
     }

@@ -28,7 +28,7 @@ class TextHelper
     bool AllocateBufferWithFallback(i32 width, i32 height, D3DFORMAT format);
     bool TryAllocateBuffer(i32 width, i32 height, D3DFORMAT format);
     FormatInfo *GetFormatInfo(D3DFORMAT format);
-    bool InvertAlpha(i32 x, i32 y, i32 spriteWidth, i32 fontHeight, BOOL param_5);
+    bool InvertAlpha(i32 x, i32 y, i32 spriteWidth, i32 fontHeight, BOOL para5);
     u8 *GetBuffer();
     u32 GetImageWidthInBytes();
     i32 GetHeight();
@@ -48,15 +48,15 @@ class TextHelper
                                     IDirect3DTexture8 *outTexture);
 
   private:
-    D3DFORMAT m_format;
-    i32 m_width;
-    i32 m_height;
-    u32 m_imageSizeInBytes;
-    i32 m_imageWidthInBytes;
-    HDC m_hdc;
-    HGDIOBJ m_gdiObj;
-    HGDIOBJ m_gdiObj2;
-    u8 *m_buffer;
+    D3DFORMAT format;
+    i32 width;
+    i32 height;
+    u32 imageSizeInBytes;
+    i32 imageWidthInBytes;
+    HDC hdc;
+    HGDIOBJ gdiObj;
+    HGDIOBJ gdiObj2;
+    u8 *buffer;
 };
 
 DIFFABLE_EXTERN(IDirect3DSurface8 *, g_TextBufferSurface)

@@ -41,27 +41,27 @@ class ChainElem
 
     void SetCallback(ChainCallback callback)
     {
-        m_Callback = callback;
-        m_AddedCallback = NULL;
-        m_DeletedCallback = NULL;
+        this->callback = callback;
+        this->addedCallback = NULL;
+        this->deletedCallback = NULL;
     }
 
-    short m_Priority;
-    u16 m_IsHeapAllocated : 1;
-    ChainCallback m_Callback;
-    ChainLifetimeCallback m_AddedCallback;
-    ChainLifetimeCallback m_DeletedCallback;
-    struct ChainElem *m_Prev;
-    struct ChainElem *m_Next;
-    struct ChainElem *m_UnkPtr;
-    void *m_Arg;
+    short priority;
+    u16 isHeapAllocated : 1;
+    ChainCallback callback;
+    ChainLifetimeCallback addedCallback;
+    ChainLifetimeCallback deletedCallback;
+    struct ChainElem *prev;
+    struct ChainElem *next;
+    struct ChainElem *unkPtr;
+    void *arg;
 };
 
 class Chain
 {
   private:
-    ChainElem m_CalcChain;
-    ChainElem m_DrawChain;
+    ChainElem calcChain;
+    ChainElem drawChain;
 
     void ReleaseSingleChain(ChainElem *root);
     void CutImpl(ChainElem *to_remove);
@@ -144,22 +144,22 @@ class GameErrorContext
 
     void ResetContext()
     {
-        m_BufferEnd = m_Buffer;
-        m_BufferEnd[0] = '\0';
+        this->bufferEnd = this->buffer;
+        this->bufferEnd[0] = '\0';
     }
 
     void Flush()
     {
-        if (m_BufferEnd != m_Buffer)
+        if (this->bufferEnd != this->buffer)
         {
             Log("---------------------------------------------------------- \r\n");
 
-            if (m_ShowMessageBox)
+            if (this->showMessageBox)
             {
-                MessageBoxA(NULL, m_Buffer, "log", MB_ICONSTOP);
+                MessageBoxA(NULL, this->buffer, "log", MB_ICONSTOP);
             }
 
-            FileSystem::WriteDataToFile("./log.txt", m_Buffer, strlen(m_Buffer));
+            FileSystem::WriteDataToFile("./log.txt", this->buffer, strlen(this->buffer));
         }
     }
 
@@ -167,9 +167,9 @@ class GameErrorContext
     const char *Fatal(const char *fmt, ...);
 
   private:
-    char m_Buffer[0x2000];
-    char *m_BufferEnd;
-    i8 m_ShowMessageBox;
+    char buffer[0x2000];
+    char *bufferEnd;
+    i8 showMessageBox;
 };
 
 class Rng
@@ -182,17 +182,17 @@ class Rng
 
     void ResetGenerationCount()
     {
-        m_GenerationCount = 0;
+        this->generationCount = 0;
     }
 
     void SetSeed(u16 newSeed)
     {
-        m_Seed = newSeed;
+        this->seed = newSeed;
     }
 
     u16 GetSeed()
     {
-        return m_Seed;
+        return this->seed;
     }
 
     u16 GetRandomU16InRange(u16 range)
@@ -216,8 +216,8 @@ class Rng
     }
 
   private:
-    u16 m_Seed, m_SeedBackup;
-    u32 m_GenerationCount;
+    u16 seed, seedBackup;
+    u32 generationCount;
 };
 
 class ZunMemory
@@ -240,10 +240,10 @@ class ZunMemory
     void *AddToRegistry(void *ptr, size_t size, char *name)
     {
 #ifdef DEBUG
-        m_bRegistryInUse = TRUE;
-        for (i32 i = 0; i < ARRAY_SIZE_SIGNED(m_Registry); i++)
+        this->bRegistryInUse = TRUE;
+        for (i32 i = 0; i < ARRAY_SIZE_SIGNED(this->registry); i++)
         {
-            if (m_Registry[i] == NULL)
+            if (this->registry[i] == NULL)
             {
                 RegistryInfo *info = (RegistryInfo *)malloc(sizeof(*info));
                 if (info != NULL)
@@ -251,7 +251,7 @@ class ZunMemory
                     info->data = ptr;
                     info->size = size;
                     info->name = name;
-                    m_Registry[i] = info;
+                    this->registry[i] = info;
                 }
                 break;
             }
@@ -263,12 +263,12 @@ class ZunMemory
     void RemoveFromRegistry(VOID *ptr)
     {
 #ifdef DEBUG
-        for (i32 i = 0; i < ARRAY_SIZE_SIGNED(m_Registry); i++)
+        for (i32 i = 0; i < ARRAY_SIZE_SIGNED(this->registry); i++)
         {
-            if (m_Registry[i] == ptr)
+            if (this->registry[i] == ptr)
             {
-                free(m_Registry[i]);
-                m_Registry[i] = NULL;
+                free(this->registry[i]);
+                this->registry[i] = NULL;
                 break;
             }
         }
@@ -283,8 +283,8 @@ class ZunMemory
         char *name;
     };
 
-    RegistryInfo *m_Registry[0x1000];
-    BOOL m_bRegistryInUse;
+    RegistryInfo *registry[0x1000];
+    BOOL bRegistryInUse;
 };
   
 struct ControllerMapping
@@ -302,45 +302,45 @@ struct ControllerMapping
 
 struct ZunGlobals
 {
-    u32 m_DisplayScore;
-    i32 m_GrazeInStage;
-    u32 m_Score;
-    i32 m_Graze;
-    i32 m_Unk0x10;
-    u32 m_DisplayedHighScore;
-    u8 m_ContinuesUsedInHighScore;
+    u32 displayScore;
+    i32 grazeInStage;
+    u32 score;
+    i32 graze;
+    i32 unk0x10;
+    u32 displayedHighScore;
+    u8 ontinuesUsedInHighScore;
     /* 3 bytes pad */
-    u32 m_unk1C;
-    i16 m_YoukaiGaugeCopy;
-    i16 m_YoukaiGauge;
-    i32 m_PointItemValue;
-    u8 m_ClockTime;
-    u8 m_NumRetries;
+    u32 unk1C;
+    i16 youkaiGaugeCopy;
+    i16 youkaiGauge;
+    i32 pointItemValue;
+    u8 clockTime;
+    u8 numRetries;
     /* 2 bytes pad */
-    i32 m_PointItemsCollectedInStage;
-    i32 m_PointItemsCollected;
-    i32 m_PointItemExtendsSoFar;
-    i32 m_NextPointItemExtendThreshold;
-    i32 m_CurrentTimeOrbs;
-    i32 m_LastSpellTimeOrbThreshold;
-    i32 m_TotalTimeOrbs;
-    u32 m_Rng1[7];
-    f32 m_Deaths;
-    f32 m_DeathInStage;
-    f32 m_Rng2[2];
-    f32 m_LivesRemaining;
-    f32 m_Rng3[2];
-    f32 m_BombsRemaining;
-    f32 m_BombsUsed;
-    f32 m_BombsUsedInStage;
-    f32 m_Rng4[3];
-    f32 m_PlayerPower;
-    f32 m_Rng5[2];
-    u32 m_Rng6;
-    u32 m_Rng7[8];
-    u32 m_AntiTamperValue;
-    u32 m_AntiTamperChecksum;
-    u32 m_Rng8[5];
+    i32 pointItemsCollectedInStage;
+    i32 pointItemsCollected;
+    i32 pointItemExtendsSoFar;
+    i32 nextPointItemExtendThreshold;
+    i32 currentTimeOrbs;
+    i32 lastSpellTimeOrbThreshold;
+    i32 totalTimeOrbs;
+    u32 rng1[7];
+    f32 deaths;
+    f32 deathInStage;
+    f32 rng2[2];
+    f32 livesRemaining;
+    f32 rng3[2];
+    f32 bombsRemaining;
+    f32 bombsUsed;
+    f32 bombsUsedInStage;
+    f32 rng4[3];
+    f32 playerPower;
+    f32 rng5[2];
+    u32 rng6;
+    u32 rng7[8];
+    u32 antiTamperValue;
+    u32 antiTamperChecksum;
+    u32 rng8[5];
 };
 
 C_ASSERT(sizeof(ZunGlobals) == 0xe4);

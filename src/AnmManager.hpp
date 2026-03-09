@@ -333,42 +333,42 @@ struct AnmManager
 
     void ClearBlendMode()
     {
-        m_CurrentBlendMode = 3;
+        this->currentBlendMode = 3;
     }
 
     void ClearColorOp()
     {
-        m_CurrentColorOp = AnmColorOp_Unset;
+        this->currentColorOp = AnmColorOp_Unset;
     }
 
     void ClearSprite()
     {
-        m_CurrentSprite = NULL;
+        this->currentSprite = NULL;
     }
 
     void ClearVertexShader()
     {
-        m_CurrentVertexShader = AnmVertexShader_Unset;
+        this->currentVertexShader = AnmVertexShader_Unset;
     }
 
     void ClearTexture()
     {
-        m_CurrentTexture = NULL;
+        this->currentTexture = NULL;
     }
 
     void ClearCameraSettings()
     {
-        m_CameraMode = AnmCameraMode_Unset;
+        this->cameraMode = AnmCameraMode_Unset;
     }
 
     void ClearZWrite()
     {
-        m_DisableZWrite = AnmZWriteMode_Unset;
+        this->disableZWrite = AnmZWriteMode_Unset;
     }
 
     void ResetSomeStuff()
     {
-        m_FlushesThisFrame = 0;
+        this->flushesThisFrame = 0;
         unk0x14 = 0;
         unk0xc = 0;
         unk0x18 = 0;
@@ -378,37 +378,37 @@ struct AnmManager
     {
         i32 i;
 
-        for (i = 0; i < ARRAY_SIZE_SIGNED(m_Surfaces); i++)
+        for (i = 0; i < ARRAY_SIZE_SIGNED(this->surfaces); i++)
         {
-            if (m_Surfaces[i] != NULL)
+            if (this->surfaces[i] != NULL)
             {
-                m_Surfaces[i]->Release();
-                m_Surfaces[i] = NULL;
+                this->surfaces[i]->Release();
+                this->surfaces[i] = NULL;
             }
         }
     }
 
     void TakeScreencaptures()
     {
-        if (m_CaptureAnmIdx >= 0)
+        if (this->captureAnmIdx >= 0)
         {
-            CaptureToTexture(m_CaptureAnmIdx, m_TextureCaptureSrcX, m_TextureCaptureSrcY, m_TextureCaptureSrcW, m_TextureCaptureSrcH,
-                            m_TextureCaptureDstX, m_TextureCaptureDstY, m_TextureCaptureDstW, m_TextureCaptureDstH);
-            m_CaptureAnmIdx = -1;
+            CaptureToTexture(this->captureAnmIdx, this->textureCaptureSrcX, this->textureCaptureSrcY, this->textureCaptureSrcW, this->textureCaptureSrcH,
+                            this->textureCaptureDstX, this->textureCaptureDstY, this->textureCaptureDstW, this->textureCaptureDstH);
+            this->captureAnmIdx = -1;
         }
 
-        if (m_CaptureSurfaceIdx >= 0)
+        if (this->captureSurfaceIdx >= 0)
         {
-            CaptureToSurface(m_CaptureSurfaceIdx, m_SurfaceCaptureSrcX, m_SurfaceCaptureSrcY, m_SurfaceCaptureSrcW, m_SurfaceCaptureSrcH,
-                            m_SurfaceCaptureDstX, m_SurfaceCaptureDstY, m_SurfaceCaptureDstW, m_SurfaceCaptureDstH);
-            m_CaptureSurfaceIdx = -1;
+            CaptureToSurface(this->captureSurfaceIdx, this->surfaceCaptureSrcX, this->surfaceCaptureSrcY, this->surfaceCaptureSrcW, this->surfaceCaptureSrcH,
+                            this->surfaceCaptureDstX, this->surfaceCaptureDstY, this->surfaceCaptureDstW, this->surfaceCaptureDstH);
+            this->captureSurfaceIdx = -1;
         }
     }
 
     void ResetMoreStuff()
     {
         unk0x4 = 0;
-        m_Color = 0x80808080;
+        this->color = 0x80808080;
     }
 
     void CaptureToTexture (i32 captureAnmIdx, i32 srcX, i32 srcY, i32 srcW, i32 srcH, i32 dstX, i32 dstY, i32 dstW, i32 dstH);
@@ -417,59 +417,59 @@ struct AnmManager
     void ClearVertexBuffer();
     void FlushVertexBuffer();
 
-    D3DCOLOR m_Color;
+    D3DCOLOR color;
     i32 unk0x4;
-    i32 m_CaptureSurfaceIdx;
+    i32 captureSurfaceIdx;
     u32 unk0xc;
-    u32 m_FlushesThisFrame;
+    u32 flushesThisFrame;
     u32 unk0x14;
     u32 unk0x18;
     D3DXVECTOR2 unk0x1c;
-    AnmFileDesc m_AnmFiles[256];
+    AnmFileDesc anmFiles[256];
     D3DXVECTOR3 unk0x1c24;
     unknown_fields(0x1c30, 0x34);
     AnmVm unk0x1c64;
     unknown_fields(0x1f08, 0x130);
 
-    IDirect3DSurface8 *m_Surfaces[32];
-    IDirect3DSurface8 *m_SurfacesBis[32];
-    u8 *m_SurfaceData[32];
-    u32 m_SurfaceDataSizes[32];
-    ZunImageInfo m_SurfaceInfo[32];
+    IDirect3DSurface8 *surfaces[32];
+    IDirect3DSurface8 *surfacesBis[32];
+    u8 *surfaceData[32];
+    u32 surfaceDataSizes[32];
+    ZunImageInfo surfaceInfo[32];
 
     unknown_fields(0x24b8, 0x4);
 
-    IDirect3DBaseTexture8 *m_CurrentTexture;
-    u8 m_CurrentBlendMode;
-    u8 m_CurrentColorOp;
-    u8 m_CurrentVertexShader;
-    u8 m_DisableZWrite;
-    u8 m_CameraMode;
+    IDirect3DBaseTexture8 *currentTexture;
+    u8 currentBlendMode;
+    u8 currentColorOp;
+    u8 currentVertexShader;
+    u8 disableZWrite;
+    u8 cameraMode;
     unknown_fields(0x24c5, 3); // Padding?
-    void *m_CurrentSprite;
+    void *currentSprite;
     unknown_fields(0x24cc, 4);
-    VertexDiffuseXyzrhw m_UntexturedVector[4];
-    u32 m_SpritesToDraw;
-    VertexTex1DiffuseXyzrhw m_VertexBuffer[0x18000];
-    VertexTex1DiffuseXyzrhw *m_VertexBufferEndPtr;
-    VertexTex1DiffuseXyzrhw *m_VertexBufferStartPtr;
-    i32 m_CaptureAnmIdx;
-    i32 m_TextureCaptureSrcX;
-    i32 m_TextureCaptureSrcY;
-    i32 m_TextureCaptureSrcW;
-    i32 m_TextureCaptureSrcH;
-    i32 m_TextureCaptureDstX;
-    i32 m_TextureCaptureDstY;
-    i32 m_TextureCaptureDstW;
-    i32 m_TextureCaptureDstH;
-    i32 m_SurfaceCaptureSrcX;
-    i32 m_SurfaceCaptureSrcY;
-    i32 m_SurfaceCaptureSrcW;
-    i32 m_SurfaceCaptureSrcH;
-    i32 m_SurfaceCaptureDstX;
-    i32 m_SurfaceCaptureDstY;
-    i32 m_SurfaceCaptureDstW;
-    i32 m_SurfaceCaptureDstH;
+    VertexDiffuseXyzrhw untexturedVector[4];
+    u32 spritesToDraw;
+    VertexTex1DiffuseXyzrhw vertexBuffer[0x18000];
+    VertexTex1DiffuseXyzrhw *vertexBufferEndPtr;
+    VertexTex1DiffuseXyzrhw *vertexBufferStartPtr;
+    i32 captureAnmIdx;
+    i32 textureCaptureSrcX;
+    i32 textureCaptureSrcY;
+    i32 textureCaptureSrcW;
+    i32 textureCaptureSrcH;
+    i32 textureCaptureDstX;
+    i32 textureCaptureDstY;
+    i32 textureCaptureDstW;
+    i32 textureCaptureDstH;
+    i32 surfaceCaptureSrcX;
+    i32 surfaceCaptureSrcY;
+    i32 surfaceCaptureSrcW;
+    i32 surfaceCaptureSrcH;
+    i32 surfaceCaptureDstX;
+    i32 surfaceCaptureDstY;
+    i32 surfaceCaptureDstW;
+    i32 surfaceCaptureDstH;
 };
 C_ASSERT(sizeof(AnmManager) == 0x2a2570);
 

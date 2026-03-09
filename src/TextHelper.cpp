@@ -19,13 +19,13 @@ DIFFABLE_STATIC_ARRAY_ASSIGN(FormatInfo, 7, g_FormatInfoArray) = {
 
 TextHelper::TextHelper()
 {
-    m_format = (D3DFORMAT)-1;
-    m_width = 0;
-    m_height = 0;
-    m_hdc = 0;
-    m_gdiObj2 = 0;
-    m_gdiObj = 0;
-    m_buffer = NULL;
+    this->format = (D3DFORMAT)-1;
+    this->width = 0;
+    this->height = 0;
+    this->hdc = 0;
+    this->gdiObj2 = 0;
+    this->gdiObj = 0;
+    this->buffer = NULL;
 }
 
 TextHelper::~TextHelper()
@@ -35,18 +35,18 @@ TextHelper::~TextHelper()
 
 bool TextHelper::ReleaseBuffer()
 {
-    if (m_hdc)
+    if (this->hdc)
     {
-        SelectObject(m_hdc, m_gdiObj);
-        DeleteDC(m_hdc);
-        DeleteObject(m_gdiObj2);
-        m_format = (D3DFORMAT)-1;
-        m_width = 0;
-        m_height = 0;
-        m_hdc = 0;
-        m_gdiObj2 = 0;
-        m_gdiObj = 0;
-        m_buffer = NULL;
+        SelectObject(this->hdc, this->gdiObj);
+        DeleteDC(this->hdc);
+        DeleteObject(this->gdiObj2);
+        this->format = (D3DFORMAT)-1;
+        this->width = 0;
+        this->height = 0;
+        this->hdc = 0;
+        this->gdiObj2 = 0;
+        this->gdiObj = 0;
+        this->buffer = NULL;
         return true;
     }
     else
@@ -123,15 +123,15 @@ bool TextHelper::TryAllocateBuffer(i32 width, i32 height, D3DFORMAT format)
     memset(bitmapData, 0, bitmapInfo.bmiHeader.biSizeImage);
     deviceContext = CreateCompatibleDC(NULL);
     originalBitmapObj = SelectObject(deviceContext, bitmapObj);
-    m_hdc = deviceContext;
-    m_gdiObj2 = bitmapObj;
-    m_buffer = bitmapData;
-    m_imageSizeInBytes = bitmapInfo.bmiHeader.biSizeImage;
-    m_gdiObj = originalBitmapObj;
-    m_width = width;
-    m_height = height;
-    m_format = format;
-    m_imageWidthInBytes = imageWidthInBytes;
+    this->hdc = deviceContext;
+    this->gdiObj2 = bitmapObj;
+    this->buffer = bitmapData;
+    this->imageSizeInBytes = bitmapInfo.bmiHeader.biSizeImage;
+    this->gdiObj = originalBitmapObj;
+    this->width = width;
+    this->height = height;
+    this->format = format;
+    this->imageWidthInBytes = imageWidthInBytes;
     return true;
 }
 
@@ -169,7 +169,7 @@ bool TextHelper::InvertAlpha(i32 x, i32 y, i32 spriteWidth, i32 fontHeight, BOOL
 
     doubleArea = spriteWidth * fontHeight * 2;
     bufferRegion = &GetBuffer()[y * spriteWidth * 2];
-    switch (m_format)
+    switch (this->format)
     {
     case D3DFMT_A8R8G8B8:
         for (idx = 3; idx < doubleArea; idx += 4)
@@ -244,37 +244,37 @@ bool TextHelper::InvertAlpha(i32 x, i32 y, i32 spriteWidth, i32 fontHeight, BOOL
 
 u8 *TextHelper::GetBuffer()
 {
-    return m_buffer;
+    return this->buffer;
 }
 
 u32 TextHelper::GetImageWidthInBytes()
 {
-    return m_imageWidthInBytes;
+    return this->imageWidthInBytes;
 }
 
 i32 TextHelper::GetHeight()
 {
-    return m_height;
+    return this->height;
 }
 
 HDC TextHelper::GetHDC()
 {
-    return m_hdc;
+    return this->hdc;
 }
 
 i32 TextHelper::GetWidth()
 {
-    return m_width;
+    return this->width;
 }
 
 D3DFORMAT TextHelper::GetFormat()
 {
-    return m_format;
+    return this->format;
 }
 
 bool TextHelper::IsAllocated()
 {
-    return m_gdiObj2 != NULL;
+    return this->gdiObj2 != NULL;
 }
 
 #pragma function(memcpy)
@@ -325,7 +325,7 @@ bool TextHelper::CopyTextToSurface(IDirect3DSurface8 *outSurface)
 
 void TextHelper::CreateTextBuffer()
 {
-    g_Supervisor.m_D3dDevice->CreateImageSurface(1024, TEXT_BUFFER_HEIGHT, D3DFMT_A1R5G5B5, &g_TextBufferSurface);
+    g_Supervisor.d3dDevice->CreateImageSurface(1024, TEXT_BUFFER_HEIGHT, D3DFMT_A1R5G5B5, &g_TextBufferSurface);
 }
 
 void TextHelper::ReleaseTextBuffer()
