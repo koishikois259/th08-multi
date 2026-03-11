@@ -5,8 +5,8 @@
 #include "inttypes.hpp"
 #include "pbg/PbgArchive.hpp"
 #include "utils.hpp"
-#include <windows.h>
 #include <d3dx8.h>
+#include <windows.h>
 
 namespace th08
 {
@@ -15,8 +15,11 @@ namespace th08
 #define WAS_PRESSED(key) (((g_CurFrameInput & (key)) != 0) && (g_CurFrameInput & (key)) != (g_LastFrameInput & (key)))
 
 /* zunName is ZUN's original name for this type */
-#define ZUN_NEW(type, zunName) ((type *) g_ZunMemory.AddToRegistry(new type(), sizeof(type), zunName))
-#define ZUN_DELETE(p) g_ZunMemory.RemoveFromRegistry(p); delete p; p = NULL;
+#define ZUN_NEW(type, zunName) ((type *)g_ZunMemory.AddToRegistry(new type(), sizeof(type), zunName))
+#define ZUN_DELETE(p)                                                                                                  \
+    g_ZunMemory.RemoveFromRegistry(p);                                                                                 \
+    delete p;                                                                                                          \
+    p = NULL;
 
 enum ChainCallbackResult
 {
@@ -114,11 +117,9 @@ enum TouhouButton
 namespace Controller
 {
 u16 GetJoystickCaps();
-u32 SetButtonFromControllerInputs(u16 *outButtons, i16 controllerButtonToTest, u16 touhouButton,
-                                  u32 inputButtons);
+u32 SetButtonFromControllerInputs(u16 *outButtons, i16 controllerButtonToTest, u16 touhouButton, u32 inputButtons);
 
-u32 SetButtonFromDirectInputJoystate(u16 *outButtons, i16 controllerButtonToTest, u16 touhouButton,
-                                     u8 *inputButtons);
+u32 SetButtonFromDirectInputJoystate(u16 *outButtons, i16 controllerButtonToTest, u16 touhouButton, u8 *inputButtons);
 
 u16 GetControllerInput(u16 buttons);
 u8 *GetControllerState();
@@ -286,7 +287,7 @@ class ZunMemory
     RegistryInfo *registry[0x1000];
     BOOL bRegistryInUse;
 };
-  
+
 struct ControllerMapping
 {
     i16 shotButton;

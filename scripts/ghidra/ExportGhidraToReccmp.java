@@ -1,21 +1,20 @@
+import ghidra.app.script.GhidraScript;
+import ghidra.pcode.floatformat.BigFloat;
+import ghidra.pcode.floatformat.FloatFormat;
 import ghidra.program.database.symbol.FunctionSymbol;
-import ghidra.program.model.listing.Function;
-import ghidra.program.model.listing.FunctionIterator;
+import ghidra.program.model.data.DataType;
+import ghidra.program.model.data.DoubleDataType;
+import ghidra.program.model.data.FloatDataType;
+import ghidra.program.model.data.StringDataType;
 import ghidra.program.model.listing.Data;
 import ghidra.program.model.listing.DataIterator;
+import ghidra.program.model.listing.Function;
+import ghidra.program.model.listing.FunctionIterator;
+import ghidra.program.model.symbol.SourceType;
 import ghidra.program.model.symbol.Symbol;
 import ghidra.program.model.symbol.SymbolIterator;
 import ghidra.program.model.symbol.SymbolTable;
 import ghidra.program.model.symbol.SymbolType;
-import ghidra.program.model.symbol.SourceType;
-import ghidra.program.model.data.DataType;
-import ghidra.program.model.data.FloatDataType;
-import ghidra.program.model.data.DoubleDataType;
-import ghidra.program.model.data.StringDataType;
-import ghidra.pcode.floatformat.BigFloat;
-import ghidra.pcode.floatformat.FloatFormat;
-import ghidra.app.script.GhidraScript;
-
 import java.io.File;
 import java.nio.file.Files;
 
@@ -25,7 +24,7 @@ public class ExportGhidraToReccmp extends GhidraScript
     {
         StringBuilder builder = new StringBuilder();
 
-        builder.append("name,address,type\n"); 
+        builder.append("name,address,type\n");
         SymbolTable symbolTable = currentProgram.getSymbolTable();
 
         SymbolIterator symbolIter = symbolTable.getAllSymbols(true);
@@ -43,16 +42,16 @@ public class ExportGhidraToReccmp extends GhidraScript
                 strType = "function";
                 if (symbol instanceof FunctionSymbol)
                 {
-                    Function function = (Function) ((FunctionSymbol) symbol).getObject();
-                    
+                    Function function = (Function)((FunctionSymbol)symbol).getObject();
+
                     /* we don't care about external functions */
                     if (function.isExternal())
                     {
                         continue;
                     }
-                    
+
                     /* some symbol names need to "demangled" in order to match with reccmp. */
-                    
+
                     if (symbolName.startsWith("_"))
                     {
                         /* remove the leading _ */
@@ -63,10 +62,9 @@ public class ExportGhidraToReccmp extends GhidraScript
                     {
                         symbolName = symbolName.replace('_', ' ');
                     }
-                    
+
                     /* e.g. `eh_vector_constructor_iterator' or `scalar_deleting_destructor' */
-                    if (symbolName.indexOf('`') != -1
-                        && symbolName.indexOf('`') != 0     /* must not start with `*/
+                    if (symbolName.indexOf('`') != -1 && symbolName.indexOf('`') != 0 /* must not start with `*/
                         && symbolName.indexOf('\'') != -1)
                     {
                         symbolName = symbolName.replace('_', ' ');
@@ -80,7 +78,7 @@ public class ExportGhidraToReccmp extends GhidraScript
                 {
                     continue;
                 }
-                
+
                 /* filter out instruction labels */
                 if (currentProgram.getListing().getDefinedDataAt(symbol.getAddress()) == null)
                 {
@@ -108,10 +106,10 @@ public class ExportGhidraToReccmp extends GhidraScript
             builder.append(strType);
             builder.append("\n");
         }
-        
+
         return builder.toString();
     }
-    
+
     public static String convertStringtoCString(String input)
     {
         StringBuilder builder = new StringBuilder();
@@ -120,48 +118,48 @@ public class ExportGhidraToReccmp extends GhidraScript
         {
             switch (c)
             {
-                case '\n':
-                    builder.append("\\n");
-                    break;
-                case '\r':
-                    builder.append("\\r");
-                    break;
-                case '\t':
-                    builder.append("\\t");
-                    break;
-                case '\\':
-                    builder.append("\\\\");
-                    break;
-                case '\"':
-                    builder.append("\\\"");
-                    break;
-                case '\'':
-                    builder.append("\\\'");
-                    break;
-                default:
-                    builder.append(c);
-                    break;
+            case '\n':
+                builder.append("\\n");
+                break;
+            case '\r':
+                builder.append("\\r");
+                break;
+            case '\t':
+                builder.append("\\t");
+                break;
+            case '\\':
+                builder.append("\\\\");
+                break;
+            case '\"':
+                builder.append("\\\"");
+                break;
+            case '\'':
+                builder.append("\\\'");
+                break;
+            default:
+                builder.append(c);
+                break;
             }
         }
 
         return builder.toString();
     }
-    
+
     private String makeReccmpStringsCSV()
     {
         StringBuilder builder = new StringBuilder();
-        
+
         builder.append("address,type,x-text\n");
-        
+
         String strType = "";
-        
+
         DataIterator dataIter = currentProgram.getListing().getDefinedData(true);
-        
+
         while (dataIter.hasNext())
         {
             Data data = dataIter.next();
             DataType type = data.getDataType();
-            
+
             if (type instanceof StringDataType)
             {
                 strType = "string";
@@ -170,30 +168,30 @@ public class ExportGhidraToReccmp extends GhidraScript
             {
                 continue;
             }
-            
+
             builder.append("0x");
             builder.append(Long.toHexString(data.getAddress().getOffset()));
             builder.append(",");
             builder.append("string,");
             builder.append("\"");
-            builder.append(convertStringtoCString((String) data.getValue()));
+            builder.append(convertStringtoCString((String)data.getValue()));
             builder.append("\"");
             builder.append("\n");
         }
-        
+
         return builder.toString();
     }
-    
+
     private String makeReccmpFloatsCSV()
     {
         StringBuilder builder = new StringBuilder();
-        
+
         builder.append("address,type,size\n");
-        
+
         String strType = "";
-        
+
         DataIterator dataIter = currentProgram.getListing().getDefinedData(true);
-        
+
         while (dataIter.hasNext())
         {
             Data data = dataIter.next();
@@ -201,7 +199,7 @@ public class ExportGhidraToReccmp extends GhidraScript
             int size = 0;
 
             strType = "float";
-            
+
             if (type instanceof FloatDataType)
             {
                 size = 4;
@@ -214,7 +212,7 @@ public class ExportGhidraToReccmp extends GhidraScript
             {
                 continue;
             }
-            
+
             builder.append("0x");
             builder.append(Long.toHexString(data.getAddress().getOffset()));
             builder.append(",");
@@ -223,7 +221,7 @@ public class ExportGhidraToReccmp extends GhidraScript
             builder.append(Integer.toString(size));
             builder.append("\n");
         }
-        
+
         return builder.toString();
     }
 
@@ -232,14 +230,13 @@ public class ExportGhidraToReccmp extends GhidraScript
         String fileContents = makeReccmpSymbolCSV();
         File outputFile = askFile("reccmp-symbol.csv", "Save");
         Files.write(outputFile.toPath(), fileContents.getBytes());
-        
+
         fileContents = makeReccmpStringsCSV();
         outputFile = askFile("reccmp-strings.csv", "Save");
         Files.write(outputFile.toPath(), fileContents.getBytes());
-        
+
         fileContents = makeReccmpFloatsCSV();
         outputFile = askFile("reccmp-floats.csv", "Save");
         Files.write(outputFile.toPath(), fileContents.getBytes());
     }
 }
-

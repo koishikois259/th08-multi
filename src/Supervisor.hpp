@@ -5,12 +5,12 @@
 #include <dinput.h>
 
 #include "AsciiManager.hpp"
+#include "Global.hpp"
 #include "Midi.hpp"
+#include "ZunBool.hpp"
 #include "diffbuild.hpp"
 #include "inttypes.hpp"
 #include "utils.hpp"
-#include "ZunBool.hpp"
-#include "Global.hpp"
 
 namespace th08
 {
@@ -243,7 +243,8 @@ struct Supervisor
     i32 unk168;
     i32 unk16c;
     i32 unk170;
-    i32 unk174; // Commonly set for screen transitions and decremented once per frame, but never actually used for anything
+    i32 unk174; // Commonly set for screen transitions and decremented once per frame, but never actually used for
+                // anything
     i32 unk178;
     BOOL disableVsync;
     ZunBool couldSetRefreshRate;
@@ -324,32 +325,32 @@ struct ZunTimer
         this->Decrement(1);
     }
 
-    void operator += (int value)
+    void operator+=(int value)
     {
         this->Increment(value);
     }
 
-    void operator -= (int value)
+    void operator-=(int value)
     {
         this->Decrement(value);
     }
 
-    bool operator < (int value)
+    bool operator<(int value)
     {
         return this->current < value;
     }
 
-    bool operator <= (int value)
+    bool operator<=(int value)
     {
         return this->current <= value;
     }
 
-    bool operator > (int value)
+    bool operator>(int value)
     {
         return this->current > value;
     }
 
-    bool operator >= (int value)
+    bool operator>=(int value)
     {
         return this->current >= value;
     }

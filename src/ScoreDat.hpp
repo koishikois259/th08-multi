@@ -1,7 +1,7 @@
 #pragma once
 
-#include "utils.hpp"
 #include "GameManager.hpp"
+#include "utils.hpp"
 
 namespace th08
 {
@@ -18,5 +18,3 @@ struct ScoreDat
 };
 
 } /* namespace th08 */
-
-
