@@ -6,8 +6,14 @@ namespace th08
 {
 DIFFABLE_STATIC(AnmManager *, g_AnmManager);
 
-D3DFORMAT g_TextureFormatD3D8Mapping[] = {
+D3DFORMAT g_TextureFormatD3D8Mapping[] =
+{
     D3DFMT_UNKNOWN, D3DFMT_A8R8G8B8, D3DFMT_A1R5G5B5, D3DFMT_R5G6B5, D3DFMT_R8G8B8, D3DFMT_A4R4G4B4
+};
+
+u32 g_TextureFormatBytesPerPixel[] =
+{
+    4, 4, 2, 2, 3, 2
 };
 
 void AnmManager::ExecuteScriptOnVmArray(AnmVm *sprite, int count)
@@ -26,24 +32,29 @@ void AnmManager::ExecuteScriptOnVmArray(AnmVm *sprite, int count)
 // STUB: th08 0x465070
 AnmManager::AnmManager()
 {
+    memset((void *) this, 0, sizeof(AnmManager));
 }
 
 // STUB: th08 0x465250
 void AnmManager::SetupVertexBuffer()
 {
-    memset((void *) this, 0, sizeof(AnmManager));
 }
 
 static i32 GetAnmFormat(i32 format)
 { 
-  if (g_Supervisor.Is16bitColorMode() != 0) {
-    if ((g_TextureFormatD3D8Mapping[format] == D3DFMT_A8R8G8B8) || (g_TextureFormatD3D8Mapping[format] == D3DFMT_UNKNOWN)) {
-        return 5;
-    } else if (g_TextureFormatD3D8Mapping[format] == D3DFMT_R8G8B8) {
-      return 3;
+    if (g_Supervisor.Is16bitColorMode() != 0)
+    {
+        if ((g_TextureFormatD3D8Mapping[format] == D3DFMT_A8R8G8B8) || (g_TextureFormatD3D8Mapping[format] == D3DFMT_UNKNOWN))
+        {
+            format = 5;
+        }
+        else if (g_TextureFormatD3D8Mapping[format] == D3DFMT_R8G8B8)
+        {
+            format = 3;
+        }
     }
-  }
-  return format;
+
+    return format;
 }
 
 // STUB: th08 0x465570
@@ -52,60 +63,72 @@ ZunResult AnmManager::CreateTextureFromFile(IDirect3DTexture8 **outTexture, i32 
     return ZUN_ERROR;
 }
 
-// STUB: th08 0x4655e0
+#pragma var_order(surface, textureSurfaceLevel, header, lockedRect, currentY, textureSrc, textureDest)
 ZunResult AnmManager::CreateTextureFromAnm(IDirect3DTexture8 **outTexture, AnmTextureHeader *textureHeader, i32 format)
 {
-    u32 uVar3;
-    u16 *puVar5;
-    char *pcVar6;
-    D3DLOCKED_RECT lockedRect;
-    IDirect3DSurface8 *local_c;
     IDirect3DSurface8 *surface;
-  
-    g_Supervisor.d3dDevice->CreateImageSurface(
-        (int)(short)textureHeader->width,
-        (int)(short)textureHeader->height,
-        g_TextureFormatD3D8Mapping[(short)textureHeader->format],
-        &surface
-    );
+    IDirect3DSurface8 *textureSurfaceLevel;
+    AnmTextureHeader *header;
+    const void *textureSrc;
+    void *textureDest;
+    D3DLOCKED_RECT lockedRect;
+    int currentY;
+
+    surface = NULL;
+    textureSurfaceLevel = NULL;
+    format = GetAnmFormat(format);
+    header = textureHeader;
+
+    g_Supervisor.d3dDevice->CreateImageSurface(header->width, header->height, g_TextureFormatD3D8Mapping[header->format], &surface);
+
     surface->LockRect(&lockedRect, NULL, 0);
-    for (int currentY = 0; currentY < (short)textureHeader->height; currentY = currentY + 1) {
-        uVar3 = textureHeader->width * g_TextureFormatD3D8Mapping[textureHeader->format + 6];
-        puVar5 = (u16 *)(textureHeader[1].magic + currentY * textureHeader->width * g_TextureFormatD3D8Mapping[textureHeader->format + 6]);
-        pcVar6 = (char *)lockedRect.pBits + currentY * lockedRect.Pitch;
-        for (u32 i = (uVar3 >> 2); i != 0; i = i - 1) {
-            pcVar6 = (char *)puVar5;
-            puVar5 = puVar5 + 2;
-            pcVar6 = pcVar6 + 4;
-        }
-        for (uVar3 = uVar3 & 3; uVar3 != 0; uVar3 = uVar3 - 1) {
-            *pcVar6 = *(char *)puVar5;
-            puVar5 = (u16 *)((int)puVar5 + 1);
-            pcVar6 = pcVar6 + 1;
-        }
+
+    for (currentY = 0; currentY < header->height; currentY++)
+    {
+        textureDest =  (u8 *) lockedRect.pBits + currentY * lockedRect.Pitch;
+        textureSrc = ((u8 *) textureHeader) + sizeof(AnmTextureHeader) + (currentY * header->width * g_TextureFormatBytesPerPixel[header->format]);
+        memcpy(textureDest, textureSrc, header->width * g_TextureFormatBytesPerPixel[header->format]);
     }
+
     surface->UnlockRect();
-    
-    if (D3DXCreateTexture(g_Supervisor.d3dDevice, textureHeader->width, textureHeader->height, 1, 0, g_TextureFormatD3D8Mapping[GetAnmFormat(format)], D3DPOOL_MANAGED, outTexture) == D3D_OK) {
-        (*outTexture)->GetSurfaceLevel(0, &local_c);
-        if (D3DXLoadSurfaceFromSurface(local_c, NULL, NULL, surface, NULL, NULL, 3, 0) == D3D_OK) {
-            if (surface != NULL) {
-                surface->Release();
-                surface = NULL;
-            }
-            if (local_c != NULL) {
-                local_c->Release();
-            }
-            return ZUN_SUCCESS;
-        }
+
+    if (D3DXCreateTexture(g_Supervisor.d3dDevice, header->width, header->height, 1, 0, g_TextureFormatD3D8Mapping[format], D3DPOOL_MANAGED, outTexture) != D3D_OK)
+    {
+        goto err;
     }
-    if (surface != NULL) {
+    
+    (*outTexture)->GetSurfaceLevel(0, &textureSurfaceLevel);
+
+    if (D3DXLoadSurfaceFromSurface(textureSurfaceLevel, NULL, NULL, surface, NULL, NULL, 3, 0) != D3D_OK)
+    {
+        goto err;
+    }
+
+    if (surface != NULL)
+    {
         surface->Release();
         surface = NULL;
     }
-    if (local_c != NULL) {
-        local_c->Release();
+    if (textureSurfaceLevel != NULL)
+    {
+        textureSurfaceLevel->Release();
+        textureSurfaceLevel = NULL;
     }
+
+    return ZUN_SUCCESS;
+
+err:
+    if (surface != NULL)
+    {
+        surface->Release();
+        surface = NULL;
+    }
+    if (textureSurfaceLevel != NULL)
+    {
+        textureSurfaceLevel->Release();
+        textureSurfaceLevel = NULL;
+    }
+
     return ZUN_ERROR;
 }
 
