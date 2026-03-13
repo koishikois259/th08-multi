@@ -1,11 +1,11 @@
 #pragma once
 
-#include <windows.h>
+#include "Supervisor.hpp"
+#include "ZunResult.hpp"
 #include "diffbuild.hpp"
 #include "inttypes.hpp"
 #include "utils.hpp"
-#include "Supervisor.hpp"
-#include "ZunResult.hpp"
+#include <windows.h>
 
 namespace th08
 {
@@ -242,4 +242,3 @@ C_ASSERT(sizeof(GameManager) == 0x3de3c);
 
 DIFFABLE_EXTERN(GameManager, g_GameManager);
 }; // Namespace th08
-

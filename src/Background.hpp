@@ -1,8 +1,8 @@
 #pragma once
-#include <windows.h>
 #include "diffbuild.hpp"
 #include "inttypes.hpp"
 #include "utils.hpp"
+#include <windows.h>
 
 namespace th08
 {

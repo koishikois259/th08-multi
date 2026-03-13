@@ -1,8 +1,8 @@
 #pragma once
 
-#include <d3dx8.h>
 #include "inttypes.hpp"
 #include "utils.hpp"
+#include <d3dx8.h>
 
 namespace th08
 {
@@ -13,4 +13,3 @@ struct ScreenEffect
     unknown_fields(0x0, 0x34);
 };
 }; // Namespace th08
-

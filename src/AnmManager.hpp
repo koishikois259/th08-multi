@@ -1,13 +1,13 @@
 #pragma once
+#include "Global.hpp"
+#include "Supervisor.hpp"
+#include "ZunColor.hpp"
+#include "ZunResult.hpp"
+#include "diffbuild.hpp"
+#include "inttypes.hpp"
+#include "utils.hpp"
 #include <d3d8.h>
 #include <d3dx8math.h>
-#include "diffbuild.hpp"
-#include "Global.hpp"
-#include "inttypes.hpp"
-#include "Supervisor.hpp"
-#include "ZunResult.hpp"
-#include "ZunColor.hpp"
-#include "utils.hpp"
 
 #define GAME_WINDOW_WIDTH 640
 #define GAME_WINDOW_HEIGHT 480
@@ -102,11 +102,11 @@ C_ASSERT(sizeof(AnmRawEntry) == 0x40);
 
 struct AnmTextureHeader
 {
-    char magic[4];      /* THTX */
+    char magic[4]; /* THTX */
     u16 unk0x4;
-    u16 format;
-    u16 width;
-    u16 height;
+    i16 format;
+    i16 width;
+    i16 height;
     u16 unk0x14;
     u16 unk0x18;
 };
@@ -128,7 +128,6 @@ struct AnmLoadedSprite
 };
 
 C_ASSERT(sizeof(AnmLoadedSprite) == 0x44);
-
 
 struct AnmInterpData
 {
@@ -283,10 +282,10 @@ struct AnmFileDesc
             vm->currentInstruction = vm->beginningOfScript;
             vm->prefix.currentTimeInScript.SetCurrent(0);
             vm->prefix.flags &= 0xfffffffe;
-            /* TODO: circular dependency! */
-            #if 0
+/* TODO: circular dependency! */
+#if 0
             g_AnmManager->ExecuteScript(vm);
-            #endif
+#endif
         }
     }
 };
@@ -312,7 +311,9 @@ struct AnmManager
 {
     AnmManager();
     void SetupVertexBuffer();
-    ~AnmManager() {}
+    ~AnmManager()
+    {
+    }
     u32 ExecuteScript(AnmVm *sprite);
     void ExecuteScriptOnVmArray(AnmVm *sprites, int count);
     ZunResult CreateTextureFromFile(IDirect3DTexture8 **outTexture, i32 format, i32 colorKey);
@@ -321,7 +322,8 @@ struct AnmManager
     AnmFileDesc *LoadAnm(i32 anmIdx, const char *filename);
     AnmFileDesc *ReadAnmEntries(i32 anmIdx, const char *filename);
     AnmFileDesc *PreloadAnm(i32 anmIdx, const char *filename);
-    i32 LoadExternalTextureData(AnmFileDesc *fileDesc, i32 entryNumber, i32 *sprites, i32 *scripts, AnmRawEntry *rawEntry);
+    i32 LoadExternalTextureData(AnmFileDesc *fileDesc, i32 entryNumber, i32 *sprites, i32 *scripts,
+                                AnmRawEntry *rawEntry);
     AnmFileDesc *PostloadAnmEntry(AnmFileDesc *anm);
     BOOL LoadTextureData(AnmFileDesc *fileDesc, i32 entryNumber, i32 sprites, i32 scripts, AnmRawEntry *rawEntry);
     ZunResult ServicePreloadedAnims();
@@ -392,15 +394,17 @@ struct AnmManager
     {
         if (this->captureAnmIdx >= 0)
         {
-            CaptureToTexture(this->captureAnmIdx, this->textureCaptureSrcX, this->textureCaptureSrcY, this->textureCaptureSrcW, this->textureCaptureSrcH,
-                            this->textureCaptureDstX, this->textureCaptureDstY, this->textureCaptureDstW, this->textureCaptureDstH);
+            CaptureToTexture(this->captureAnmIdx, this->textureCaptureSrcX, this->textureCaptureSrcY,
+                             this->textureCaptureSrcW, this->textureCaptureSrcH, this->textureCaptureDstX,
+                             this->textureCaptureDstY, this->textureCaptureDstW, this->textureCaptureDstH);
             this->captureAnmIdx = -1;
         }
 
         if (this->captureSurfaceIdx >= 0)
         {
-            CaptureToSurface(this->captureSurfaceIdx, this->surfaceCaptureSrcX, this->surfaceCaptureSrcY, this->surfaceCaptureSrcW, this->surfaceCaptureSrcH,
-                            this->surfaceCaptureDstX, this->surfaceCaptureDstY, this->surfaceCaptureDstW, this->surfaceCaptureDstH);
+            CaptureToSurface(this->captureSurfaceIdx, this->surfaceCaptureSrcX, this->surfaceCaptureSrcY,
+                             this->surfaceCaptureSrcW, this->surfaceCaptureSrcH, this->surfaceCaptureDstX,
+                             this->surfaceCaptureDstY, this->surfaceCaptureDstW, this->surfaceCaptureDstH);
             this->captureSurfaceIdx = -1;
         }
     }
@@ -411,8 +415,10 @@ struct AnmManager
         this->color = 0x80808080;
     }
 
-    void CaptureToTexture (i32 captureAnmIdx, i32 srcX, i32 srcY, i32 srcW, i32 srcH, i32 dstX, i32 dstY, i32 dstW, i32 dstH);
-    void CaptureToSurface (i32 captureSurfaceIdx, i32 srcX, i32 srcY, i32 srcW, i32 srcH, i32 dstX, i32 dstY, i32 dstW, i32 dstH);
+    void CaptureToTexture(i32 captureAnmIdx, i32 srcX, i32 srcY, i32 srcW, i32 srcH, i32 dstX, i32 dstY, i32 dstW,
+                          i32 dstH);
+    void CaptureToSurface(i32 captureSurfaceIdx, i32 srcX, i32 srcY, i32 srcW, i32 srcH, i32 dstX, i32 dstY, i32 dstW,
+                          i32 dstH);
 
     void ClearVertexBuffer();
     void FlushVertexBuffer();

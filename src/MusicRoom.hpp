@@ -1,8 +1,8 @@
 #pragma once
 
+#include "ZunResult.hpp"
 #include "diffbuild.hpp"
 #include "inttypes.hpp"
-#include "ZunResult.hpp"
 
 namespace th08
 {

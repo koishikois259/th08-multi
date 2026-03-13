@@ -1,16 +1,16 @@
 #pragma once
 
-#include <windows.h>
 #include <dsound.h>
+#include <windows.h>
 
 #include "ZunResult.hpp"
 #include "diffbuild.hpp"
 #include "inttypes.hpp"
 #include "zwave.hpp"
 
-#define SOUNDPLAYER_SILENT_VOLUME  (DSBVOLUME_MIN)
-#define SOUNDPLAYER_MAX_VOLUME     (DSBVOLUME_MIN / 2)
-#define SOUNDPLAYER_VOLUME_RANGE   (SOUNDPLAYER_MAX_VOLUME - SOUNDPLAYER_SILENT_VOLUME)
+#define SOUNDPLAYER_SILENT_VOLUME (DSBVOLUME_MIN)
+#define SOUNDPLAYER_MAX_VOLUME (DSBVOLUME_MIN / 2)
+#define SOUNDPLAYER_VOLUME_RANGE (SOUNDPLAYER_MAX_VOLUME - SOUNDPLAYER_SILENT_VOLUME)
 
 namespace th08
 {

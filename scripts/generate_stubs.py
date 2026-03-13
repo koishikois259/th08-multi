@@ -102,8 +102,7 @@ for stub in stubbed_csv:
     fun_sig += ")"
 
     # reccmp annotation
-    print("// STUB: th08 " + str(hex(fun["fun_addr"])), file=output);
-
+    print("// STUB: th08 " + str(hex(fun["fun_addr"])), file=output)
     print(fun_sig + " {", file=output)
     print('    printf("STUBBED: ' + fun_sig + '\\n");', file=output)
     print("    return " + ret_val + ";", file=output)

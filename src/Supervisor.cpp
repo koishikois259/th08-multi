@@ -1,21 +1,21 @@
+#include "Supervisor.hpp"
 #include "AnmManager.hpp"
 #include "Ending.hpp"
 #include "GameManager.hpp"
 #include "Global.hpp"
-#include "i18n.hpp"
 #include "MusicRoom.hpp"
 #include "ReplayManager.hpp"
 #include "ResultScreen.hpp"
-#include "SoundPlayer.hpp"
-#include "Supervisor.hpp"
 #include "ScoreDat.hpp"
+#include "SoundPlayer.hpp"
 #include "TextHelper.hpp"
 #include "Title.hpp"
+#include "i18n.hpp"
 #include "utils.hpp"
 #include <WinBase.h>
 #include <d3dx8.h>
-#include <stdio.h>
 #include <direct.h>
+#include <stdio.h>
 #include <time.h>
 
 namespace th08
@@ -43,25 +43,25 @@ ZunResult Supervisor::RegisterChain()
     ChainElem *elem = g_Chain.CreateElem((ChainCallback)Supervisor::OnUpdate);
 
     elem->arg = supervisor;
-    elem->addedCallback = (ChainLifetimeCallback) Supervisor::AddedCallback;
-    elem->deletedCallback = (ChainLifetimeCallback) Supervisor::DeletedCallback;
+    elem->addedCallback = (ChainLifetimeCallback)Supervisor::AddedCallback;
+    elem->deletedCallback = (ChainLifetimeCallback)Supervisor::DeletedCallback;
 
-    ZunResult result = (ZunResult) g_Chain.AddToCalcChain(elem, 0);
+    ZunResult result = (ZunResult)g_Chain.AddToCalcChain(elem, 0);
 
     if (result != ZUN_SUCCESS)
     {
         return result;
     }
 
-    elem = g_Chain.CreateElem((ChainCallback) Supervisor::DrawFpsCounter);
+    elem = g_Chain.CreateElem((ChainCallback)Supervisor::DrawFpsCounter);
     elem->arg = supervisor;
     g_Chain.AddToDrawChain(elem, 16);
 
-    elem = g_Chain.CreateElem((ChainCallback) Supervisor::OnDraw2);
+    elem = g_Chain.CreateElem((ChainCallback)Supervisor::OnDraw2);
     elem->arg = supervisor;
     g_Chain.AddToDrawChain(elem, 0);
 
-    elem = g_Chain.CreateElem((ChainCallback) Supervisor::OnDraw3);
+    elem = g_Chain.CreateElem((ChainCallback)Supervisor::OnDraw3);
     elem->arg = supervisor;
     g_Chain.AddToDrawChain(elem, 2);
 
@@ -121,7 +121,7 @@ int Supervisor::AddedCallback(Supervisor *s)
     g_Supervisor.SetupLoadingVms(&position);
 
     g_Supervisor.unk294 = 1;
-    g_Supervisor.ThreadStart((LPTHREAD_START_ROUTINE) Supervisor::StartupThread, s);
+    g_Supervisor.ThreadStart((LPTHREAD_START_ROUTINE)Supervisor::StartupThread, s);
 
     return ZUN_SUCCESS;
 }
@@ -159,7 +159,8 @@ i32 Supervisor::CheckFps()
     return -1;
 }
 
-#pragma var_order(bgmVolume, scoreFileSize, scoreFile, findFile, i, fileNameBuffer, scoreBackupFileName, findData, currentLocalTime, currentTime)
+#pragma var_order(bgmVolume, scoreFileSize, scoreFile, findFile, i, fileNameBuffer, scoreBackupFileName, findData,     \
+                  currentLocalTime, currentTime)
 void Supervisor::StartupThread(Supervisor *s)
 {
     float bgmVolume;
@@ -167,7 +168,7 @@ void Supervisor::StartupThread(Supervisor *s)
     i32 scoreFileSize;
     HANDLE findFile;
     int i;
-    char fileNameBuffer[256];       /* yes I know the buffer might be too small, but it would not match otherwise. */
+    char fileNameBuffer[256]; /* yes I know the buffer might be too small, but it would not match otherwise. */
     const char *scoreBackupFileName;
     WIN32_FIND_DATAA findData;
     time_t currentTime;
@@ -232,7 +233,7 @@ void Supervisor::StartupThread(Supervisor *s)
         bgmVolume *= bgmVolume;
         bgmVolume = (1.0f - bgmVolume);
 
-        g_SoundPlayer.unkVolume = ((int) (SOUNDPLAYER_VOLUME_RANGE * bgmVolume)) - SOUNDPLAYER_VOLUME_RANGE;
+        g_SoundPlayer.unkVolume = ((int)(SOUNDPLAYER_VOLUME_RANGE * bgmVolume)) - SOUNDPLAYER_VOLUME_RANGE;
     }
     else
     {
@@ -259,9 +260,7 @@ void Supervisor::StartupThread(Supervisor *s)
         strcpy(g_SoundPlayer.currentBgmFileName, "th08.dat");
     }
 
-
-    if (g_Supervisor.flags.unk8
-        && ((scoreFile = FileSystem::OpenFile("score.dat", &scoreFileSize, TRUE)) != NULL))
+    if (g_Supervisor.flags.unk8 && ((scoreFile = FileSystem::OpenFile("score.dat", &scoreFileSize, TRUE)) != NULL))
     {
         scoreBackupFileName = "score_4.??????.bak";
 
@@ -432,188 +431,188 @@ ChainCallbackResult Supervisor::OnUpdate(Supervisor *s)
         utils::GuiDebugPrint("scene %d -> %d\r\n", s->wantedState, s->curState);
         switch (s->wantedState)
         {
-            case 0:
-init_titlescreen:
-                s->curState = 1;
-                g_Supervisor.d3dDevice->ResourceManagerDiscardBytes(0);
-                if (Title::RegisterChain(0) != ZUN_SUCCESS)
+        case 0:
+        init_titlescreen:
+            s->curState = 1;
+            g_Supervisor.d3dDevice->ResourceManagerDiscardBytes(0);
+            if (Title::RegisterChain(0) != ZUN_SUCCESS)
+            {
+                return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
+            }
+            break;
+        case 1:
+            switch (s->curState)
+            {
+            case -1:
+                return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
+            case 2:
+                if (GameManager::RegisterChain() != ZUN_SUCCESS)
                 {
                     return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
                 }
                 break;
-            case 1:
-                switch (s->curState)
-                {
-                    case -1:
-                        return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
-                    case 2:
-                        if (GameManager::RegisterChain() != ZUN_SUCCESS)
-                        {
-                            return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
-                        }
-                        break;
-                    case 4:
-                        return CHAIN_CALLBACK_RESULT_EXIT_GAME_ERROR;
-                    case 5:
-                        if (ResultScreen::RegisterChain(0) != ZUN_SUCCESS)
-                        {
-                            return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
-                        }
-                        break;
-                    case 8:
-                        if (MusicRoom::RegisterChain() != ZUN_SUCCESS)
-                        {
-                            return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
-                        }
-                        break;
-                    case 9:
-                        GameManager::CutChain();
-                        if (Ending::RegisterChain() != ZUN_SUCCESS)
-                        {
-                            return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
-                        }
-                        break;
-                }
-                break;
+            case 4:
+                return CHAIN_CALLBACK_RESULT_EXIT_GAME_ERROR;
             case 5:
-                switch (s->curState)
+                if (ResultScreen::RegisterChain(0) != ZUN_SUCCESS)
                 {
-                    case -1:
-                        return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
-                    case 1:
-                        s->curState = 0;
-                        goto init_titlescreen;
-                }
-                break;
-            case 2:
-                switch (s->curState)
-                {
-                    case -1:
-                        return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
-                    case 1:
-                        GameManager::CutChain();
-                        s->curState = 0;
-                        ReplayManager::SaveReplay(NULL, NULL);
-
-                        goto init_titlescreen;
-                    case 6:
-                        GameManager::CutChain();
-                        if (ResultScreen::RegisterChain(1) != ZUN_SUCCESS)
-                        {
-                            return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
-                        }
-                        break;
-                    case 10:
-                        GameManager::CutChain();
-                        if ((g_GameManager.flags.unk0) == 0 && g_GameManager.difficulty < 4)
-                        {
-                            g_GameManager.currentStage = 0;
-                        }
-                        ReplayManager::SaveReplay(NULL, NULL);
-                        if (GameManager::RegisterChain() != ZUN_SUCCESS)
-                        {
-                            return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
-                        }
-                        s->curState = 2;
-                        break;
-                    case 11:
-                        g_Supervisor.curState = 3;
-                        g_Supervisor.unk16c = 1;
-
-                        GameManager::CutChain();
-
-                        if (GameManager::RegisterChain() != ZUN_SUCCESS)
-                        {
-                            return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
-                        }
-                        s->curState = 2;
-                        break;
-                    case 12:
-                        g_Supervisor.curState = 3;
-                        GameManager::CutChain();
-                        g_GameManager.AdvanceToNextStage();
-
-                        if (GameManager::RegisterChain() != ZUN_SUCCESS)
-                        {
-                            return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
-                        }
-                        s->curState = 2;
-                        break;
-                    case 3:
-                        GameManager::CutChain();
-
-                        if (GameManager::RegisterChain() != ZUN_SUCCESS)
-                        {
-                            return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
-                        }
-
-                        s->curState = 2;
-                        break;
-                    case 7:
-                        GameManager::CutChain();
-
-                        s->curState = 0;
-                        ReplayManager::SaveReplay(NULL, NULL);
-                        s->curState = 1;
-
-                        g_Supervisor.d3dDevice->ResourceManagerDiscardBytes(0);
-
-                        if (Title::RegisterChain(1) != ZUN_SUCCESS)
-                        {
-                            return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
-                        }
-                        break;
-                    case 9:
-                        GameManager::CutChain();
-                        if (Ending::RegisterChain() != ZUN_SUCCESS)
-                        {
-                            return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
-                        }
-                        break;
-                }
-                break;
-            case 6:
-                switch (s->curState)
-                {
-                    case -1:
-                        ReplayManager::SaveReplay(NULL, NULL);
-                        return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
-                    case 1:
-                        s->curState = 0;
-
-                        ReplayManager::SaveReplay(NULL, NULL);
-
-                        goto init_titlescreen;
+                    return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
                 }
                 break;
             case 8:
-                switch (s->curState)
+                if (MusicRoom::RegisterChain() != ZUN_SUCCESS)
                 {
-                    case -1:
-                        return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
-                    case 1:
-                        s->curState = 0;
-
-                        goto init_titlescreen;
+                    return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
                 }
                 break;
             case 9:
-                switch (s->curState)
+                GameManager::CutChain();
+                if (Ending::RegisterChain() != ZUN_SUCCESS)
                 {
-                    case -1:
-                        return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
-                    case 1:
-                        s->curState = 0;
-
-                        goto init_titlescreen;
-                    case 6:
-                        if (ResultScreen::RegisterChain(1) != ZUN_SUCCESS)
-                        {
-                            return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
-                        }
-                        break;
+                    return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
                 }
                 break;
+            }
+            break;
+        case 5:
+            switch (s->curState)
+            {
+            case -1:
+                return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
+            case 1:
+                s->curState = 0;
+                goto init_titlescreen;
+            }
+            break;
+        case 2:
+            switch (s->curState)
+            {
+            case -1:
+                return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
+            case 1:
+                GameManager::CutChain();
+                s->curState = 0;
+                ReplayManager::SaveReplay(NULL, NULL);
+
+                goto init_titlescreen;
+            case 6:
+                GameManager::CutChain();
+                if (ResultScreen::RegisterChain(1) != ZUN_SUCCESS)
+                {
+                    return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
+                }
+                break;
+            case 10:
+                GameManager::CutChain();
+                if ((g_GameManager.flags.unk0) == 0 && g_GameManager.difficulty < 4)
+                {
+                    g_GameManager.currentStage = 0;
+                }
+                ReplayManager::SaveReplay(NULL, NULL);
+                if (GameManager::RegisterChain() != ZUN_SUCCESS)
+                {
+                    return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
+                }
+                s->curState = 2;
+                break;
+            case 11:
+                g_Supervisor.curState = 3;
+                g_Supervisor.unk16c = 1;
+
+                GameManager::CutChain();
+
+                if (GameManager::RegisterChain() != ZUN_SUCCESS)
+                {
+                    return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
+                }
+                s->curState = 2;
+                break;
+            case 12:
+                g_Supervisor.curState = 3;
+                GameManager::CutChain();
+                g_GameManager.AdvanceToNextStage();
+
+                if (GameManager::RegisterChain() != ZUN_SUCCESS)
+                {
+                    return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
+                }
+                s->curState = 2;
+                break;
+            case 3:
+                GameManager::CutChain();
+
+                if (GameManager::RegisterChain() != ZUN_SUCCESS)
+                {
+                    return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
+                }
+
+                s->curState = 2;
+                break;
+            case 7:
+                GameManager::CutChain();
+
+                s->curState = 0;
+                ReplayManager::SaveReplay(NULL, NULL);
+                s->curState = 1;
+
+                g_Supervisor.d3dDevice->ResourceManagerDiscardBytes(0);
+
+                if (Title::RegisterChain(1) != ZUN_SUCCESS)
+                {
+                    return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
+                }
+                break;
+            case 9:
+                GameManager::CutChain();
+                if (Ending::RegisterChain() != ZUN_SUCCESS)
+                {
+                    return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
+                }
+                break;
+            }
+            break;
+        case 6:
+            switch (s->curState)
+            {
+            case -1:
+                ReplayManager::SaveReplay(NULL, NULL);
+                return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
+            case 1:
+                s->curState = 0;
+
+                ReplayManager::SaveReplay(NULL, NULL);
+
+                goto init_titlescreen;
+            }
+            break;
+        case 8:
+            switch (s->curState)
+            {
+            case -1:
+                return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
+            case 1:
+                s->curState = 0;
+
+                goto init_titlescreen;
+            }
+            break;
+        case 9:
+            switch (s->curState)
+            {
+            case -1:
+                return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
+            case 1:
+                s->curState = 0;
+
+                goto init_titlescreen;
+            case 6:
+                if (ResultScreen::RegisterChain(1) != ZUN_SUCCESS)
+                {
+                    return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
+                }
+                break;
+            }
+            break;
         }
         g_CurFrameInput = g_LastFrameInput = g_IsEighthFrameOfHeldInput = 0;
     }
@@ -621,8 +620,8 @@ init_titlescreen:
     s->wantedState = s->curState;
     s->calcCount++;
 
-    if ((s->calcCount % 4000) == 3999
-        && g_Supervisor.VerifyExeIntegrity("0100d", g_Supervisor.exeSize, g_Supervisor.exeChecksum) != ZUN_SUCCESS)
+    if ((s->calcCount % 4000) == 3999 &&
+        g_Supervisor.VerifyExeIntegrity("0100d", g_Supervisor.exeSize, g_Supervisor.exeChecksum) != ZUN_SUCCESS)
     {
         return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
     }
@@ -805,12 +804,7 @@ ZunResult Supervisor::ThreadStart(LPTHREAD_START_ROUTINE startFunction, void *st
 
     utils::GuiDebugPrint("info : Sub Thread Start Request\n");
 
-    this->runningSubthreadHandle = CreateThread(NULL,
-                                                  0,
-                                                  startFunction,
-                                                  startParam,
-                                                  0,
-                                                  &this->runningSubthreadID);
+    this->runningSubthreadHandle = CreateThread(NULL, 0, startFunction, startParam, 0, &this->runningSubthreadID);
 
     this->unk290 = TRUE;
 
@@ -854,7 +848,8 @@ void Supervisor::SetupLoadingVms(D3DXVECTOR3 *position)
     }
 }
 
-void Supervisor::InitializeCriticalSections() {
+void Supervisor::InitializeCriticalSections()
+{
     for (u32 i = 0; i < ARRAY_SIZE_SIGNED(this->criticalSections); i++)
     {
         InitializeCriticalSection(&this->criticalSections[i]);

@@ -9,6 +9,7 @@ from pathlib import Path
 
 SCRIPT_PATH = Path(os.path.realpath(__file__)).parent
 
+
 def main():
     parser = argparse.ArgumentParser(
         description="Export Ghidra symbols to a CSV file compatible with reccmp",
@@ -39,5 +40,6 @@ def main():
             pre_scripts=[["ExportGhidraToReccmp.java", str(mapping_path)]],
         )
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

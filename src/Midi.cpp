@@ -128,7 +128,7 @@ UINT MidiTimer::StartTimerImpl(u32 delay, LPTIMECALLBACK cb, DWORD_PTR data)
     else
     {
         this->timerId = timeSetEvent(delay, this->timeCaps.wPeriodMin, (LPTIMECALLBACK)MidiTimer::DefaultTimerCallback,
-                                 (DWORD_PTR)this, TIME_PERIODIC);
+                                     (DWORD_PTR)this, TIME_PERIODIC);
     }
 
     return this->timerId;
@@ -524,7 +524,8 @@ void MidiOutput::ProcessMsg(MidiTrack *track)
                 UnprepareHeader(this->midiHeaders[this->midiHeadersCursor]);
             }
 
-            midiHdr = this->midiHeaders[this->midiHeadersCursor] = (LPMIDIHDR)g_ZunMemory.Alloc(sizeof(MIDIHDR), "midiHDR");
+            midiHdr = this->midiHeaders[this->midiHeadersCursor] =
+                (LPMIDIHDR)g_ZunMemory.Alloc(sizeof(MIDIHDR), "midiHDR");
             curTrackLength = MidiOutput::SkipVariableLength(&track->curTrackDataCursor);
             memset(midiHdr, 0, sizeof(MIDIHDR));
             midiHdr->lpData = (LPSTR)g_ZunMemory.Alloc(curTrackLength + 1, "midiHDR->lpData");
