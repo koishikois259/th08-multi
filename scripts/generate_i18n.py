@@ -1,7 +1,6 @@
 # This script converts an i18n file containing Japanese strings into Shift-JIS
 # strings.
 
-import sys
 import os
 import argparse
 import csv

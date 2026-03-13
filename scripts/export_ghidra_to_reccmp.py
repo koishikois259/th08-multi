@@ -29,15 +29,14 @@ def main():
 
     mapping_path = SCRIPT_PATH.parent / "config" / "reccmp.csv"
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        ghidra_helpers.runAnalyze(
-            args.GHIDRA_REPO_NAME,
-            project_name=args.project_name,
-            process=args.program,
-            username=args.username,
-            ssh_key=args.ssh_key,
-            pre_scripts=[["ExportGhidraToReccmp.java", str(mapping_path)]],
-        )
+    ghidra_helpers.runAnalyze(
+        args.GHIDRA_REPO_NAME,
+        project_name=args.project_name,
+        process=args.program,
+        username=args.username,
+        ssh_key=args.ssh_key,
+        pre_scripts=[["ExportGhidraToReccmp.java", str(mapping_path)]],
+    )
 
 if __name__ == '__main__':
     main()
