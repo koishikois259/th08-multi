@@ -104,9 +104,9 @@ struct AnmTextureHeader
 {
     char magic[4]; /* THTX */
     u16 unk0x4;
-    u16 format;
-    u16 width;
-    u16 height;
+    i16 format;
+    i16 width;
+    i16 height;
     u16 unk0x14;
     u16 unk0x18;
 };

@@ -36,9 +36,9 @@ th08::Supervisor::IsSoftwareTexturing,0x406550,function
 th08::Supervisor::IsFogDisabled,0x406580,function
 th08::ZunTimer::ZunTimer,0x4065a0,function
 th08::ZunTimer::Initialize,0x4065c0,function
-th08::ZunTimer::SetCurrent,0x4065f0,function
+th08::ZunTimer::operator=,0x4065f0,function
 th08::ZunTimer::SetCurrentImpl,0x406610,function
-th08::ZunTimer::Tick,0x406640,function
+th08::ZunTimer::operator++(int),0x406640,function
 th08::ZunTimer::TickImpl,0x406660,function
 th08::ZunTimer::operator<,0x4066a0,function
 th08::ZunTimer::operator>,0x4066c0,function
@@ -115,8 +115,8 @@ th08::Background::SetCamera2,0x40b6d0,function
 FUN_0040b7f0,0x40b7f0,function
 th08::ZunMemory::Alloc,0x40b880,function
 th08::ZunMemory::Free,0x40b8a0,function
-th08::ZunTimer::AsFramesFloat,0x40b8c0,function
-FUN_0040b8e0,0x40b8e0,function
+th08::ZunTimer::operator_float,0x40b8c0,function
+th08::ZunTimer::operator>=,0x40b8e0,function
 FUN_0040b900,0x40b900,function
 th08::AnmFileDesc::ExecuteAnmIdx,0x40b910,function
 th08::AnmManager::ClearBlendMode,0x40b9b0,function
@@ -147,7 +147,7 @@ FUN_0040d010,0x40d010,function
 FUN_0040d100,0x40d100,function
 FUN_0040d310,0x40d310,function
 th08::Rng::GetRandomF32InRange,0x40d390,function
-th08::ZunTimer::AsFrames,0x40d3b0,function
+th08::ZunTimer::operator_int,0x40d3b0,function
 FUN_0040d3d0,0x40d3d0,function
 FUN_0040d3f0,0x40d3f0,function
 FUN_0040d410,0x40d410,function
@@ -160,7 +160,7 @@ FUN_0040e120,0x40e120,function
 FUN_0040e200,0x40e200,function
 FUN_0040e2d0,0x40e2d0,function
 FUN_0040e350,0x40e350,function
-FUN_0040e390,0x40e390,function
+th08::ZunTimer::operator<=,0x40e390,function
 FUN_0040e3b0,0x40e3b0,function
 FUN_0040e610,0x40e610,function
 FUN_0040e780,0x40e780,function
@@ -225,7 +225,7 @@ FUN_00418010,0x418010,function
 FUN_00418030,0x418030,function
 FUN_00418050,0x418050,function
 th08::Spellcard::CutChain,0x4180f0,function
-th08::ZunTimer::operator--,0x418110,function
+th08::ZunTimer::operator--(int),0x418110,function
 th08::GameManager::FUN_00418130,0x418130,function
 th08::GameManager::FUN_00418180,0x418180,function
 th08::GameManager::AddScore,0x4181f0,function
@@ -686,7 +686,7 @@ th08::MidiOutput::SetFadeOut,0x4447d0,function
 th08::MidiOutput::OnTimerElapsed,0x444820,function
 th08::MidiOutput::ProcessMsg,0x444a90,function
 th08::MidiOutput::FadeOutSetVolume,0x445340,function
-FUN_00445400,0x445400,function
+th08::DummyMidiTimer::OnTimerElapsed,0x445400,function
 th08::MidiTimer::StartTimer,0x445420,function
 th08::MidiTimer::StopTimer,0x445440,function
 th08::Supervisor::OnUpdate,0x445453,function
@@ -703,8 +703,8 @@ th08::Supervisor::StartupThread,0x4464c8,function
 th08::Supervisor::SetupDInput,0x446a37,function
 FUN_00446cc7,0x446cc7,function
 th08::Supervisor::DeletedCallback,0x446d06,function
-th08::AnmManager::FUN_00446f0b,0x446f0b,function
-FUN_00446f42,0x446f42,function
+th08::AnmManager::ReleaseVertexBuffer,0x446f0b,function
+th08::DummyMidiTimer::~DummyMidiTimer,0x446f42,function
 th08::Supervisor::CalculateFps,0x446f53,function
 th08::ZunTimer::Increment,0x447295,function
 th08::ZunTimer::Decrement,0x44735b,function
@@ -989,7 +989,7 @@ th08::AnmManager::PostloadAnmEntry,0x465ba0,function
 th08::AnmManager::LoadTextureData,0x465cc0,function
 th08::AnmManager::ServicePreloadedAnims,0x466000,function
 th08::AnmManager::ReleaseAnm,0x466060,function
-ReleaseAnmEntry,0x466160,function
+th08::AnmManager::ReleaseAnmEntry,0x466160,function
 th08::AnmFileDesc::LoadSprite,0x4661b0,function
 FUN_00466310,0x466310,function
 th08::AnmManager::DrawVmTextFmt,0x4663b0,function
@@ -1003,7 +1003,7 @@ FUN_00466d70,0x466d70,function
 th08::AnmManager::CaptureToTexture,0x466f20,function
 FUN_00467040,0x467040,function
 th08::AnmManager::CaptureToSurface,0x467180,function
-FUN_00467399,0x467399,function
+th08::Title::OnUpdate,0x467399,function
 FUN_004674e0,0x4674e0,function
 FUN_0046837b,0x46837b,function
 FUN_004694c3,0x4694c3,function
@@ -1028,7 +1028,7 @@ FUN_0046ffc0,0x46ffc0,function
 FUN_0047030b,0x47030b,function
 FUN_00470424,0x470424,function
 FUN_0047052d,0x47052d,function
-FUN_0047087f,0x47087f,function
+th08::Title::OnDraw,0x47087f,function
 FUN_00470a6c,0x470a6c,function
 th08::Supervisor::FUN_00470dd5,0x470dd5,function
 th08::Title::TitleSetupThread,0x470e10,function
@@ -1036,8 +1036,8 @@ FUN_00471181,0x471181,function
 FUN_00471400,0x471400,function
 th08::Title::RegisterChain,0x47146d,function
 th08::Title::Title,0x471586,function
-FUN_00471651,0x471651,function
-FUN_00471662,0x471662,function
+th08::Title::AddedCallback,0x471651,function
+th08::Title::DeletedCallback,0x471662,function
 th08::CSoundManager::CSoundManager,0x4716e0,function
 th08::CSoundManager::~CSoundManager,0x471700,function
 th08::CSoundManager::Initialize,0x471730,function
@@ -1228,7 +1228,7 @@ FUN_0047a586,0x47a586,function
 FUN_0047a668,0x47a668,function
 FUN_0047a73b,0x47a73b,function
 FUN_0047aa65,0x47aa65,function
-FUN_0047aa8d,0x47aa8d,function
+D3DXCreateTexture,0x47aa8d,function
 D3DXLoadSurfaceFromFileInMemory,0x47aaf3,function
 D3DXLoadSurfaceFromSurface,0x47abab,function
 FUN_0047ad51,0x47ad51,function
@@ -1788,8 +1788,8 @@ _Strftime,0x4a58f3,function
 strftime,0x4a5925,function
 localtime,0x4a5940,function
 _time32,0x4a5ac0,function
-FUN_004a5af9,0x4a5af9,function
-FUN_004a5b27,0x4a5b27,function
+rename,0x4a5af9,function
+_chdir,0x4a5b27,function
 strchr,0x4a5be0,function
 sscanf,0x4a5c9e,function
 strncmp,0x4a5ce0,function
@@ -2243,7 +2243,9 @@ FUN_004b3b50,0x4b3b50,function
 FUN_004b3b60,0x4b3b60,function
 th08::MidiTimer::`vftable',0x4b6550,vtable
 th08::MidiOutput::`vftable',0x4b6554,vtable
+th08::DummyMidiTimer::`vftable',0x4b677c,vtable
 th08::g_TextureFormatD3D8Mapping,0x4b8480,global
+th08::g_TextureFormatBytesPerPixel,0x4b8498,global
 th08::CSound::`vftable',0x4b96bc,vtable
 th08::CStreamingSound::`vftable',0x4b96c0,vtable
 th08::CPbgFile::`vftable',0x4b98b4,vtable
