@@ -1,6 +1,6 @@
+#include "ZunResult.hpp"
 #include "diffbuild.hpp"
 #include "inttypes.hpp"
-#include "ZunResult.hpp"
 
 namespace th08
 {
@@ -12,4 +12,4 @@ struct AsciiManager
 
 DIFFABLE_EXTERN(AsciiManager, g_AsciiManager);
 
-}
+} // namespace th08

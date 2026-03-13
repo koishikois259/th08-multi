@@ -185,10 +185,11 @@ C_ASSERT(sizeof(MidiOutput) == 0x300);
 
 class DummyMidiTimer : public MidiTimer
 {
-    public:
-        void OnTimerElapsed();
-    private:
-        u32 unk0x10;
+  public:
+    void OnTimerElapsed();
+
+  private:
+    u32 unk0x10;
 };
 
 C_ASSERT(sizeof(DummyMidiTimer) == 0x14);
