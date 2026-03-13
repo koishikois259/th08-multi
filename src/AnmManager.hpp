@@ -267,27 +267,7 @@ struct AnmFileDesc
         this->SetAndExecuteScript(vm, this->scripts[scriptIdx]);
     }
 
-    void SetAndExecuteScript(AnmVm *vm, AnmRawInstr *beginningOfScript)
-    {
-        if (beginningOfScript == NULL || (this->numberEntriesToBeLoaded != 0))
-        {
-            memset(vm, 0, sizeof(AnmVm));
-        }
-        else
-        {
-            vm->Initialize();
-            vm->prefix.anmFile = this;
-            vm->prefix.flags &= 0xfffff9ff;
-            vm->beginningOfScript = beginningOfScript;
-            vm->currentInstruction = vm->beginningOfScript;
-            vm->prefix.currentTimeInScript.SetCurrent(0);
-            vm->prefix.flags &= 0xfffffffe;
-/* TODO: circular dependency! */
-#if 0
-            g_AnmManager->ExecuteScript(vm);
-#endif
-        }
-    }
+    void SetAndExecuteScript(AnmVm *vm, AnmRawInstr *beginningOfScript);
 };
 
 C_ASSERT(sizeof(AnmFileDesc) == 0x1c);

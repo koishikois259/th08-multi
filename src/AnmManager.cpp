@@ -11,6 +11,27 @@ D3DFORMAT g_TextureFormatD3D8Mapping[] = {D3DFMT_UNKNOWN, D3DFMT_A8R8G8B8, D3DFM
 
 u32 g_TextureFormatBytesPerPixel[] = {4, 4, 2, 2, 3, 2};
 
+void AnmFileDesc::SetAndExecuteScript(AnmVm *vm, AnmRawInstr *beginningOfScript)
+{
+    if (beginningOfScript == NULL || (this->numberEntriesToBeLoaded != 0))
+    {
+        memset(vm, 0, sizeof(AnmVm));
+    }
+    else
+    {
+        vm->Initialize();
+        vm->anmFileIndex = this->anmIdx;
+        vm->prefix.anmFile = this;
+        vm->prefix.flags &= 0xfffff9ff;
+        vm->beginningOfScript = beginningOfScript;
+        vm->currentInstruction = vm->beginningOfScript;
+        vm->prefix.currentTimeInScript = 0;
+        vm->prefix.flags &= 0xfffffffe;
+        g_AnmManager->ExecuteScript(vm);
+        g_AnmManager->unk0xc++;
+    }
+}
+
 void AnmManager::ExecuteScriptOnVmArray(AnmVm *sprite, int count)
 {
     while (count != 0)
