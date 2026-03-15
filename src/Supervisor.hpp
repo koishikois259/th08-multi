@@ -325,37 +325,37 @@ struct ZunTimer
         this->Decrement(1);
     }
 
-    bool operator==(int value)
+    ZunBool operator==(int value)
     {
         return this->current == value;
     }
 
-    void operator+=(int value)
+    ZunBool operator+=(int value)
     {
         this->Increment(value);
     }
 
-    void operator-=(int value)
+    ZunBool operator-=(int value)
     {
         this->Decrement(value);
     }
 
-    bool operator<(int value)
+    ZunBool operator<(int value)
     {
         return this->current < value;
     }
 
-    bool operator<=(int value)
+    ZunBool operator<=(int value)
     {
         return this->current <= value;
     }
 
-    bool operator>(int value)
+    ZunBool operator>(int value)
     {
         return this->current > value;
     }
 
-    bool operator>=(int value)
+    ZunBool operator>=(int value)
     {
         return this->current >= value;
     }

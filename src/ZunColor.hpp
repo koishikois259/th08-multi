@@ -24,4 +24,14 @@
 #define COLOR_GET_COMPONENT(color, component) (((u8 *)&(color))[(component)])
 #define COLOR_SET_COMPONENT(color, component, value) ((u8 *)&(color))[(component)] = (value);
 
-typedef u32 ZunColor;
+union ZunColor
+{
+    u32 d3dColor;
+    struct
+    {
+        u8 b;
+        u8 g;
+        u8 r;
+        u8 a;
+    };
+};

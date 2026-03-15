@@ -362,10 +362,10 @@ ChainCallbackResult Supervisor::OnUpdate(Supervisor *s)
     g_AnmManager->ClearBlendMode();
     g_AnmManager->ClearZWrite();
 
-    g_AnmManager->ResetSomeStuff();
+    g_AnmManager->ResetFrameDebugInfo();
     g_AnmManager->ClearCameraSettings();
     g_AnmManager->ResetMoreStuff();
-    g_AnmManager->unk0x1c.x = g_AnmManager->unk0x1c.y = 0.0f;
+    g_AnmManager->screenShakeOffset.x = g_AnmManager->screenShakeOffset.y = 0.0f;
 
     g_AnmManager->ExecuteScriptOnVmArray(g_SupervisorLoadingVms, ARRAY_SIZE(g_SupervisorLoadingVms));
 

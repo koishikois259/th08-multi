@@ -26,5 +26,4 @@ th08::AnmManager::CaptureToSurface
 th08::AnmManager::CaptureToTexture
 th08::AnmManager::ClearVertexBuffer
 th08::AnmManager::FlushVertexBuffer
-th08::AnmManager::ExecuteScript
 th08::Title::RegisterChain
