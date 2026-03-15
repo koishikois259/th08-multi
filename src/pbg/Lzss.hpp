@@ -13,8 +13,8 @@ namespace th08
 class Lzss
 {
   public:
-    static LPBYTE Encode(LPBYTE in, i32 uncompressedSize, i32 *compressedSize);
-    static LPBYTE Decode(LPBYTE in, i32 compressedSize, LPBYTE out, i32 decompressedSize);
+    static LPBYTE Encode(u8 *in, i32 inSize, i32 *outSize);
+    static LPBYTE Decode(u8 *in, i32 inSize, u8 *out, i32 outSize);
 
     static void InitTree(i32 root);
     static void InitEncoderState();

@@ -1,7 +1,8 @@
 #include "pbg/Lzss.hpp"
 #include "pbg/PbgMemory.hpp"
 
-#define LZSS_LOOKAHEAD_SIZE ((1 << LZSS_LENGTH_BITS) + 2)
+#define LZSS_BREAKEVEN 3
+#define LZSS_LOOKAHEAD_MAX ((1 << LZSS_LENGTH_BITS) + LZSS_BREAKEVEN - 1)
 #define LZSS_DICTSIZE_MASK (LZSS_DICTSIZE - 1)
 #define LZSS_DICTPOS_MOD(pos, amount) ((pos + amount) & LZSS_DICTSIZE_MASK)
 
@@ -10,66 +11,92 @@ namespace th08
 Lzss::TreeNode Lzss::m_Tree[LZSS_DICTSIZE + 1];
 u8 Lzss::m_Dict[LZSS_DICTSIZE];
 
-#define ENC_NEXT_BIT()                                                                                                 \
-    inBitMask >>= 1;                                                                                                   \
-    if (inBitMask == 0)                                                                                                \
+/**
+ * \brief Advance the write head forward by one bit.
+ */
+#define ENCODE_ADVANCE_WRITE_HEAD                                                                                      \
+    outBitMask >>= 1;                                                                                                  \
+    if (outBitMask == 0)                                                                                               \
     {                                                                                                                  \
-        *outCursor++ = currByte;                                                                                       \
-        checksum += currByte;                                                                                          \
-        currByte = 0;                                                                                                  \
-        inBitMask = 0x80;                                                                                              \
+        *outCursor++ = outBits;                                                                                        \
+        checksum += outBits;                                                                                           \
+        outBits = 0;                                                                                                   \
+        outBitMask = 0x80;                                                                                             \
     }
 
-#define ENC_WRITE_FLAG_BIT(bit)                                                                                        \
+/**
+ * \brief Pack and write a single bit to the output buffer.
+ * \param bit Bit value to write (1 or 0)
+ */
+#define ENCODE_PACK_BIT(bit)                                                                                           \
     if (bit)                                                                                                           \
     {                                                                                                                  \
-        currByte |= inBitMask;                                                                                         \
+        outBits |= outBitMask;                                                                                         \
     }                                                                                                                  \
-    ENC_NEXT_BIT();
+    ENCODE_ADVANCE_WRITE_HEAD;
 
-#define ENC_WRITE_BITS(bitCount, condition)                                                                            \
+/**
+ * \brief Pack and write a sequence of bits to the output buffer.
+ * \param bitCount Number of bits to write
+ * \param writeOneIf A conditional expression evaluated for each bit that will evaluate to true if that bit should be 1
+ */
+#define ENCODE_PACK_BITS(bitCount, writeOneIf)                                                                         \
     bitfieldMask = 0x1 << (bitCount - 1);                                                                              \
     while (bitfieldMask != 0)                                                                                          \
     {                                                                                                                  \
-        if (condition)                                                                                                 \
-        {                                                                                                              \
-            currByte |= inBitMask;                                                                                     \
-        }                                                                                                              \
-        ENC_NEXT_BIT();                                                                                                \
+        if (writeOneIf)                                                                                                \
+            outBits |= outBitMask;                                                                                     \
+        ENCODE_ADVANCE_WRITE_HEAD;                                                                                     \
         bitfieldMask >>= 1;                                                                                            \
     }
 
-#pragma var_order(currByte, out, outCursor, matchOffset, i, bytesToCopyToDict, inBitMask, inCursor, matchLength,       \
-                  checksum, lookAheadBytes, dictValue, dictHead, bitfieldMask)
-LPBYTE Lzss::Encode(LPBYTE in, i32 uncompressedSize, i32 *compressedSize)
+#pragma var_order(outBits, out, outCursor, matchOffset, i, bytesToCopyToDict, outBitMask, inCursor, matchLength,       \
+                  checksum, maxMatchLength, dictValue, dictHead, bitfieldMask)
+/**
+ * \brief Compresses data using LZSS and writes the output to a buffer.
+ * \param in Input buffer
+ * \param inSize Size of input data in bytes
+ * \param out Output buffer (if NULL, a buffer will allocated automatically)
+ */
+u8 *Lzss::Encode(u8 *in, i32 inSize, i32 *outSize)
 {
+    u8 outBitMask;
+    u32 outBits;
+    // NOTE: For some reason, this value is discarded after encoding is complete instead of being returned
+    u32 checksum;
+    u8 *out;
+    u8 *inCursor, *outCursor;
+    u32 dictHead;
     i32 i;
+    i32 maxMatchLength;
+    i32 matchLength;
+    i32 matchOffset;
     i32 bytesToCopyToDict;
-    i32 lookAheadBytes;
     i32 dictValue;
     u32 bitfieldMask;
 
-    u8 inBitMask = 0x80;
-    u32 currByte = 0;
-    u32 checksum = 0;
+    outBitMask = 0x80;
+    outBits = 0;
+    checksum = 0;
 
-    LPBYTE out = (LPBYTE)MemAlloc(uncompressedSize * 2);
+    out = (LPBYTE)MemAlloc(inSize * 2);
     if (out == NULL)
     {
         return NULL;
     }
 
-    LPBYTE inCursor = in;
-    LPBYTE outCursor = out;
-    *compressedSize = 0;
-
+    inCursor = in;
+    outCursor = out;
+    *outSize = 0;
     InitEncoderState();
+    dictHead = 1;
 
-    u32 dictHead = 1;
-    for (i = 0; i < LZSS_LOOKAHEAD_SIZE; i++)
+    for (i = 0; i < LZSS_LOOKAHEAD_MAX; i++)
     {
-        if (inCursor - in >= uncompressedSize)
+        // If past the end of the input data
+        if (inCursor - in >= inSize)
         {
+            // Signal value to mark end of input data
             dictValue = -1;
         }
         else
@@ -77,6 +104,7 @@ LPBYTE Lzss::Encode(LPBYTE in, i32 uncompressedSize, i32 *compressedSize)
             dictValue = *inCursor++;
         }
 
+        // If past the end of the input data
         if (dictValue == -1)
         {
             break;
@@ -85,40 +113,47 @@ LPBYTE Lzss::Encode(LPBYTE in, i32 uncompressedSize, i32 *compressedSize)
         m_Dict[dictHead + i] = dictValue;
     }
 
-    lookAheadBytes = i;
+    maxMatchLength = i;
     InitTree(dictHead);
-    i32 matchLength = 0;
-    i32 matchOffset = 0;
 
-    while (lookAheadBytes > 0)
+    matchLength = 0;
+    matchOffset = 0;
+
+    while (maxMatchLength > 0)
     {
-        if (matchLength > lookAheadBytes)
+        // Ensure match length does not go past the end of the input data
+        if (matchLength > maxMatchLength)
         {
-            matchLength = lookAheadBytes;
+            matchLength = maxMatchLength;
         }
 
-        if (matchLength <= 2)
+        // If current match length does not at least break even, encode byte literal
+        if (matchLength <= LZSS_BREAKEVEN - 1)
         {
             bytesToCopyToDict = 1;
 
-            ENC_WRITE_FLAG_BIT(1);
-            ENC_WRITE_BITS(8, (bitfieldMask & m_Dict[dictHead]) != 0);
+            ENCODE_PACK_BIT(1);
+            ENCODE_PACK_BITS(8, (bitfieldMask & m_Dict[dictHead]) != 0);
         }
+        // Otherwise, encode length/offset pair
         else
         {
-            ENC_WRITE_FLAG_BIT(0);
-            ENC_WRITE_BITS(LZSS_OFFSET_BITS, (bitfieldMask & matchOffset) != 0);
-            ENC_WRITE_BITS(LZSS_LENGTH_BITS, (bitfieldMask & (matchLength - 3)) != 0);
+            ENCODE_PACK_BIT(0);
+            ENCODE_PACK_BITS(LZSS_OFFSET_BITS, (bitfieldMask & matchOffset) != 0);
+            ENCODE_PACK_BITS(LZSS_LENGTH_BITS, (bitfieldMask & (matchLength - LZSS_BREAKEVEN)) != 0);
 
             bytesToCopyToDict = matchLength;
         }
 
+        // Copy data to dictionary
         for (i = 0; i < bytesToCopyToDict; i++)
         {
-            DeleteString(LZSS_DICTPOS_MOD(dictHead, LZSS_LOOKAHEAD_SIZE));
+            DeleteString(LZSS_DICTPOS_MOD(dictHead, LZSS_LOOKAHEAD_MAX));
 
-            if (inCursor - in >= uncompressedSize)
+            // If past the end of the input data
+            if (inCursor - in >= inSize)
             {
+                // Signal value to mark end of input data
                 dictValue = -1;
             }
             else
@@ -126,44 +161,60 @@ LPBYTE Lzss::Encode(LPBYTE in, i32 uncompressedSize, i32 *compressedSize)
                 dictValue = *inCursor++;
             }
 
+            // If past the end of the input data, decrement maximum match length
             if (dictValue == -1)
             {
-                lookAheadBytes--;
+                maxMatchLength--;
             }
+            // Else, copy previous byte in input data to the dictionary
             else
             {
-                m_Dict[LZSS_DICTPOS_MOD(dictHead, LZSS_LOOKAHEAD_SIZE)] = dictValue;
+                m_Dict[LZSS_DICTPOS_MOD(dictHead, LZSS_LOOKAHEAD_MAX)] = dictValue;
             }
 
             dictHead = LZSS_DICTPOS_MOD(dictHead, 1);
 
-            if (lookAheadBytes != 0)
+            // If input data not fully encoded
+            if (maxMatchLength != 0)
             {
                 matchLength = AddString(dictHead, &matchOffset);
             }
         }
     }
 
-    ENC_WRITE_FLAG_BIT(0);
-    ENC_WRITE_BITS(LZSS_OFFSET_BITS, FALSE);
+    ENCODE_PACK_BIT(0);
+    ENCODE_PACK_BITS(LZSS_OFFSET_BITS, false);
 
-    *compressedSize = outCursor - out;
+    *outSize = outCursor - out;
     return out;
+
+#undef ENCODE_ADVANCE_WRITE_HEAD
+#undef ENCODE_PACK_BIT
+#undef ENCODE_PACK_BITS
 }
 
-#define DEC_NEXT_BIT()                                                                                                 \
+/**
+ * \brief Advance the read head forward by one bit.
+ */
+#define DECODE_ADVANCE_READ_HEAD                                                                                       \
     inBitMask >>= 1;                                                                                                   \
     if (inBitMask == 0)                                                                                                \
     {                                                                                                                  \
         inBitMask = 0x80;                                                                                              \
     }
 
-#define DEC_WRITE_BYTE(data)                                                                                           \
+/**
+ * \brief Write a byte to the output buffer.
+ */
+#define DECODE_WRITE_BYTE(data)                                                                                        \
     *outCursor++ = data;                                                                                               \
     m_Dict[dictHead] = data;                                                                                           \
     dictHead = LZSS_DICTPOS_MOD(dictHead, 1);
 
-#define DEC_HANDLE_FETCH_NEW_BYTE()                                                                                    \
+/**
+ * \brief Fetch a new byte from the input buffer if the current byte has been fully decoded.
+ */
+#define DECODE_HANDLE_FETCH                                                                                            \
     if (inBitMask == 0x80)                                                                                             \
     {                                                                                                                  \
         currByte = *inCursor;                                                                                          \
@@ -178,69 +229,88 @@ LPBYTE Lzss::Encode(LPBYTE in, i32 uncompressedSize, i32 *compressedSize)
         checksum += currByte;                                                                                          \
     }
 
-#define DEC_READ_FLAG_BIT()                                                                                            \
-    DEC_HANDLE_FETCH_NEW_BYTE();                                                                                       \
+/**
+ * \brief Read and unpack a single bit from the input buffer.
+ */
+#define DECODE_UNPACK_BIT                                                                                              \
+    DECODE_HANDLE_FETCH;                                                                                               \
     inBits = currByte & inBitMask;                                                                                     \
-    DEC_NEXT_BIT();
+    DECODE_ADVANCE_READ_HEAD;
 
-#define DEC_READ_BITS(bitsCount)                                                                                       \
-    outBitMask = 0x01 << (bitsCount - 1);                                                                              \
+/**
+ * \brief Read and unpack a sequence of bits from the input buffer.
+ * \param bitCount Number of bits to read
+ */
+#define DECODE_UNPACK_BITS(bitCount)                                                                                   \
+    outBitMask = 0x1 << (bitCount - 1);                                                                                \
     inBits = 0;                                                                                                        \
     while (outBitMask != 0)                                                                                            \
     {                                                                                                                  \
-        DEC_HANDLE_FETCH_NEW_BYTE();                                                                                   \
+        DECODE_HANDLE_FETCH;                                                                                           \
         if ((currByte & inBitMask) != 0)                                                                               \
-        {                                                                                                              \
             inBits |= outBitMask;                                                                                      \
-        }                                                                                                              \
-                                                                                                                       \
         outBitMask >>= 1;                                                                                              \
-        DEC_NEXT_BIT();                                                                                                \
+        DECODE_ADVANCE_READ_HEAD;                                                                                      \
     }
 
 #pragma var_order(currByte, outCursor, matchOffset, i, inBitMask, inCursor, inBits, size, matchLength, checksum,       \
                   dictValue, outBitMask, dictHead)
-LPBYTE Lzss::Decode(LPBYTE in, i32 compressedSize, LPBYTE out, i32 decompressedSize)
+/**
+ * \brief Decodes LZSS-compressed data to a buffer.
+ * \param in Input buffer
+ * \param inSize Size of input data in bytes
+ * \param out Output buffer (if NULL, a buffer will allocated automatically)
+ * \param outSize Number of bytes to allocate for output buffer
+ */
+u8 *Lzss::Decode(u8 *in, i32 inSize, u8 *out, i32 outSize)
 {
-    i32 i;
-    u32 matchOffset;
+    u8 inBitMask;
+    u32 currByte;
+    // NOTE: For some reason, this value is discarded after decoding is complete instead of being returned
+    u32 checksum;
+    i32 size;
+    u8 *inCursor, *outCursor;
+    u32 dictHead;
     u32 inBits;
+    i32 matchOffset;
     i32 matchLength;
+    i32 i;
     u32 dictValue;
     u32 outBitMask;
 
-    u8 inBitMask = 0x80;
-    u32 currByte = 0;
-    u32 checksum = 0;
-    i32 size = compressedSize;
+    inBitMask = 0x80;
+    currByte = 0;
+    checksum = 0;
+    size = inSize;
 
     if (out == NULL)
     {
-        out = (u8 *)MemAlloc(decompressedSize);
+        out = (u8 *)MemAlloc(outSize);
         if (out == NULL)
         {
             return NULL;
         }
     }
 
-    LPBYTE inCursor = in;
-    LPBYTE outCursor = out;
-    u32 dictHead = 1;
+    inCursor = in;
+    outCursor = out;
+    dictHead = 1;
 
     for (;;)
     {
-        DEC_READ_FLAG_BIT();
+        // Read flag bit
+        DECODE_UNPACK_BIT;
 
         // Read literal byte from next 8 bits
         if (inBits != 0)
         {
-            DEC_READ_BITS(8);
-            DEC_WRITE_BYTE(inBits);
+            DECODE_UNPACK_BITS(8);
+            DECODE_WRITE_BYTE(inBits);
         }
         // Copy from dictionary, 13 bit offset, then 4 bit length
         else
         {
-            DEC_READ_BITS(13);
+            DECODE_UNPACK_BITS(13);
 
             matchOffset = inBits;
             if (matchOffset == 0)
@@ -248,14 +318,14 @@ LPBYTE Lzss::Decode(LPBYTE in, i32 compressedSize, LPBYTE out, i32 decompressedS
                 break;
             }
 
-            DEC_READ_BITS(4);
+            DECODE_UNPACK_BITS(4);
 
             // Value encoded in 4 bit length is 3 less than the actual length
             matchLength = inBits + 2;
             for (i = 0; i <= matchLength; i++)
             {
                 dictValue = m_Dict[LZSS_DICTPOS_MOD(matchOffset, i)];
-                DEC_WRITE_BYTE(dictValue);
+                DECODE_WRITE_BYTE(dictValue);
             }
         }
     }
@@ -263,10 +333,16 @@ LPBYTE Lzss::Decode(LPBYTE in, i32 compressedSize, LPBYTE out, i32 decompressedS
     // Read any trailing bits in the data
     while (inBitMask != 0x80)
     {
-        DEC_READ_FLAG_BIT();
+        DECODE_UNPACK_BIT;
     }
 
     return out;
+
+#undef DECODE_ADVANCE_READ_HEAD
+#undef DECODE_WRITE_BYTE
+#undef DECODE_HANDLE_FETCH
+#undef DECODE_UNPACK_BIT
+#undef DECODE_UNPACK_BITS
 }
 
 void Lzss::InitTree(i32 root)
@@ -294,6 +370,7 @@ void Lzss::InitEncoderState()
 }
 
 #pragma var_order(i, child, testNode, matchLength, delta)
+
 i32 Lzss::AddString(i32 newNode, i32 *matchPosition)
 {
     i32 i;
@@ -301,16 +378,14 @@ i32 Lzss::AddString(i32 newNode, i32 *matchPosition)
     i32 delta;
 
     if (newNode == 0)
-    {
         return 0;
-    }
 
     i32 testNode = m_Tree[LZSS_DICTSIZE].right;
     i32 matchLength = 0;
 
     for (;;)
     {
-        for (i = 0; i < LZSS_LOOKAHEAD_SIZE; i++)
+        for (i = 0; i < LZSS_LOOKAHEAD_MAX; i++)
         {
             delta = m_Dict[LZSS_DICTPOS_MOD(newNode, i)] - m_Dict[LZSS_DICTPOS_MOD(testNode, i)];
 
@@ -325,7 +400,7 @@ i32 Lzss::AddString(i32 newNode, i32 *matchPosition)
             matchLength = i;
             *matchPosition = testNode;
 
-            if (matchLength >= LZSS_LOOKAHEAD_SIZE)
+            if (matchLength >= LZSS_LOOKAHEAD_MAX)
             {
                 ReplaceNode(testNode, newNode);
                 return matchLength;
