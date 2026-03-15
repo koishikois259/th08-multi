@@ -325,6 +325,11 @@ struct ZunTimer
         this->Decrement(1);
     }
 
+    bool operator==(int value)
+    {
+        return this->current == value;
+    }
+
     void operator+=(int value)
     {
         this->Increment(value);

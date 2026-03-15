@@ -634,6 +634,85 @@ ChainCallbackResult Supervisor::OnUpdate(Supervisor *s)
     return CHAIN_CALLBACK_RESULT_CONTINUE;
 }
 
+void ZunTimer::Increment(int value)
+{
+    if (g_Supervisor.flags.unk5 != 0)
+    {
+        this->current++;
+        this->subFrame = 0.0f;
+        this->previous = -999.0f;
+    }
+
+    if (g_Supervisor.framerateMultiplier > 0.99f)
+    {
+        this->current += value;
+        return;
+    }
+
+    if (value < 0)
+    {
+        this->Decrement(-value);
+        return;
+    }
+
+    this->previous = this->current;
+    this->subFrame += value * g_Supervisor.framerateMultiplier;
+
+    while (this->subFrame >= 1.0f)
+    {
+        this->current++;
+        this->subFrame -= 1.0f;
+    }
+}
+
+void ZunTimer::Decrement(int value)
+{
+    if (g_Supervisor.flags.unk5 != 0)
+    {
+        this->current--;
+        this->subFrame = 0.0f;
+        this->previous = -999.0f;
+    }
+
+    if (g_Supervisor.framerateMultiplier > 0.99f)
+    {
+        this->current -= value;
+        return;
+    }
+
+    if (value < 0)
+    {
+        this->Increment(-value);
+        return;
+    }
+
+    this->previous = this->current;
+    this->subFrame -= value * g_Supervisor.framerateMultiplier;
+
+    while (this->subFrame < 0.0f)
+    {
+        this->current--;
+        this->subFrame += 1.0f;
+    }
+}
+
+void Supervisor::TickTimer(int *frames, float *subframes)
+{
+    if (this->framerateMultiplier <= 0.99f)
+    {
+        *subframes += this->framerateMultiplier;
+        if (*subframes >= 1.0f)
+        {
+            *frames = *frames + 1;
+            *subframes -= 1.0f;
+        }
+    }
+    else
+    {
+        *frames = *frames + 1;
+    }
+}
+
 #pragma var_order(fileSize, configFileBuffer, bgmHandle, bytesRead, bgmBuffer, bgmHandle2, bytesRead2, bgmBuffer2)
 ZunResult Supervisor::LoadConfig(char *configFile)
 {
