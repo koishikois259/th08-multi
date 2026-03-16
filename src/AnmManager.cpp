@@ -13,7 +13,7 @@ D3DFORMAT g_TextureFormatD3D8Mapping[] = {D3DFMT_UNKNOWN, D3DFMT_A8R8G8B8, D3DFM
 
 u32 g_TextureFormatBytesPerPixel[] = {4, 4, 2, 2, 3, 2};
 
-ZunResult AnmFileDesc::SetSprite(AnmVm *vm, int spriteIdx)
+ZunResult AnmLoaded::SetSprite(AnmVm *vm, int spriteIdx)
 {
     if (this->rawData == NULL || this->numberEntriesToBeLoaded != 0)
     {
@@ -46,7 +46,7 @@ ZunResult AnmFileDesc::SetSprite(AnmVm *vm, int spriteIdx)
     return ZUN_SUCCESS;
 }
 
-void AnmFileDesc::SetAndExecuteScript(AnmVm *vm, AnmRawInstr *beginningOfScript)
+void AnmLoaded::SetAndExecuteScript(AnmVm *vm, AnmRawInstr *beginningOfScript)
 {
     if (beginningOfScript == NULL || (this->numberEntriesToBeLoaded != 0))
     {
@@ -1389,26 +1389,26 @@ ZunResult AnmManager::CreateEmptyTexture(IDirect3DTexture8 **outTexture, i32 wid
     return ZUN_SUCCESS;
 }
 
-AnmFileDesc *AnmManager::LoadAnm(i32 anmIdx, const char *filename)
+AnmLoaded *AnmManager::LoadAnm(i32 anmIdx, const char *filename)
 {
     utils::DebugPrint("::loadAnim : %s\n", filename);
-    AnmFileDesc *fileDesc = this->ReadAnmEntries(anmIdx, filename);
-    if (fileDesc != NULL)
+    AnmLoaded *anmLoaded = this->ReadAnmEntries(anmIdx, filename);
+    if (anmLoaded != NULL)
     {
-        fileDesc->numberEntriesToBeLoaded = 1;
+        anmLoaded->numberEntriesToBeLoaded = 1;
 
         /* ZUN bug: no NULL check! */
-        while (fileDesc->numberEntriesToBeLoaded != 0)
+        while (anmLoaded->numberEntriesToBeLoaded != 0)
         {
-            fileDesc = this->PostloadAnmEntry(fileDesc);
+            anmLoaded = this->PostloadAnmEntry(anmLoaded);
         }
     }
 
-    return fileDesc;
+    return anmLoaded;
 }
 
-#pragma var_order(curEntryNum, totalSprites, totalEntries, fileDesc, entry, result, totalScripts, curEntry)
-AnmFileDesc *AnmManager::ReadAnmEntries(int anmIdx, const char *filename)
+#pragma var_order(curEntryNum, totalSprites, totalEntries, anmLoaded, entry, result, totalScripts, curEntry)
+AnmLoaded *AnmManager::ReadAnmEntries(int anmIdx, const char *filename)
 {
     i32 result;
 
@@ -1428,14 +1428,14 @@ AnmFileDesc *AnmManager::ReadAnmEntries(int anmIdx, const char *filename)
     i32 totalSprites = 0;
     i32 curEntryNum = 0;
 
-    AnmFileDesc *fileDesc = this->anmFiles + anmIdx;
+    AnmLoaded *anmLoaded = this->anmFiles + anmIdx;
     if (entry == NULL)
     {
         return NULL;
     }
 
-    fileDesc->anmIdx = anmIdx;
-    fileDesc->rawData = entry;
+    anmLoaded->anmIdx = anmIdx;
+    anmLoaded->rawData = entry;
     AnmRawEntry *curEntry = entry;
 
     while (true)
@@ -1452,12 +1452,12 @@ AnmFileDesc *AnmManager::ReadAnmEntries(int anmIdx, const char *filename)
         curEntry = (AnmRawEntry *)(((u8 *)curEntry) + curEntry->nextOffset);
     }
 
-    fileDesc->totalEntries = totalEntries;
+    anmLoaded->totalEntries = totalEntries;
 
-    fileDesc->textures = (AnmEntry *)g_ZunMemory.Alloc(totalEntries * sizeof(AnmEntry));
-    memset(fileDesc->textures, 0, sizeof(AnmEntry) * totalEntries);
-    fileDesc->sprites = (AnmLoadedSprite *)g_ZunMemory.Alloc(totalSprites * sizeof(AnmLoadedSprite));
-    fileDesc->scripts = (AnmRawInstr **)g_ZunMemory.Alloc(totalScripts * sizeof(void *));
+    anmLoaded->textures = (AnmEntry *)g_ZunMemory.Alloc(totalEntries * sizeof(AnmEntry));
+    memset(anmLoaded->textures, 0, sizeof(AnmEntry) * totalEntries);
+    anmLoaded->sprites = (AnmLoadedSprite *)g_ZunMemory.Alloc(totalSprites * sizeof(AnmLoadedSprite));
+    anmLoaded->scripts = (AnmRawInstr **)g_ZunMemory.Alloc(totalScripts * sizeof(void *));
 
     curEntry = entry;
     totalEntries = 0;
@@ -1466,7 +1466,7 @@ AnmFileDesc *AnmManager::ReadAnmEntries(int anmIdx, const char *filename)
 
     while (true)
     {
-        result = this->LoadExternalTextureData(fileDesc, curEntryNum, &totalSprites, &totalScripts, curEntry);
+        result = this->LoadExternalTextureData(anmLoaded, curEntryNum, &totalSprites, &totalScripts, curEntry);
         if (result < ZUN_SUCCESS)
         {
             return NULL;
@@ -1482,41 +1482,41 @@ AnmFileDesc *AnmManager::ReadAnmEntries(int anmIdx, const char *filename)
         curEntry = (AnmRawEntry *)(((u8 *)curEntry) + curEntry->nextOffset);
     }
 
-    return fileDesc;
+    return anmLoaded;
 }
 
-AnmFileDesc *AnmManager::PreloadAnm(i32 anmIdx, const char *filename)
+AnmLoaded *AnmManager::PreloadAnm(i32 anmIdx, const char *filename)
 {
-    AnmFileDesc *fileDesc = this->ReadAnmEntries(anmIdx, filename);
-    if (fileDesc == NULL)
+    AnmLoaded *anmLoaded = this->ReadAnmEntries(anmIdx, filename);
+    if (anmLoaded == NULL)
     {
         return NULL;
     }
 
-    fileDesc->numberEntriesToBeLoaded = 1;
-    while (fileDesc->numberEntriesToBeLoaded != 0 && !g_Supervisor.subthreadCloseRequestActive)
+    anmLoaded->numberEntriesToBeLoaded = 1;
+    while (anmLoaded->numberEntriesToBeLoaded != 0 && !g_Supervisor.subthreadCloseRequestActive)
     {
         Sleep(1);
     }
     utils::DebugPrint("::preloadAnimEnd : %s\n", filename);
 
-    return g_Supervisor.subthreadCloseRequestActive ? NULL : fileDesc;
+    return g_Supervisor.subthreadCloseRequestActive ? NULL : anmLoaded;
 }
 
-i32 AnmManager::LoadExternalTextureData(AnmFileDesc *fileDesc, i32 entryNumber, i32 *sprites, i32 *scripts,
+i32 AnmManager::LoadExternalTextureData(AnmLoaded *anmLoaded, i32 entryNumber, i32 *sprites, i32 *scripts,
                                         AnmRawEntry *rawEntry)
 {
     return 0;
 }
 
 #pragma var_order(currentEntryNumber, currentNumSprites, entryLoadNumber, data, result, currentNumScripts, rawEntry)
-AnmFileDesc *AnmManager::PostloadAnmEntry(AnmFileDesc *fileDesc)
+AnmLoaded *AnmManager::PostloadAnmEntry(AnmLoaded *anmLoaded)
 {
     i32 result;
 
-    utils::DebugPrint("::postloadAnim : %d, %d\n", fileDesc->anmIdx, fileDesc->numberEntriesToBeLoaded);
+    utils::DebugPrint("::postloadAnim : %d, %d\n", anmLoaded->anmIdx, anmLoaded->numberEntriesToBeLoaded);
 
-    AnmRawEntry *rawData = fileDesc->rawData;
+    AnmRawEntry *rawData = anmLoaded->rawData;
 
     i32 entryLoadNumber = 0;
     i32 currentNumScripts = 0;
@@ -1524,16 +1524,16 @@ AnmFileDesc *AnmManager::PostloadAnmEntry(AnmFileDesc *fileDesc)
     i32 currentEntryNumber = 0;
 
     /* ??? */
-    fileDesc->rawData = rawData;
+    anmLoaded->rawData = rawData;
     AnmRawEntry *rawEntry = rawData;
 
     while (true)
     {
-        if (entryLoadNumber == fileDesc->numberEntriesToBeLoaded - 1 &&
-            (result = this->LoadTextureData(fileDesc, currentEntryNumber, currentNumSprites, currentNumScripts,
+        if (entryLoadNumber == anmLoaded->numberEntriesToBeLoaded - 1 &&
+            (result = this->LoadTextureData(anmLoaded, currentEntryNumber, currentNumSprites, currentNumScripts,
                                             rawEntry)) < ZUN_SUCCESS)
         {
-            fileDesc->numberEntriesToBeLoaded = 0;
+            anmLoaded->numberEntriesToBeLoaded = 0;
             return NULL;
         }
 
@@ -1549,20 +1549,20 @@ AnmFileDesc *AnmManager::PostloadAnmEntry(AnmFileDesc *fileDesc)
         rawEntry = (AnmRawEntry *)(((u8 *)rawEntry) + rawEntry->nextOffset);
         entryLoadNumber++;
 
-        if (entryLoadNumber == fileDesc->numberEntriesToBeLoaded)
+        if (entryLoadNumber == anmLoaded->numberEntriesToBeLoaded)
         {
-            fileDesc->numberEntriesToBeLoaded++;
-            return fileDesc;
+            anmLoaded->numberEntriesToBeLoaded++;
+            return anmLoaded;
         }
     }
 
-    fileDesc->numberEntriesToBeLoaded = 0;
+    anmLoaded->numberEntriesToBeLoaded = 0;
 
-    return fileDesc;
+    return anmLoaded;
 }
 
 #pragma var_order(result, startOfEntry, surfaceDesc, path, rawSprite, i, currentOffset, loadedSprite)
-int AnmManager::LoadTextureData(AnmFileDesc *fileDesc, i32 entryNumber, i32 currentSpriteNumber,
+int AnmManager::LoadTextureData(AnmLoaded *anmLoaded, i32 entryNumber, i32 currentSpriteNumber,
                                 i32 currentScriptNumber, AnmRawEntry *rawEntry)
 {
     int result = 0;
@@ -1590,12 +1590,12 @@ int AnmManager::LoadTextureData(AnmFileDesc *fileDesc, i32 entryNumber, i32 curr
 
         if (path[0] == '@')
         {
-            this->CreateEmptyTexture(&fileDesc->textures[entryNumber].texture, startOfEntry->width,
+            this->CreateEmptyTexture(&anmLoaded->textures[entryNumber].texture, startOfEntry->width,
                                      startOfEntry->height, startOfEntry->format);
         }
         else
         {
-            if (this->CreateTextureFromFile(&fileDesc->textures[entryNumber].texture, startOfEntry->format,
+            if (this->CreateTextureFromFile(&anmLoaded->textures[entryNumber].texture, startOfEntry->format,
                                             startOfEntry->colorKey) != ZUN_SUCCESS)
             {
                 g_GameErrorContext.Fatal(TH_ERR_ANMMANAGER_EXTERN_TEXTURE_CORRUPTED, path);
@@ -1605,7 +1605,7 @@ int AnmManager::LoadTextureData(AnmFileDesc *fileDesc, i32 entryNumber, i32 curr
     }
     else
     {
-        if (this->CreateTextureFromAnm(&fileDesc->textures[entryNumber].texture,
+        if (this->CreateTextureFromAnm(&anmLoaded->textures[entryNumber].texture,
                                        (AnmTextureHeader *)(((u8 *)startOfEntry) + startOfEntry->textureOffset),
                                        startOfEntry->format) != ZUN_SUCCESS)
         {
@@ -1614,12 +1614,12 @@ int AnmManager::LoadTextureData(AnmFileDesc *fileDesc, i32 entryNumber, i32 curr
         }
     }
 
-    fileDesc->textures[entryNumber].texture->SetPriority(startOfEntry->priority);
-    fileDesc->textures[entryNumber].texture->PreLoad();
+    anmLoaded->textures[entryNumber].texture->SetPriority(startOfEntry->priority);
+    anmLoaded->textures[entryNumber].texture->PreLoad();
 
     D3DSURFACE_DESC surfaceDesc;
 
-    fileDesc->textures[entryNumber].texture->GetLevelDesc(0, &surfaceDesc);
+    anmLoaded->textures[entryNumber].texture->GetLevelDesc(0, &surfaceDesc);
 
     u32 *currentOffset = (u32 *)((u8 *)startOfEntry + sizeof(AnmRawEntry));
 
@@ -1629,8 +1629,8 @@ int AnmManager::LoadTextureData(AnmFileDesc *fileDesc, i32 entryNumber, i32 curr
     {
         rawSprite = (AnmRawSprite *)((u8 *)startOfEntry + *currentOffset);
 
-        loadedSprite.anmIdx = fileDesc->anmIdx;
-        loadedSprite.texture = fileDesc->textures[entryNumber].texture;
+        loadedSprite.anmIdx = anmLoaded->anmIdx;
+        loadedSprite.texture = anmLoaded->textures[entryNumber].texture;
         loadedSprite.scaleFactor.x = surfaceDesc.Width / (float)startOfEntry->width;
         loadedSprite.scaleFactor.y = surfaceDesc.Height / (float)startOfEntry->height;
 
@@ -1641,14 +1641,14 @@ int AnmManager::LoadTextureData(AnmFileDesc *fileDesc, i32 entryNumber, i32 curr
         loadedSprite.width = surfaceDesc.Width;
         loadedSprite.height = surfaceDesc.Height;
 
-        fileDesc->LoadSprite(currentSpriteNumber, &loadedSprite);
+        anmLoaded->LoadSprite(currentSpriteNumber, &loadedSprite);
 
         currentSpriteNumber++;
     }
 
     for (i = 0; i < startOfEntry->numScripts; i++, currentOffset += 2)
     {
-        fileDesc->scripts[currentScriptNumber] = (AnmRawInstr *)(((u8 *)startOfEntry) + currentOffset[1]);
+        anmLoaded->scripts[currentScriptNumber] = (AnmRawInstr *)(((u8 *)startOfEntry) + currentOffset[1]);
         currentScriptNumber++;
     }
 
@@ -1687,7 +1687,7 @@ void AnmManager::ReleaseAnm(i32 anmIdx)
         g_ZunMemory.Free(this->anmFiles[anmIdx].scripts);
         g_ZunMemory.Free(this->anmFiles[anmIdx].rawData);
 
-        memset(&this->anmFiles[anmIdx], 0, sizeof(AnmFileDesc));
+        memset(&this->anmFiles[anmIdx], 0, sizeof(AnmLoaded));
     }
 }
 
@@ -1705,7 +1705,7 @@ void AnmManager::ReleaseAnmEntry(AnmEntry *entry)
     }
 }
 
-void AnmFileDesc::LoadSprite(i32 spriteIdx, AnmLoadedSprite *loadedSprite)
+void AnmLoaded::LoadSprite(i32 spriteIdx, AnmLoadedSprite *loadedSprite)
 {
     this->sprites[spriteIdx] = *loadedSprite;
 

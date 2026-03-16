@@ -335,7 +335,7 @@ struct AnmPrefix
     i16 type;
     i16 pendingInterrupt;
     i32 playerBulletHitAnimationType;
-    AnmFileDesc *anmFile;
+    AnmLoaded *anmFile;
 };
 
 C_ASSERT(sizeof(AnmPrefix) == 0x208);
@@ -401,7 +401,7 @@ struct AnmVm
 
 C_ASSERT(sizeof(AnmVm) == 0x2a4);
 
-struct AnmFileDesc
+struct AnmLoaded
 {
     i32 anmIdx;
     AnmRawEntry *rawData;
@@ -430,7 +430,7 @@ struct AnmFileDesc
     void SetAndExecuteScript(AnmVm *vm, AnmRawInstr *beginningOfScript);
 };
 
-C_ASSERT(sizeof(AnmFileDesc) == 0x1c);
+C_ASSERT(sizeof(AnmLoaded) == 0x1c);
 
 struct AnmRawSprite
 {
@@ -466,13 +466,13 @@ struct AnmManager
     ZunResult CreateTextureFromFile(IDirect3DTexture8 **outTexture, i32 format, i32 colorKey);
     ZunResult CreateTextureFromAnm(IDirect3DTexture8 **outTexture, AnmTextureHeader *textureData, i32 format);
     ZunResult CreateEmptyTexture(IDirect3DTexture8 **outTexture, i32 width, i32 height, i32 format);
-    AnmFileDesc *LoadAnm(i32 anmIdx, const char *filename);
-    AnmFileDesc *ReadAnmEntries(i32 anmIdx, const char *filename);
-    AnmFileDesc *PreloadAnm(i32 anmIdx, const char *filename);
-    i32 LoadExternalTextureData(AnmFileDesc *fileDesc, i32 entryNumber, i32 *sprites, i32 *scripts,
+    AnmLoaded *LoadAnm(i32 anmIdx, const char *filename);
+    AnmLoaded *ReadAnmEntries(i32 anmIdx, const char *filename);
+    AnmLoaded *PreloadAnm(i32 anmIdx, const char *filename);
+    i32 LoadExternalTextureData(AnmLoaded *anmLoaded, i32 entryNumber, i32 *sprites, i32 *scripts,
                                 AnmRawEntry *rawEntry);
-    AnmFileDesc *PostloadAnmEntry(AnmFileDesc *anm);
-    BOOL LoadTextureData(AnmFileDesc *fileDesc, i32 entryNumber, i32 sprites, i32 scripts, AnmRawEntry *rawEntry);
+    AnmLoaded *PostloadAnmEntry(AnmLoaded *anm);
+    BOOL LoadTextureData(AnmLoaded *anmLoaded, i32 entryNumber, i32 sprites, i32 scripts, AnmRawEntry *rawEntry);
     ZunResult ServicePreloadedAnims();
     void ReleaseAnm(i32 anmIdx);
     void ReleaseAnmEntry(AnmEntry *anmEntry);
@@ -578,7 +578,7 @@ struct AnmManager
     u32 renderStateChangesThisFrame;
     u32 flushesThisFrame;
     D3DXVECTOR2 screenShakeOffset;
-    AnmFileDesc anmFiles[256];
+    AnmLoaded anmFiles[256];
     D3DXVECTOR3 unk0x1c24;
     unknown_fields(0x1c30, 0x34);
     AnmVm unk0x1c64;

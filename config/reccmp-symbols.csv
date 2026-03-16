@@ -47,11 +47,11 @@ th08::AnmVm::ClearVisible,0x406700,function
 th08::AnmVm::AnmVm,0x406720,function
 th08::AnmPrefix::AnmPrefix,0x4067c0,function
 `eh_vector_constructor_iterator',0x406850,function
-th08::AnmFileDesc::GetSprite,0x406880,function
-th08::AnmFileDesc::InitializeAndSetSprite,0x4068a0,function
+th08::AnmLoaded::GetSprite,0x406880,function
+th08::AnmLoaded::InitializeAndSetSprite,0x4068a0,function
 th08::AnmVm::Initialize,0x4068e0,function
 D3DXMatrixIdentity,0x406940,function
-th08::AnmFileDesc::SetAndExecuteScriptIdx,0x4069f0,function
+th08::AnmLoaded::SetAndExecuteScriptIdx,0x4069f0,function
 th08::AnmManager::SetTextureCaptureParams,0x406a30,function
 th08::SoundPlayer::FadeIn,0x406ac0,function
 th08::CStreamingSound::FadeIn,0x406af0,function
@@ -118,7 +118,7 @@ th08::ZunMemory::Free,0x40b8a0,function
 th08::ZunTimer::operator_float,0x40b8c0,function
 th08::ZunTimer::operator>=,0x40b8e0,function
 FUN_0040b900,0x40b900,function
-th08::AnmFileDesc::ExecuteAnmIdx,0x40b910,function
+th08::AnmLoaded::ExecuteAnmIdx,0x40b910,function
 th08::AnmManager::ClearBlendMode,0x40b9b0,function
 th08::AnmManager::ClearColorOp,0x40b9d0,function
 th08::AnmManager::ClearVertexShader,0x40b9f0,function
@@ -239,7 +239,7 @@ th08::EclManager::RunEcl,0x4184b0,function
 FUN_0041efc0,0x41efc0,function
 FUN_0041f000,0x41f000,function
 FUN_0041f040,0x41f040,function
-FUN_0041f090,0x41f090,function
+fmodf,0x41f090,function
 FUN_0041f0b0,0x41f0b0,function
 FUN_0041f0e0,0x41f0e0,function
 FUN_0041f110,0x41f110,function
@@ -936,8 +936,8 @@ th08::SoundPlayer::SoundPlayer,0x45e320,function
 th08::SoundPlayer::FreePreloadedBGM,0x45e370,function
 th08::SoundPlayer::FadeOut,0x45e3c0,function
 th08::CStreamingSound::FadeOut,0x45e3f0,function
-th08::AnmFileDesc::SetSprite,0x45e430,function
-th08::AnmFileDesc::SetAndExecuteScript,0x45e580,function
+th08::AnmLoaded::SetSprite,0x45e430,function
+th08::AnmLoaded::SetAndExecuteScript,0x45e580,function
 th08::AnmVm::GetFloatVar,0x45e650,function
 th08::AnmVm::GetIntVar,0x45e720,function
 th08::AnmVm::GetFloatVarPtr,0x45e810,function
@@ -990,7 +990,7 @@ th08::AnmManager::LoadTextureData,0x465cc0,function
 th08::AnmManager::ServicePreloadedAnims,0x466000,function
 th08::AnmManager::ReleaseAnm,0x466060,function
 th08::AnmManager::ReleaseAnmEntry,0x466160,function
-th08::AnmFileDesc::LoadSprite,0x4661b0,function
+th08::AnmLoaded::LoadSprite,0x4661b0,function
 FUN_00466310,0x466310,function
 th08::AnmManager::DrawVmTextFmt,0x4663b0,function
 FUN_004664a0,0x4664a0,function
