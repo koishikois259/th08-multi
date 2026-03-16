@@ -23,8 +23,7 @@ struct VertexDiffuseXyzrhw
 
 struct VertexTex1DiffuseXyzrhw
 {
-    D3DXVECTOR3 pos;
-    f32 w;
+    D3DXVECTOR4 pos;
     D3DCOLOR diffuse;
     D3DXVECTOR2 textureUV;
 };
@@ -379,6 +378,11 @@ struct AnmVm
         this->activeSpriteIndex = -1;
     }
 
+    ZunBool IsVisible()
+    {
+        return this->prefix.visible;
+    }
+
     f32 GetFloatVar(f32 varId);
     i32 GetIntVar(i32 varId);
     f32 *GetFloatVarPtr(f32 *varPtr, u16 varMask, u32 variableNumber);
@@ -389,6 +393,9 @@ struct AnmVm
         this->prefix.scale.x = 1.0f;
         this->prefix.scale.y = 1.0f;
         this->prefix.color1.d3dColor = COLOR_WHITE;
+        D3DXMatrixIdentity(&this->prefix.matrix1);
+        this->prefix.flags |= 7;
+        this->prefix.currentTimeInScript.Initialize();
     }
 };
 
@@ -449,6 +456,13 @@ struct AnmManager
     }
     ZunBool ExecuteScript(AnmVm *vm);
     void ExecuteScriptOnVmArray(AnmVm *sprites, int count);
+    void SetRenderStateForVm(AnmVm *vm);
+    ZunResult DrawInner(AnmVm *vm, i32 flags);
+    ZunResult AddSpriteToDrawBuffer(VertexTex1DiffuseXyzrhw *vertices);
+    ZunResult DrawNoRotation(AnmVm *vm);
+    void TranslateRotation(VertexTex1DiffuseXyzrhw *vertex, float x, float y, float sine, float cosine, float xOffset, float yOffset);
+    ZunResult Draw2D(AnmVm *vm);
+    ZunResult DrawNoRotationNoRound(AnmVm *vm);
     ZunResult CreateTextureFromFile(IDirect3DTexture8 **outTexture, i32 format, i32 colorKey);
     ZunResult CreateTextureFromAnm(IDirect3DTexture8 **outTexture, AnmTextureHeader *textureData, i32 format);
     ZunResult CreateEmptyTexture(IDirect3DTexture8 **outTexture, i32 width, i32 height, i32 format);

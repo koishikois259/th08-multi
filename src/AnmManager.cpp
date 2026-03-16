@@ -1,10 +1,12 @@
 #include "AnmManager.hpp"
 #include "i18n.hpp"
 #include "utils.hpp"
+#include "ZunMath.hpp"
 
 namespace th08
 {
 DIFFABLE_STATIC(AnmManager *, g_AnmManager);
+DIFFABLE_STATIC_ARRAY(VertexTex1DiffuseXyzrhw, 4, g_QuadVertices);
 
 D3DFORMAT g_TextureFormatD3D8Mapping[] = {D3DFMT_UNKNOWN, D3DFMT_A8R8G8B8, D3DFMT_A1R5G5B5,
                                           D3DFMT_R5G6B5,  D3DFMT_R8G8B8,   D3DFMT_A4R4G4B4};
@@ -898,6 +900,378 @@ void AnmManager::ExecuteScriptOnVmArray(AnmVm *sprite, int count)
         sprite++;
         count--;
     }
+}
+
+u8 MixColors(u8 color1, u8 color2)
+{
+    u32 color = ((color1 * color2) / 128U);
+
+    if (color >= 256)
+    {
+        color = 255;
+    }
+
+    return color;
+}
+
+
+void AnmManager::SetRenderStateForVm(AnmVm *vm)
+{
+    if (this->currentBlendMode != vm->prefix.blendMode)
+    {
+        this->FlushVertexBuffer();
+        this->currentBlendMode = vm->prefix.blendMode;
+
+        switch (this->currentBlendMode)
+        {
+        case AnmBlendMode_Normal:
+            g_Supervisor.d3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+            break;
+        case AnmBlendMode_Additive:
+            g_Supervisor.d3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
+            break;
+        }
+    }
+
+    if (!g_Supervisor.IsDepthTestDisabled()
+        && this->disableZWrite != vm->prefix.zWriteDisabled)
+    {
+        this->disableZWrite = vm->prefix.zWriteDisabled;
+        if (!this->disableZWrite)
+        {
+            g_Supervisor.SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
+        }
+        else
+        {
+            g_Supervisor.SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
+        }
+    }
+
+    this->renderStateChangesThisFrame++;
+}
+
+static const f32 g_ZeroPointFive = 0.5;
+
+#pragma var_order(triangleY1, triangleY2, triangleX2, triangleX1, color)
+ZunResult AnmManager::DrawInner(AnmVm *vm, i32 flags)
+{
+    ZunColor color;
+    float triangleX1, triangleX2, triangleY1, triangleY2;
+
+    g_QuadVertices[0].pos.x += this->screenShakeOffset.x;
+    g_QuadVertices[0].pos.y += this->screenShakeOffset.y;
+    g_QuadVertices[1].pos.x += this->screenShakeOffset.x;
+    g_QuadVertices[1].pos.y += this->screenShakeOffset.y;
+    g_QuadVertices[2].pos.x += this->screenShakeOffset.x;
+    g_QuadVertices[2].pos.y += this->screenShakeOffset.y;
+    g_QuadVertices[3].pos.x += this->screenShakeOffset.x;
+    g_QuadVertices[3].pos.y += this->screenShakeOffset.y;
+
+    if (flags & 1)
+    {
+        /* same as in EoSD. */
+        __asm
+        {
+            fld g_QuadVertices[0 * TYPE g_QuadVertices].pos.x
+            frndint
+            fsub g_ZeroPointFive
+            fld g_QuadVertices[1 * TYPE g_QuadVertices].pos.x
+            frndint
+            fsub g_ZeroPointFive
+            fld g_QuadVertices[0 * TYPE g_QuadVertices].pos.y
+            frndint
+            fsub g_ZeroPointFive
+            fld g_QuadVertices[2 * TYPE g_QuadVertices].pos.y
+            frndint
+            fsub g_ZeroPointFive
+            fst g_QuadVertices[2 * TYPE g_QuadVertices].pos.y
+            fstp g_QuadVertices[3 * TYPE g_QuadVertices].pos.y
+            fst g_QuadVertices[0 * TYPE g_QuadVertices].pos.y
+            fstp g_QuadVertices[1 * TYPE g_QuadVertices].pos.y
+            fst g_QuadVertices[1 * TYPE g_QuadVertices].pos.x
+            fstp g_QuadVertices[3 * TYPE g_QuadVertices].pos.x
+            fst g_QuadVertices[0 * TYPE g_QuadVertices].pos.x
+            fstp g_QuadVertices[2 * TYPE g_QuadVertices].pos.x
+        }
+    }
+
+    g_QuadVertices[0].textureUV.x = g_QuadVertices[2].textureUV.x = vm->loadedSprite->uvStart.x + vm->prefix.uvScrollPos.x;
+    g_QuadVertices[1].textureUV.x = g_QuadVertices[3].textureUV.x = vm->loadedSprite->uvEnd.x + vm->prefix.uvScrollPos.x;
+    g_QuadVertices[0].textureUV.y = g_QuadVertices[1].textureUV.y = vm->loadedSprite->uvStart.y + vm->prefix.uvScrollPos.y;
+    g_QuadVertices[2].textureUV.y = g_QuadVertices[3].textureUV.y = vm->loadedSprite->uvEnd.y + vm->prefix.uvScrollPos.y;
+
+    triangleX1 = max(g_QuadVertices[0].pos.x, g_QuadVertices[1].pos.x);
+    triangleX1 = max(g_QuadVertices[2].pos.x, triangleX1);
+    triangleX1 = max(g_QuadVertices[3].pos.x, triangleX1);
+
+    triangleY1 = max(g_QuadVertices[0].pos.y, g_QuadVertices[1].pos.y);
+    triangleY1 = max(g_QuadVertices[2].pos.y, triangleY1);
+    triangleY1 = max(g_QuadVertices[3].pos.y, triangleY1);
+
+    triangleX2 = min(g_QuadVertices[0].pos.x, g_QuadVertices[1].pos.x);
+    triangleX2 = min(g_QuadVertices[2].pos.x, triangleX2);
+    triangleX2 = min(g_QuadVertices[3].pos.x, triangleX2);
+
+    triangleY2 = min(g_QuadVertices[0].pos.y, g_QuadVertices[1].pos.y);
+    triangleY2 = min(g_QuadVertices[2].pos.y, triangleY2);
+    triangleY2 = min(g_QuadVertices[3].pos.y, triangleY2);
+
+    if (triangleX1 < g_Supervisor.viewport.X
+        || triangleY1 < g_Supervisor.viewport.Y
+        || triangleX2 > (g_Supervisor.viewport.X + g_Supervisor.viewport.Width)
+        || triangleY2 > (g_Supervisor.viewport.Y + g_Supervisor.viewport.Height))
+    {
+        return ZUN_SUCCESS;
+    }
+
+    if (this->currentTexture != vm->loadedSprite->texture)
+    {
+        this->currentTexture = vm->loadedSprite->texture;
+        this->FlushVertexBuffer();
+        g_Supervisor.d3dDevice->SetTexture(0, this->currentTexture);
+    }
+
+    if (this->currentVertexShader != 1)
+    {
+        this->FlushVertexBuffer();
+        this->currentVertexShader = 1;
+    }
+
+    if ((flags & 2) == 0)
+    {
+        color.d3dColor = vm->prefix.flag17 ? vm->prefix.color2.d3dColor : vm->prefix.color1.d3dColor;
+
+        if (this->unk0x4 != 0)
+        {
+            color.r = MixColors(color.r, this->color.r);
+            color.g = MixColors(color.g, this->color.g);
+            color.b = MixColors(color.b, this->color.b);
+            color.a = MixColors(color.a, this->color.a);
+        }
+
+        g_QuadVertices[0].diffuse = color.d3dColor;
+        g_QuadVertices[1].diffuse = color.d3dColor;
+        g_QuadVertices[2].diffuse = color.d3dColor;
+        g_QuadVertices[3].diffuse = color.d3dColor;
+    }
+
+    this->SetRenderStateForVm(vm);
+    this->AddSpriteToDrawBuffer(g_QuadVertices);
+
+    return ZUN_SUCCESS;
+}
+
+void AnmManager::ClearVertexBuffer()
+{
+    this->spritesToDraw = 0;
+    this->vertexBufferStartPtr = this->vertexBufferEndPtr = this->vertexBuffer;
+}
+
+void AnmManager::FlushVertexBuffer()
+{
+    if (this->spritesToDraw == 0)
+    {
+        return;
+    }
+
+    g_Supervisor.d3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
+    g_Supervisor.d3dDevice->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
+    g_Supervisor.d3dDevice->SetVertexShader(D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_TEX1);
+    g_Supervisor.d3dDevice->DrawPrimitiveUP(D3DPT_TRIANGLELIST, this->spritesToDraw * 2, this->vertexBufferStartPtr, sizeof(VertexTex1DiffuseXyzrhw));
+
+    this->vertexBufferStartPtr = this->vertexBufferEndPtr;
+    this->spritesToDraw = 0;
+    this->flushesThisFrame++;
+}
+
+/* This function copies 4 vertices creating a quad into 6 vertices
+ * (2 triangles) for rendering.
+ */
+ZunResult AnmManager::AddSpriteToDrawBuffer(VertexTex1DiffuseXyzrhw *vertices)
+{
+    this->vertexBufferEndPtr[0] = vertices[0];
+    this->vertexBufferEndPtr[1] = vertices[1];
+    this->vertexBufferEndPtr[2] = vertices[2];
+    this->vertexBufferEndPtr[3] = vertices[1];
+    this->vertexBufferEndPtr[4] = vertices[2];
+    this->vertexBufferEndPtr[5] = vertices[3];
+
+    this->vertexBufferEndPtr += 6;
+    this->spritesToDraw++;
+
+    return ZUN_SUCCESS;
+}
+
+#pragma var_order(spriteHalfWidth, spriteHalfHeight)
+ZunResult AnmManager::DrawNoRotation(AnmVm *vm)
+{
+    float spriteHalfWidth;
+    float spriteHalfHeight;
+
+    if (!vm->IsVisible())
+    {
+        return ZUN_ERROR;
+    }
+
+    if (!vm->prefix.flag1)
+    {
+        return ZUN_ERROR;
+    }
+
+    if (vm->prefix.color1.a == 0)
+    {
+        return ZUN_ERROR;
+    }
+
+    spriteHalfWidth = (vm->prefix.spriteSize.x * vm->prefix.scale.x) / 2.0f;
+    spriteHalfHeight = (vm->prefix.spriteSize.y * vm->prefix.scale.y) / 2.0f;
+
+    if ((vm->prefix.anchor & 1) == 0)
+    {
+        g_QuadVertices[0].pos.x = g_QuadVertices[2].pos.x = vm->pos.x - spriteHalfWidth;
+        g_QuadVertices[1].pos.x = g_QuadVertices[3].pos.x = spriteHalfWidth + vm->pos.x;
+    }
+    else
+    {
+        g_QuadVertices[0].pos.x = g_QuadVertices[2].pos.x = vm->pos.x;
+        g_QuadVertices[1].pos.x = g_QuadVertices[3].pos.x = spriteHalfWidth + vm->pos.x + spriteHalfWidth;
+    }
+
+    if ((vm->prefix.anchor & 2) == 0)
+    {
+        g_QuadVertices[0].pos.y = g_QuadVertices[1].pos.y = vm->pos.y - spriteHalfHeight;
+        g_QuadVertices[2].pos.y = g_QuadVertices[3].pos.y = spriteHalfHeight + vm->pos.y;
+    }
+    else
+    {
+        g_QuadVertices[0].pos.y = g_QuadVertices[1].pos.y = vm->pos.y;
+        g_QuadVertices[2].pos.y = g_QuadVertices[3].pos.y = spriteHalfHeight + vm->pos.y + spriteHalfHeight;
+    }
+
+    g_QuadVertices[0].pos.z = g_QuadVertices[1].pos.z = g_QuadVertices[2].pos.z = g_QuadVertices[3].pos.z = vm->pos.z;
+
+    return this->DrawInner(vm, 1);
+}
+
+void AnmManager::TranslateRotation(VertexTex1DiffuseXyzrhw *vertex, float x, float y, float sine, float cosine, float xOffset, float yOffset)
+{
+    vertex->pos.x = x * cosine - y * sine + xOffset;
+    vertex->pos.y = x * sine + y * cosine + yOffset;
+}
+
+#pragma var_order(sine, rotation, cosine, x, y, yOffset, xOffset)
+ZunResult AnmManager::Draw2D(AnmVm *vm)
+{
+    float sine, cosine, rotation, xOffset, yOffset, x, y;
+
+    if (vm->prefix.rotation.z == 0.0f)
+    {
+        return this->DrawNoRotation(vm);
+    }
+
+    if (!vm->IsVisible())
+    {
+        return ZUN_ERROR;
+    }
+
+    if (!vm->prefix.flag1)
+    {
+        return ZUN_ERROR;
+    }
+
+    if (vm->prefix.color1.a == 0)
+    {
+        return ZUN_ERROR;
+    }
+
+    rotation = vm->prefix.rotation.z;
+
+    sincos(rotation, sine, cosine);
+
+    xOffset = vm->pos.x;
+    yOffset = vm->pos.y;
+
+    x = (vm->prefix.spriteSize.x * vm->prefix.scale.x) / 2.0f;
+    y = (vm->prefix.spriteSize.y * vm->prefix.scale.y) / 2.0f;
+
+    this->TranslateRotation(&g_QuadVertices[0], -x, -y, sine, cosine, xOffset, yOffset);
+    this->TranslateRotation(&g_QuadVertices[1],  x, -y, sine, cosine, xOffset, yOffset);
+    this->TranslateRotation(&g_QuadVertices[2], -x,  y, sine, cosine, xOffset, yOffset);
+    this->TranslateRotation(&g_QuadVertices[3],  x,  y, sine, cosine, xOffset, yOffset);
+
+    g_QuadVertices[0].pos.z = g_QuadVertices[1].pos.z = g_QuadVertices[2].pos.z = g_QuadVertices[3].pos.z = vm->pos.z;
+
+    if (vm->prefix.anchor & 1)
+    {
+        g_QuadVertices[0].pos.x += x;
+        g_QuadVertices[1].pos.x += x;
+        g_QuadVertices[2].pos.x += x;
+        g_QuadVertices[3].pos.x += x;
+    }
+
+    if (vm->prefix.anchor & 2)
+    {
+        g_QuadVertices[0].pos.y += y;
+        g_QuadVertices[1].pos.y += y;
+        g_QuadVertices[2].pos.y += y;
+        g_QuadVertices[3].pos.y += y;
+    }
+
+    return this->DrawInner(vm, 0);
+}
+
+/* This is identical to DrawNoRotation except for 0 being passed to DrawInner,
+ * which doesn't round and subtract 0.5 from each vertex.
+ */
+#pragma var_order(spriteHalfWidth, spriteHalfHeight)
+ZunResult AnmManager::DrawNoRotationNoRound(AnmVm *vm)
+{
+    float spriteHalfWidth;
+    float spriteHalfHeight;
+
+    if (!vm->IsVisible())
+    {
+        return ZUN_ERROR;
+    }
+
+    if (!vm->prefix.flag1)
+    {
+        return ZUN_ERROR;
+    }
+
+    if (vm->prefix.color1.a == 0)
+    {
+        return ZUN_ERROR;
+    }
+
+    spriteHalfWidth = (vm->prefix.spriteSize.x * vm->prefix.scale.x) / 2.0f;
+    spriteHalfHeight = (vm->prefix.spriteSize.y * vm->prefix.scale.y) / 2.0f;
+
+    if ((vm->prefix.anchor & 1) == 0)
+    {
+        g_QuadVertices[0].pos.x = g_QuadVertices[2].pos.x = vm->pos.x - spriteHalfWidth;
+        g_QuadVertices[1].pos.x = g_QuadVertices[3].pos.x = spriteHalfWidth + vm->pos.x;
+    }
+    else
+    {
+        g_QuadVertices[0].pos.x = g_QuadVertices[2].pos.x = vm->pos.x;
+        g_QuadVertices[1].pos.x = g_QuadVertices[3].pos.x = spriteHalfWidth + vm->pos.x + spriteHalfWidth;
+    }
+
+    if ((vm->prefix.anchor & 2) == 0)
+    {
+        g_QuadVertices[0].pos.y = g_QuadVertices[1].pos.y = vm->pos.y - spriteHalfHeight;
+        g_QuadVertices[2].pos.y = g_QuadVertices[3].pos.y = spriteHalfHeight + vm->pos.y;
+    }
+    else
+    {
+        g_QuadVertices[0].pos.y = g_QuadVertices[1].pos.y = vm->pos.y;
+        g_QuadVertices[2].pos.y = g_QuadVertices[3].pos.y = spriteHalfHeight + vm->pos.y + spriteHalfHeight;
+    }
+
+    g_QuadVertices[0].pos.z = g_QuadVertices[1].pos.z = g_QuadVertices[2].pos.z = g_QuadVertices[3].pos.z = vm->pos.z;
+
+    return this->DrawInner(vm, 0);
 }
 
 // STUB: th08 0x465070
