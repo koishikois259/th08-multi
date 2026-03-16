@@ -31,6 +31,45 @@ Supervisor::Supervisor()
     this->flags.unk8 = true;
 }
 
+ChainCallbackResult Supervisor::OnDraw2(Supervisor *s)
+{
+    if (s->loadingVmsHaveBeenSetup == 0)
+    {
+        /* ZUN bloat: no need to check because ReleaseSurface does that already. */
+        if (g_AnmManager->surfaces[8] != NULL)
+        {
+            g_AnmManager->ReleaseSurface(8);
+        }
+    }
+    else
+    {
+        g_AnmManager->CopySurfaceToBackbuffer(8, 0, 0, 0, 0);
+    }
+
+    return CHAIN_CALLBACK_RESULT_CONTINUE;
+}
+
+ChainCallbackResult Supervisor::OnDraw3(Supervisor *s)
+{
+    int i;
+
+    for (i = 0; i < ARRAY_SIZE(g_SupervisorLoadingVms); i++)
+    {
+        g_SupervisorLoadingVms[i].pos += g_SupervisorLoadingVms[i].pos2;
+
+        g_AnmManager->Draw2D(&g_SupervisorLoadingVms[i]);
+
+        g_SupervisorLoadingVms[i].pos -= g_SupervisorLoadingVms[i].pos2;
+    }
+
+    if (s->unk294 != 0)
+    {
+        return CHAIN_CALLBACK_RESULT_CONTINUE;
+    }
+
+    return CHAIN_CALLBACK_RESULT_CONTINUE;
+}
+
 #pragma var_order(elem, result, supervisor)
 ZunResult Supervisor::RegisterChain()
 {
