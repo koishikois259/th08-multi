@@ -16,15 +16,10 @@ th08::Supervisor::DeleteCriticalSections
 th08::Supervisor::TakeSnapshot
 th08::Supervisor::DeletedCallback
 th08::Supervisor::DrawFpsCounter
-th08::Supervisor::OnDraw2
-th08::Supervisor::OnDraw3
 th08::Supervisor::VerifyExeIntegrity
 th08::ReplayManager::SaveReplay
 th08::ResultScreen::RegisterChain
 th08::ScreenEffect::SetViewport
 th08::AnmManager::CaptureToSurface
 th08::AnmManager::CaptureToTexture
-th08::AnmManager::ClearVertexBuffer
-th08::AnmManager::FlushVertexBuffer
-th08::AnmManager::ExecuteScript
 th08::Title::RegisterChain

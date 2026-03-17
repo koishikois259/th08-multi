@@ -105,7 +105,7 @@ struct SupervisorFlags
 };
 
 /* This forward declaration is to prevent including AnmManager.hpp */
-struct AnmFileDesc;
+struct AnmLoaded;
 
 struct Supervisor
 {
@@ -254,8 +254,8 @@ struct Supervisor
     float lagNumerator;
     float lagDenominator;
     u32 unk198;
-    AnmFileDesc *textAnm;
-    AnmFileDesc *loadingAnm;
+    AnmLoaded *textAnm;
+    AnmLoaded *loadingAnm;
     SupervisorFlags flags;
     DWORD totalPlayTime;
     DWORD systemTime;
@@ -325,32 +325,37 @@ struct ZunTimer
         this->Decrement(1);
     }
 
-    void operator+=(int value)
+    ZunBool operator==(int value)
+    {
+        return this->current == value;
+    }
+
+    ZunBool operator+=(int value)
     {
         this->Increment(value);
     }
 
-    void operator-=(int value)
+    ZunBool operator-=(int value)
     {
         this->Decrement(value);
     }
 
-    bool operator<(int value)
+    ZunBool operator<(int value)
     {
         return this->current < value;
     }
 
-    bool operator<=(int value)
+    ZunBool operator<=(int value)
     {
         return this->current <= value;
     }
 
-    bool operator>(int value)
+    ZunBool operator>(int value)
     {
         return this->current > value;
     }
 
-    bool operator>=(int value)
+    ZunBool operator>=(int value)
     {
         return this->current >= value;
     }

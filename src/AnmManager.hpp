@@ -23,8 +23,7 @@ struct VertexDiffuseXyzrhw
 
 struct VertexTex1DiffuseXyzrhw
 {
-    D3DXVECTOR3 pos;
-    f32 w;
+    D3DXVECTOR4 pos;
     D3DCOLOR diffuse;
     D3DXVECTOR2 textureUV;
 };
@@ -45,7 +44,9 @@ C_ASSERT(sizeof(ZunImageInfo) == 0x14);
 
 enum AnmBlendMode
 {
-    AnmBlendMode_Unset = -1
+    AnmBlendMode_Unset = -1,
+    AnmBlendMode_Normal,
+    AnmBlendMode_Additive
 };
 
 enum AnmColorOp
@@ -66,6 +67,138 @@ enum AnmCameraMode
 enum AnmZWriteMode
 {
     AnmZWriteMode_Unset = -1
+};
+
+enum AnmVariable
+{
+    AnmVariable_I0 = 10000,
+    AnmVariable_I1,
+    AnmVariable_I2,
+    AnmVariable_I3,
+    AnmVariable_F0,
+    AnmVariable_F1,
+    AnmVariable_F2,
+    AnmVariable_F3,
+    AnmVariable_IC0,
+    AnmVariable_IC1,
+};
+
+enum AnmInterp
+{
+    AnmInterp_Pos,
+    AnmInterp_RGB1,
+    AnmInterp_Alpha1,
+    AnmInterp_Rotate,
+    AnmInterp_Scale,
+    AnmInterp_RGB2,
+    AnmInterp_Alpha2,
+    AnmInterp_Last
+};
+
+enum AnmInterpMode
+{
+    AnmInterpMode_Linear = 0,
+    AnmInterpMode_EaseIn = 1,
+    AnmInterpMode_EaseInCubic = 2,
+    AnmInterpMode_EaseInQuartic = 3,
+    AnmInterpMode_EaseOut = 4,
+    AnmInterpMode_EaseOutCubic = 5,
+    AnmInterpMode_EaseOutQuartic = 6
+};
+
+enum AnmOpcode
+{
+    AnmOpcode_EndOfScript = -1,
+    AnmOpcode_Nop = 0,
+    AnmOpcode_Delete = 1,
+    AnmOpcode_Static = 2,
+    AnmOpcode_Sprite = 3,
+    AnmOpcode_Jmp = 4,
+    AnmOpcode_JmpDec = 5,
+    AnmOpcode_Pos = 6,
+    AnmOpcode_Scale = 7,
+    AnmOpcode_Alpha = 8,
+    AnmOpcode_Color = 9,
+    AnmOpcode_FlipX = 10,
+    AnmOpcode_FlipY = 11,
+    AnmOpcode_Rotate = 12,
+    AnmOpcode_AngularVelocity = 13,
+    AnmOpcode_ScaleGrowth = 14,
+    AnmOpcode_AlphaTimeLinear = 15,
+    AnmOpcode_AdditiveBlendMode = 16,
+    AnmOpcode_PosTimeLinear = 17,
+    AnmOpcode_PosTimeDecel = 18,
+    AnmOpcode_PosTimeDecel2 = 19,
+    AnmOpcode_Stop = 20,
+    AnmOpcode_InterruptLabel = 21,
+    AnmOpcode_AnchorTopLeft = 22,
+    AnmOpcode_StopHide = 23,
+    AnmOpcode_PosMode = 24,
+    AnmOpcode_Ins25 = 25,
+    AnmOpcode_AddU = 26,
+    AnmOpcode_AddV = 27,
+    AnmOpcode_Visible = 28,
+    AnmOpcode_ScaleTimeLinear = 29,
+    AnmOpcode_ZWriteDisable = 30,
+    AnmOpcode_Ins31 = 31,
+    AnmOpcode_PosTime = 32,
+    AnmOpcode_ColorTime = 33,
+    AnmOpcode_AlphaTime = 34,
+    AnmOpcode_RotateTime = 35,
+    AnmOpcode_ScaleTime = 36,
+    AnmOpcode_ISet = 37,
+    AnmOpcode_FSet = 38,
+    AnmOpcode_IAdd = 39,
+    AnmOpcode_FAdd = 40,
+    AnmOpcode_ISub = 41,
+    AnmOpcode_FSub = 42,
+    AnmOpcode_IMul = 43,
+    AnmOpcode_FMul = 44,
+    AnmOpcode_IDiv = 45,
+    AnmOpcode_FDiv = 46,
+    AnmOpcode_IMod = 47,
+    AnmOpcode_FMod = 48,
+    AnmOpcode_ISetAdd = 49,
+    AnmOpcode_FSetAdd = 50,
+    AnmOpcode_ISetSub = 51,
+    AnmOpcode_FSetSub = 52,
+    AnmOpcode_ISetMul = 53,
+    AnmOpcode_FSetMul = 54,
+    AnmOpcode_ISetDiv = 55,
+    AnmOpcode_FSetDiv = 56,
+    AnmOpcode_ISetMod = 57,
+    AnmOpcode_FSetMod = 58,
+    AnmOpcode_ISetRand = 59,
+    AnmOpcode_FSetRand = 60,
+    AnmOpcode_FSin = 61,
+    AnmOpcode_FCos = 62,
+    AnmOpcode_FTan = 63,
+    AnmOpcode_FAcos = 64,
+    AnmOpcode_FAtan = 65,
+    AnmOpcode_NormalizeAngle = 66,
+    AnmOpcode_IJmpEq = 67,
+    AnmOpcode_FJmpEq = 68,
+    AnmOpcode_IJmpNeq = 69,
+    AnmOpcode_FJmpNeq = 70,
+    AnmOpcode_IJmpLess = 71,
+    AnmOpcode_FJmpLess = 72,
+    AnmOpcode_IJmpLessOrEq = 73,
+    AnmOpcode_FJmpLessOrEq = 74,
+    AnmOpcode_IJmpGreater = 75,
+    AnmOpcode_FJmpGreater = 76,
+    AnmOpcode_IJmpGreaterOrEq = 77,
+    AnmOpcode_FJmpGreaterOrEq = 78,
+    AnmOpcode_Wait = 79,
+    AnmOpcode_UScroll = 80,
+    AnmOpcode_VScroll = 81,
+    AnmOpcode_BlendMode = 82,
+    AnmOpcode_Ins83 = 83,
+    AnmOpcode_Color2 = 84,
+    AnmOpcode_Alpha2 = 85,
+    AnmOpcode_Color2Time = 86,
+    AnmOpcode_Alpha2Time = 87,
+    AnmOpcode_Ins88 = 88,
+    AnmOpcode_ReturnFromInterrupt = 89
 };
 
 struct AnmEntry
@@ -129,49 +262,19 @@ struct AnmLoadedSprite
 
 C_ASSERT(sizeof(AnmLoadedSprite) == 0x44);
 
-struct AnmInterpData
-{
-    D3DXVECTOR3 posInitial;
-    D3DXVECTOR3 posFinal;
-    D3DXVECTOR3 rotateInitial;
-    D3DXVECTOR3 rotateFinal;
-    D3DXVECTOR2 scaleInitial;
-    D3DXVECTOR2 scaleFinal;
-    D3DCOLOR color1Initial;
-    D3DCOLOR color1Final;
-    D3DCOLOR color2Initial;
-    D3DCOLOR color2Final;
-};
-
-C_ASSERT(sizeof(AnmInterpData) == 0x50);
-
-struct AnmInterpTimers
-{
-    ZunTimer pos;
-    ZunTimer rgb1;
-    ZunTimer alpha1;
-    ZunTimer rotate;
-    ZunTimer scale;
-    ZunTimer rgb2;
-    ZunTimer alpha2;
-};
-
-C_ASSERT(sizeof(AnmInterpTimers) == 0x54);
-
-struct AnmInterpModes
-{
-    u8 pos;
-    u8 rgb1;
-    u8 alpha1;
-    u8 rotate;
-    u8 scale;
-    u8 rgb2;
-    u8 alpha2;
-    u8 unk0x7;
-};
+#define ANM_MAX_ARGS 10
 
 struct AnmRawInstr
 {
+    i16 opcode;
+    u16 instructionSize;
+    i16 time;
+    u16 varMask;
+    union {
+        i32 intArgs[ANM_MAX_ARGS];
+        f32 floatArgs[ANM_MAX_ARGS];
+        u8 byteArgs[ANM_MAX_ARGS * sizeof(i32)];
+    };
 };
 
 struct AnmPrefix
@@ -184,24 +287,52 @@ struct AnmPrefix
     D3DXVECTOR2 uvScrollPos;
     ZunTimer currentTimeInScript;
     ZunTimer waitTimer;
-    AnmInterpTimers interpCurrentTImes;
-    AnmInterpTimers interpEndTimes;
-    AnmInterpModes interpModes;
-    i32 intVars[4];
-    f32 floatVars[4];
-    i32 intVar8;
-    i32 intVar9;
+    ZunTimer interpCurrentTimers[AnmInterp_Last];
+    ZunTimer interpEndTimers[AnmInterp_Last];
+    u8 interpModes[AnmInterp_Last];
+    i32 intVar0;
+    i32 intVar1;
+    i32 intVar2;
+    i32 intVar3;
+    f32 floatVar0;
+    f32 floatVar1;
+    f32 floatVar2;
+    f32 floatVar3;
+    i32 counterVar0;
+    i32 counterVar1;
     D3DXVECTOR2 uvScrollVel;
     D3DXMATRIX matrix1;
     D3DXMATRIX matrix2;
     D3DXMATRIX matrix3;
     ZunColor color1;
     ZunColor color2;
-    u32 flags;
+    union {
+        u32 flags;
+        struct
+        {
+            u32 visible : 1;
+            u32 flag1 : 1;
+            u32 updateRotation : 1;
+            u32 updateScale : 1;
+            u32 blendMode : 2;
+            u32 flag6 : 1;
+            u32 flag7 : 1;
+            u32 usePosOffset : 1;
+            u32 flip : 2;
+            u32 anchor : 2;
+            u32 zWriteDisabled : 1;
+            u32 stopped : 1;
+            u32 flag15 : 1;
+            u32 flag16 : 1;
+            u32 flag17 : 1;
+            u32 flag18 : 1;
+            u32 flag19 : 1;
+        };
+    };
     i16 type;
     i16 pendingInterrupt;
     i32 playerBulletHitAnimationType;
-    AnmFileDesc *anmFile;
+    AnmLoaded *anmFile;
 };
 
 C_ASSERT(sizeof(AnmPrefix) == 0x208);
@@ -219,7 +350,18 @@ struct AnmVm
     AnmLoadedSprite *loadedSprite;
     ZunTimer interruptReturnTime;
     AnmRawInstr *interruptReturnInstruction;
-    AnmInterpData interpData;
+
+    D3DXVECTOR3 posInitial;
+    D3DXVECTOR3 posFinal;
+    D3DXVECTOR3 rotateInitial;
+    D3DXVECTOR3 rotateFinal;
+    D3DXVECTOR2 scaleInitial;
+    D3DXVECTOR2 scaleFinal;
+    ZunColor color1Initial;
+    ZunColor color1Final;
+    ZunColor color2Initial;
+    ZunColor color2Final;
+
     D3DXVECTOR3 pos2;
     i32 timeOfLastSpriteSet;
     u8 fontWidth;
@@ -232,17 +374,30 @@ struct AnmVm
         this->activeSpriteIndex = -1;
     }
 
+    ZunBool IsVisible()
+    {
+        return this->prefix.visible;
+    }
+
+    f32 GetFloatVar(f32 varId);
+    i32 GetIntVar(i32 varId);
+    f32 *GetFloatVarPtr(f32 *varPtr, u16 varMask, u32 variableNumber);
+    i32 *GetIntVarPtr(i32 *varPtr, u16 varMask, u32 variableNumber);
+
     void Initialize()
     {
         this->prefix.scale.x = 1.0f;
         this->prefix.scale.y = 1.0f;
-        this->prefix.color1 = COLOR_WHITE;
+        this->prefix.color1.d3dColor = COLOR_WHITE;
+        D3DXMatrixIdentity(&this->prefix.matrix1);
+        this->prefix.flags |= 7;
+        this->prefix.currentTimeInScript.Initialize();
     }
 };
 
 C_ASSERT(sizeof(AnmVm) == 0x2a4);
 
-struct AnmFileDesc
+struct AnmLoaded
 {
     i32 anmIdx;
     AnmRawEntry *rawData;
@@ -267,30 +422,11 @@ struct AnmFileDesc
         this->SetAndExecuteScript(vm, this->scripts[scriptIdx]);
     }
 
-    void SetAndExecuteScript(AnmVm *vm, AnmRawInstr *beginningOfScript)
-    {
-        if (beginningOfScript == NULL || (this->numberEntriesToBeLoaded != 0))
-        {
-            memset(vm, 0, sizeof(AnmVm));
-        }
-        else
-        {
-            vm->Initialize();
-            vm->prefix.anmFile = this;
-            vm->prefix.flags &= 0xfffff9ff;
-            vm->beginningOfScript = beginningOfScript;
-            vm->currentInstruction = vm->beginningOfScript;
-            vm->prefix.currentTimeInScript.SetCurrent(0);
-            vm->prefix.flags &= 0xfffffffe;
-/* TODO: circular dependency! */
-#if 0
-            g_AnmManager->ExecuteScript(vm);
-#endif
-        }
-    }
+    ZunResult SetSprite(AnmVm *vm, int spriteIdx);
+    void SetAndExecuteScript(AnmVm *vm, AnmRawInstr *beginningOfScript);
 };
 
-C_ASSERT(sizeof(AnmFileDesc) == 0x1c);
+C_ASSERT(sizeof(AnmLoaded) == 0x1c);
 
 struct AnmRawSprite
 {
@@ -314,18 +450,26 @@ struct AnmManager
     ~AnmManager()
     {
     }
-    u32 ExecuteScript(AnmVm *sprite);
+    ZunBool ExecuteScript(AnmVm *vm);
     void ExecuteScriptOnVmArray(AnmVm *sprites, int count);
+    void SetRenderStateForVm(AnmVm *vm);
+    ZunResult DrawInner(AnmVm *vm, i32 flags);
+    ZunResult AddSpriteToDrawBuffer(VertexTex1DiffuseXyzrhw *vertices);
+    ZunResult DrawNoRotation(AnmVm *vm);
+    void TranslateRotation(VertexTex1DiffuseXyzrhw *vertex, float x, float y, float sine, float cosine, float xOffset,
+                           float yOffset);
+    ZunResult Draw2D(AnmVm *vm);
+    ZunResult DrawNoRotationNoRound(AnmVm *vm);
     ZunResult CreateTextureFromFile(IDirect3DTexture8 **outTexture, i32 format, i32 colorKey);
     ZunResult CreateTextureFromAnm(IDirect3DTexture8 **outTexture, AnmTextureHeader *textureData, i32 format);
     ZunResult CreateEmptyTexture(IDirect3DTexture8 **outTexture, i32 width, i32 height, i32 format);
-    AnmFileDesc *LoadAnm(i32 anmIdx, const char *filename);
-    AnmFileDesc *ReadAnmEntries(i32 anmIdx, const char *filename);
-    AnmFileDesc *PreloadAnm(i32 anmIdx, const char *filename);
-    i32 LoadExternalTextureData(AnmFileDesc *fileDesc, i32 entryNumber, i32 *sprites, i32 *scripts,
+    AnmLoaded *LoadAnm(i32 anmIdx, const char *filename);
+    AnmLoaded *ReadAnmEntries(i32 anmIdx, const char *filename);
+    AnmLoaded *PreloadAnm(i32 anmIdx, const char *filename);
+    i32 LoadExternalTextureData(AnmLoaded *anmLoaded, i32 entryNumber, i32 *sprites, i32 *scripts,
                                 AnmRawEntry *rawEntry);
-    AnmFileDesc *PostloadAnmEntry(AnmFileDesc *anm);
-    BOOL LoadTextureData(AnmFileDesc *fileDesc, i32 entryNumber, i32 sprites, i32 scripts, AnmRawEntry *rawEntry);
+    AnmLoaded *PostloadAnmEntry(AnmLoaded *anm);
+    BOOL LoadTextureData(AnmLoaded *anmLoaded, i32 entryNumber, i32 sprites, i32 scripts, AnmRawEntry *rawEntry);
     ZunResult ServicePreloadedAnims();
     void ReleaseAnm(i32 anmIdx);
     void ReleaseAnmEntry(AnmEntry *anmEntry);
@@ -368,12 +512,12 @@ struct AnmManager
         this->disableZWrite = AnmZWriteMode_Unset;
     }
 
-    void ResetSomeStuff()
+    void ResetFrameDebugInfo()
     {
+        this->scriptsExecutedThisFrame = 0;
+        this->renderStateChangesThisFrame = 0;
+        this->unk0xc = 0;
         this->flushesThisFrame = 0;
-        unk0x14 = 0;
-        unk0xc = 0;
-        unk0x18 = 0;
     }
 
     void ReleaseSurfaces()
@@ -412,7 +556,7 @@ struct AnmManager
     void ResetMoreStuff()
     {
         unk0x4 = 0;
-        this->color = 0x80808080;
+        this->color.d3dColor = 0x80808080;
     }
 
     void CaptureToTexture(i32 captureAnmIdx, i32 srcX, i32 srcY, i32 srcW, i32 srcH, i32 dstX, i32 dstY, i32 dstW,
@@ -423,15 +567,15 @@ struct AnmManager
     void ClearVertexBuffer();
     void FlushVertexBuffer();
 
-    D3DCOLOR color;
+    ZunColor color;
     i32 unk0x4;
     i32 captureSurfaceIdx;
     u32 unk0xc;
+    u32 scriptsExecutedThisFrame;
+    u32 renderStateChangesThisFrame;
     u32 flushesThisFrame;
-    u32 unk0x14;
-    u32 unk0x18;
-    D3DXVECTOR2 unk0x1c;
-    AnmFileDesc anmFiles[256];
+    D3DXVECTOR2 screenShakeOffset;
+    AnmLoaded anmFiles[256];
     D3DXVECTOR3 unk0x1c24;
     unknown_fields(0x1c30, 0x34);
     AnmVm unk0x1c64;
@@ -445,7 +589,7 @@ struct AnmManager
 
     unknown_fields(0x24b8, 0x4);
 
-    IDirect3DBaseTexture8 *currentTexture;
+    IDirect3DTexture8 *currentTexture;
     u8 currentBlendMode;
     u8 currentColorOp;
     u8 currentVertexShader;

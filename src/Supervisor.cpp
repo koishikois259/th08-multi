@@ -31,6 +31,45 @@ Supervisor::Supervisor()
     this->flags.unk8 = true;
 }
 
+ChainCallbackResult Supervisor::OnDraw2(Supervisor *s)
+{
+    if (s->loadingVmsHaveBeenSetup == 0)
+    {
+        /* ZUN bloat: no need to check because ReleaseSurface does that already. */
+        if (g_AnmManager->surfaces[8] != NULL)
+        {
+            g_AnmManager->ReleaseSurface(8);
+        }
+    }
+    else
+    {
+        g_AnmManager->CopySurfaceToBackbuffer(8, 0, 0, 0, 0);
+    }
+
+    return CHAIN_CALLBACK_RESULT_CONTINUE;
+}
+
+ChainCallbackResult Supervisor::OnDraw3(Supervisor *s)
+{
+    int i;
+
+    for (i = 0; i < ARRAY_SIZE(g_SupervisorLoadingVms); i++)
+    {
+        g_SupervisorLoadingVms[i].pos += g_SupervisorLoadingVms[i].pos2;
+
+        g_AnmManager->Draw2D(&g_SupervisorLoadingVms[i]);
+
+        g_SupervisorLoadingVms[i].pos -= g_SupervisorLoadingVms[i].pos2;
+    }
+
+    if (s->unk294 != 0)
+    {
+        return CHAIN_CALLBACK_RESULT_CONTINUE;
+    }
+
+    return CHAIN_CALLBACK_RESULT_CONTINUE;
+}
+
 #pragma var_order(elem, result, supervisor)
 ZunResult Supervisor::RegisterChain()
 {
@@ -362,10 +401,10 @@ ChainCallbackResult Supervisor::OnUpdate(Supervisor *s)
     g_AnmManager->ClearBlendMode();
     g_AnmManager->ClearZWrite();
 
-    g_AnmManager->ResetSomeStuff();
+    g_AnmManager->ResetFrameDebugInfo();
     g_AnmManager->ClearCameraSettings();
     g_AnmManager->ResetMoreStuff();
-    g_AnmManager->unk0x1c.x = g_AnmManager->unk0x1c.y = 0.0f;
+    g_AnmManager->screenShakeOffset.x = g_AnmManager->screenShakeOffset.y = 0.0f;
 
     g_AnmManager->ExecuteScriptOnVmArray(g_SupervisorLoadingVms, ARRAY_SIZE(g_SupervisorLoadingVms));
 
@@ -632,6 +671,85 @@ ChainCallbackResult Supervisor::OnUpdate(Supervisor *s)
     }
 
     return CHAIN_CALLBACK_RESULT_CONTINUE;
+}
+
+void ZunTimer::Increment(int value)
+{
+    if (g_Supervisor.flags.unk5 != 0)
+    {
+        this->current++;
+        this->subFrame = 0.0f;
+        this->previous = -999.0f;
+    }
+
+    if (g_Supervisor.framerateMultiplier > 0.99f)
+    {
+        this->current += value;
+        return;
+    }
+
+    if (value < 0)
+    {
+        this->Decrement(-value);
+        return;
+    }
+
+    this->previous = this->current;
+    this->subFrame += value * g_Supervisor.framerateMultiplier;
+
+    while (this->subFrame >= 1.0f)
+    {
+        this->current++;
+        this->subFrame -= 1.0f;
+    }
+}
+
+void ZunTimer::Decrement(int value)
+{
+    if (g_Supervisor.flags.unk5 != 0)
+    {
+        this->current--;
+        this->subFrame = 0.0f;
+        this->previous = -999.0f;
+    }
+
+    if (g_Supervisor.framerateMultiplier > 0.99f)
+    {
+        this->current -= value;
+        return;
+    }
+
+    if (value < 0)
+    {
+        this->Increment(-value);
+        return;
+    }
+
+    this->previous = this->current;
+    this->subFrame -= value * g_Supervisor.framerateMultiplier;
+
+    while (this->subFrame < 0.0f)
+    {
+        this->current--;
+        this->subFrame += 1.0f;
+    }
+}
+
+void Supervisor::TickTimer(int *frames, float *subframes)
+{
+    if (this->framerateMultiplier <= 0.99f)
+    {
+        *subframes += this->framerateMultiplier;
+        if (*subframes >= 1.0f)
+        {
+            *frames = *frames + 1;
+            *subframes -= 1.0f;
+        }
+    }
+    else
+    {
+        *frames = *frames + 1;
+    }
 }
 
 #pragma var_order(fileSize, configFileBuffer, bgmHandle, bytesRead, bgmBuffer, bgmHandle2, bytesRead2, bgmBuffer2)

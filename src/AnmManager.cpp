@@ -1,15 +1,899 @@
 #include "AnmManager.hpp"
+#include "ZunMath.hpp"
 #include "i18n.hpp"
 #include "utils.hpp"
 
 namespace th08
 {
 DIFFABLE_STATIC(AnmManager *, g_AnmManager);
+DIFFABLE_STATIC_ARRAY(VertexTex1DiffuseXyzrhw, 4, g_QuadVertices);
 
 D3DFORMAT g_TextureFormatD3D8Mapping[] = {D3DFMT_UNKNOWN, D3DFMT_A8R8G8B8, D3DFMT_A1R5G5B5,
                                           D3DFMT_R5G6B5,  D3DFMT_R8G8B8,   D3DFMT_A4R4G4B4};
 
 u32 g_TextureFormatBytesPerPixel[] = {4, 4, 2, 2, 3, 2};
+
+ZunResult AnmLoaded::SetSprite(AnmVm *vm, int spriteIdx)
+{
+    if (this->rawData == NULL || this->numberEntriesToBeLoaded != 0)
+    {
+        return ZUN_ERROR;
+    }
+
+    vm->prefix.anmFile = this;
+    vm->activeSpriteIndex = spriteIdx;
+    vm->loadedSprite = &this->sprites[spriteIdx];
+    vm->prefix.spriteSize.x = vm->loadedSprite->widthPx;
+    vm->prefix.spriteSize.y = vm->loadedSprite->heightPx;
+
+    D3DXMatrixIdentity(&vm->prefix.matrix1);
+    D3DXMatrixIdentity(&vm->prefix.matrix3);
+
+    /* ZUN bloat: what does this do? */
+    if (vm->loadedSprite->scaleFactor.x < 1.0f)
+    {
+        spriteIdx = 0;
+    }
+
+    vm->prefix.matrix1.m[0][0] = vm->prefix.spriteSize.x / 256.0f;
+    vm->prefix.matrix1.m[1][1] = vm->prefix.spriteSize.y / 256.0f;
+
+    vm->prefix.matrix3.m[0][0] = (vm->prefix.spriteSize.x / vm->loadedSprite->width) * vm->loadedSprite->scaleFactor.x;
+    vm->prefix.matrix3.m[1][1] = (vm->prefix.spriteSize.y / vm->loadedSprite->height) * vm->loadedSprite->scaleFactor.y;
+
+    vm->prefix.matrix2 = vm->prefix.matrix1;
+
+    return ZUN_SUCCESS;
+}
+
+void AnmLoaded::SetAndExecuteScript(AnmVm *vm, AnmRawInstr *beginningOfScript)
+{
+    if (beginningOfScript == NULL || (this->numberEntriesToBeLoaded != 0))
+    {
+        memset(vm, 0, sizeof(AnmVm));
+    }
+    else
+    {
+        vm->Initialize();
+        vm->anmFileIndex = this->anmIdx;
+        vm->prefix.anmFile = this;
+        vm->prefix.flags &= 0xfffff9ff;
+        vm->beginningOfScript = beginningOfScript;
+        vm->currentInstruction = vm->beginningOfScript;
+        vm->prefix.currentTimeInScript = 0;
+        vm->prefix.flags &= 0xfffffffe;
+        g_AnmManager->ExecuteScript(vm);
+        g_AnmManager->unk0xc++;
+    }
+}
+
+f32 AnmVm::GetFloatVar(f32 varId)
+{
+    switch ((int)varId)
+    {
+    case AnmVariable_I0:
+        return this->prefix.intVar0;
+    case AnmVariable_I1:
+        return this->prefix.intVar1;
+    case AnmVariable_I2:
+        return this->prefix.intVar2;
+    case AnmVariable_I3:
+        return this->prefix.intVar3;
+    case AnmVariable_F0:
+        return this->prefix.floatVar0;
+    case AnmVariable_F1:
+        return this->prefix.floatVar1;
+    case AnmVariable_F2:
+        return this->prefix.floatVar2;
+    case AnmVariable_F3:
+        return this->prefix.floatVar3;
+    case AnmVariable_IC0:
+        return this->prefix.counterVar0;
+    case AnmVariable_IC1:
+        return this->prefix.counterVar1;
+    default:
+        return varId;
+    }
+}
+
+i32 AnmVm::GetIntVar(i32 varId)
+{
+    switch (varId)
+    {
+    case AnmVariable_I0:
+        return this->prefix.intVar0;
+    case AnmVariable_I1:
+        return this->prefix.intVar1;
+    case AnmVariable_I2:
+        return this->prefix.intVar2;
+    case AnmVariable_I3:
+        return this->prefix.intVar3;
+    case AnmVariable_F0:
+        return this->prefix.floatVar0;
+    case AnmVariable_F1:
+        return this->prefix.floatVar1;
+    case AnmVariable_F2:
+        return this->prefix.floatVar2;
+    case AnmVariable_F3:
+        return this->prefix.floatVar3;
+    case AnmVariable_IC0:
+        return this->prefix.counterVar0;
+    case AnmVariable_IC1:
+        return this->prefix.counterVar1;
+    default:
+        return varId;
+    }
+}
+
+f32 *AnmVm::GetFloatVarPtr(f32 *varPtr, u16 varMask, u32 variableNumber)
+{
+    if ((varMask & (1 << variableNumber)) == 0)
+    {
+        return varPtr;
+    }
+
+    switch ((int)*varPtr)
+    {
+    case AnmVariable_F0:
+        return &this->prefix.floatVar0;
+    case AnmVariable_F1:
+        return &this->prefix.floatVar1;
+    case AnmVariable_F2:
+        return &this->prefix.floatVar2;
+    case AnmVariable_F3:
+        return &this->prefix.floatVar3;
+    }
+
+    return varPtr;
+}
+
+i32 *AnmVm::GetIntVarPtr(i32 *varPtr, u16 varMask, u32 variableNumber)
+{
+    if ((varMask & (1 << variableNumber)) == 0)
+    {
+        return varPtr;
+    }
+
+    switch (*varPtr)
+    {
+    case AnmVariable_I0:
+        return &this->prefix.intVar0;
+    case AnmVariable_I1:
+        return &this->prefix.intVar1;
+    case AnmVariable_I2:
+        return &this->prefix.intVar2;
+    case AnmVariable_I3:
+        return &this->prefix.intVar3;
+    case AnmVariable_IC0:
+        return &this->prefix.counterVar0;
+    case AnmVariable_IC1:
+        return &this->prefix.counterVar1;
+    }
+
+    return varPtr;
+}
+
+#pragma var_order(instruction, nextInstruction, i, interp)
+ZunBool AnmManager::ExecuteScript(AnmVm *vm)
+{
+    AnmRawInstr *instruction;
+    AnmRawInstr *nextInstruction;
+    int i;
+    float interp;
+
+    if (vm->currentInstruction == NULL)
+    {
+        return TRUE;
+    }
+
+    if (vm->prefix.flag19 != 0)
+    {
+        return FALSE;
+    }
+
+    if (vm->prefix.pendingInterrupt != 0)
+    {
+        goto handleInterrupt;
+    }
+
+    while (instruction = vm->currentInstruction, instruction->time <= (int)vm->prefix.currentTimeInScript)
+    {
+#define GET_INT_VAR(argNumber)                                                                                         \
+    ((instruction->varMask & (1 << argNumber)) ? vm->GetIntVar(instruction->intArgs[argNumber])                        \
+                                               : instruction->intArgs[argNumber])
+#define GET_FLOAT_VAR(argNumber)                                                                                       \
+    ((instruction->varMask & (1 << argNumber)) ? vm->GetFloatVar(instruction->floatArgs[argNumber])                    \
+                                               : instruction->floatArgs[argNumber])
+
+#define GET_INT_VAR_PTR(idx) vm->GetIntVarPtr(&instruction->intArgs[idx], instruction->varMask, idx)
+
+#define GET_FLOAT_VAR_PTR(idx) vm->GetFloatVarPtr(&instruction->floatArgs[idx], instruction->varMask, idx)
+
+        switch (instruction->opcode)
+        {
+        case AnmOpcode_EndOfScript:
+        case AnmOpcode_Delete:
+            vm->prefix.visible = false;
+        case AnmOpcode_Static:
+            vm->currentInstruction = NULL;
+            return TRUE;
+        case AnmOpcode_Sprite:
+            vm->prefix.visible = true;
+
+            vm->prefix.anmFile->SetSprite(vm, GET_INT_VAR(0));
+            vm->timeOfLastSpriteSet = (int)vm->prefix.currentTimeInScript;
+            break;
+        case AnmOpcode_Scale:
+            vm->prefix.scale.x = GET_FLOAT_VAR(0);
+            vm->prefix.scale.y = GET_FLOAT_VAR(1);
+
+            vm->prefix.updateScale = true;
+            break;
+        case AnmOpcode_Alpha:
+            vm->prefix.color1.a = GET_INT_VAR(0);
+            break;
+        case AnmOpcode_Color:
+            vm->prefix.color1.r = GET_INT_VAR(0);
+            vm->prefix.color1.g = GET_INT_VAR(1);
+            vm->prefix.color1.b = GET_INT_VAR(2);
+            break;
+        case AnmOpcode_Alpha2:
+            vm->prefix.color2.a = GET_INT_VAR(0);
+            break;
+        case AnmOpcode_Color2:
+            vm->prefix.color2.r = GET_INT_VAR(0);
+            vm->prefix.color2.g = GET_INT_VAR(1);
+            vm->prefix.color2.b = GET_INT_VAR(2);
+            break;
+        case AnmOpcode_Jmp:
+            vm->prefix.currentTimeInScript = instruction->intArgs[1];
+            vm->currentInstruction = (AnmRawInstr *)(((u8 *)vm->beginningOfScript) + instruction->intArgs[0]);
+            continue;
+        case AnmOpcode_JmpDec:
+            *GET_INT_VAR_PTR(0) -= 1;
+
+            if (GET_INT_VAR(0) > 0)
+            {
+                vm->prefix.currentTimeInScript = instruction->intArgs[2];
+                vm->currentInstruction = (AnmRawInstr *)(((u8 *)vm->beginningOfScript) + instruction->intArgs[1]);
+                continue;
+            }
+            break;
+        case AnmOpcode_FlipX:
+            vm->prefix.flip ^= (1 << 0);
+            vm->prefix.scale.x *= -1.0f;
+            vm->prefix.updateScale = true;
+            break;
+        case AnmOpcode_PosMode:
+            vm->prefix.usePosOffset = instruction->intArgs[0];
+            break;
+        case AnmOpcode_FlipY:
+            vm->prefix.flip ^= (1 << 1);
+            vm->prefix.scale.y *= -1.0f;
+            vm->prefix.updateScale = true;
+            break;
+        case AnmOpcode_Rotate:
+            vm->prefix.rotation.x = GET_FLOAT_VAR(0);
+            vm->prefix.rotation.y = GET_FLOAT_VAR(1);
+            vm->prefix.rotation.z = GET_FLOAT_VAR(2);
+
+            vm->prefix.updateRotation = true;
+            break;
+        case AnmOpcode_AngularVelocity:
+            vm->prefix.angleVel.x = GET_FLOAT_VAR(0);
+            vm->prefix.angleVel.y = GET_FLOAT_VAR(1);
+            vm->prefix.angleVel.z = GET_FLOAT_VAR(2);
+
+            vm->prefix.updateRotation = true;
+            break;
+        case AnmOpcode_ScaleGrowth:
+            vm->prefix.scaleGrowth.x = GET_FLOAT_VAR(0);
+            vm->prefix.scaleGrowth.y = GET_FLOAT_VAR(1);
+            break;
+        case AnmOpcode_ScaleTimeLinear:
+            vm->prefix.interpCurrentTimers[AnmInterp_Scale] = 0;
+
+            vm->prefix.interpEndTimers[AnmInterp_Scale] = GET_INT_VAR(2);
+
+            vm->prefix.interpModes[AnmInterp_Scale] = AnmInterpMode_Linear;
+            vm->scaleInitial = vm->prefix.scale;
+
+            vm->scaleFinal.x = GET_FLOAT_VAR(0);
+            vm->scaleFinal.y = GET_FLOAT_VAR(1);
+            break;
+        case AnmOpcode_AlphaTimeLinear:
+            vm->color1Initial.a = vm->prefix.color1.a;
+            vm->color1Final.a = instruction->intArgs[0];
+
+            vm->prefix.interpCurrentTimers[AnmInterp_Alpha1] = 0;
+            vm->prefix.interpEndTimers[AnmInterp_Alpha1] = GET_INT_VAR(1);
+            vm->prefix.interpModes[AnmInterp_Alpha1] = AnmInterpMode_Linear;
+            break;
+        case AnmOpcode_AdditiveBlendMode:
+            vm->prefix.blendMode = instruction->intArgs[0] != 0;
+            break;
+        case AnmOpcode_BlendMode:
+            vm->prefix.blendMode = instruction->intArgs[0];
+            break;
+        case AnmOpcode_Pos:
+            if (!vm->prefix.usePosOffset)
+            {
+                vm->pos = D3DXVECTOR3(GET_FLOAT_VAR(0), GET_FLOAT_VAR(1), GET_FLOAT_VAR(2));
+            }
+            else
+            {
+                vm->pos2 = D3DXVECTOR3(GET_FLOAT_VAR(0), GET_FLOAT_VAR(1), GET_FLOAT_VAR(2));
+            }
+            break;
+        case AnmOpcode_PosTimeDecel2:
+            vm->prefix.interpModes[AnmInterp_Pos] = AnmInterpMode_EaseOutQuartic;
+            goto posTime;
+        case AnmOpcode_PosTimeDecel:
+            vm->prefix.interpModes[AnmInterp_Pos] = AnmInterpMode_EaseOut;
+            goto posTime;
+        case AnmOpcode_PosTimeLinear:
+            vm->prefix.interpModes[AnmInterp_Pos] = AnmInterpMode_Linear;
+        posTime:
+            if (!vm->prefix.usePosOffset)
+            {
+                vm->posInitial = vm->pos;
+            }
+            else
+            {
+                vm->posInitial = vm->pos2;
+            }
+
+            vm->posFinal = D3DXVECTOR3(GET_FLOAT_VAR(0), GET_FLOAT_VAR(1), GET_FLOAT_VAR(2));
+
+            vm->prefix.interpEndTimers[AnmInterp_Pos] = GET_INT_VAR(3);
+            vm->prefix.interpCurrentTimers[AnmInterp_Pos] = 0;
+            break;
+        case AnmOpcode_Wait:
+            if (vm->prefix.waitTimer == 0)
+            {
+                vm->prefix.waitTimer = GET_INT_VAR(0);
+            }
+            else
+            {
+                vm->prefix.waitTimer--;
+            }
+
+            if (vm->prefix.waitTimer <= 0)
+            {
+                vm->prefix.waitTimer = 0;
+                break;
+            }
+            vm->prefix.currentTimeInScript--;
+            goto stop;
+        case AnmOpcode_StopHide:
+            vm->prefix.visible = false;
+        case AnmOpcode_Stop:
+            if (vm->prefix.pendingInterrupt == 0)
+            {
+                vm->prefix.stopped = true;
+                vm->prefix.currentTimeInScript--;
+                goto stop;
+            }
+
+        handleInterrupt:
+            nextInstruction = NULL;
+            instruction = vm->beginningOfScript;
+            while (!(instruction->opcode == AnmOpcode_InterruptLabel &&
+                     vm->prefix.pendingInterrupt == instruction->intArgs[0]) &&
+                   instruction->opcode != AnmOpcode_EndOfScript)
+            {
+                if (instruction->opcode == AnmOpcode_InterruptLabel && instruction->intArgs[0] == -1)
+                {
+                    nextInstruction = instruction;
+                }
+                instruction = (AnmRawInstr *)((u8 *)instruction + instruction->instructionSize);
+            }
+
+            vm->prefix.pendingInterrupt = 0;
+            vm->prefix.stopped = false;
+
+            if (instruction->opcode != AnmOpcode_InterruptLabel)
+            {
+                if (nextInstruction == NULL)
+                {
+                    vm->prefix.currentTimeInScript--;
+                    goto stop;
+                }
+                instruction = nextInstruction;
+            }
+
+            vm->interruptReturnTime = vm->prefix.currentTimeInScript;
+            vm->interruptReturnInstruction = vm->currentInstruction;
+            instruction = (AnmRawInstr *)((u8 *)instruction + instruction->instructionSize);
+            vm->currentInstruction = instruction;
+            vm->prefix.currentTimeInScript = vm->currentInstruction->time;
+            vm->prefix.visible = true;
+            continue;
+        case AnmOpcode_ReturnFromInterrupt:
+            vm->prefix.currentTimeInScript = vm->interruptReturnTime;
+            vm->currentInstruction = vm->interruptReturnInstruction;
+            continue;
+        case AnmOpcode_Visible:
+            vm->prefix.visible = instruction->intArgs[0];
+            break;
+        case AnmOpcode_AnchorTopLeft:
+            vm->prefix.anchor = 3;
+            break;
+        case AnmOpcode_Ins25:
+            vm->prefix.type = instruction->intArgs[0];
+            break;
+        case AnmOpcode_AddU:
+            vm->prefix.uvScrollPos.x += GET_FLOAT_VAR(0);
+            ;
+            if (vm->prefix.uvScrollPos.x >= 1.0f)
+            {
+                vm->prefix.uvScrollPos.x -= 1.0f;
+            }
+            else
+            {
+                if (vm->prefix.uvScrollPos.x < 0.0f)
+                {
+                    vm->prefix.uvScrollPos.x += 1.0f;
+                }
+            }
+            break;
+        case AnmOpcode_AddV:
+            vm->prefix.uvScrollPos.y += GET_FLOAT_VAR(0);
+            if (vm->prefix.uvScrollPos.y >= 1.0f)
+            {
+                vm->prefix.uvScrollPos.y -= 1.0f;
+            }
+            else
+            {
+                if (vm->prefix.uvScrollPos.y < 0.0f)
+                {
+                    vm->prefix.uvScrollPos.y += 1.0f;
+                }
+            }
+            break;
+        case AnmOpcode_UScroll:
+            vm->prefix.uvScrollVel.x = GET_FLOAT_VAR(0);
+            break;
+        case AnmOpcode_VScroll:
+            vm->prefix.uvScrollVel.y = GET_FLOAT_VAR(0);
+            break;
+        case AnmOpcode_ZWriteDisable:
+            vm->prefix.zWriteDisabled = instruction->intArgs[0];
+            break;
+        case AnmOpcode_Ins31:
+            vm->prefix.flag15 = instruction->intArgs[0];
+            break;
+        case AnmOpcode_PosTime:
+            vm->prefix.interpCurrentTimers[AnmInterp_Pos] = 0;
+            vm->prefix.interpEndTimers[AnmInterp_Pos] = GET_INT_VAR(0);
+            vm->prefix.interpModes[AnmInterp_Pos] = instruction->intArgs[1];
+
+            if (!vm->prefix.usePosOffset)
+            {
+                vm->posInitial = vm->pos;
+            }
+            else
+            {
+                vm->posInitial = vm->pos2;
+            }
+
+            vm->posFinal.x = GET_FLOAT_VAR(2);
+            vm->posFinal.y = GET_FLOAT_VAR(3);
+            vm->posFinal.z = GET_FLOAT_VAR(4);
+            break;
+        case AnmOpcode_ColorTime:
+            vm->prefix.interpCurrentTimers[AnmInterp_RGB1] = 0;
+
+            vm->prefix.interpEndTimers[AnmInterp_RGB1] = GET_INT_VAR(0);
+
+            vm->prefix.interpModes[AnmInterp_RGB1] = instruction->intArgs[1];
+            vm->color1Initial.r = vm->prefix.color1.r;
+            vm->color1Initial.g = vm->prefix.color1.g;
+            vm->color1Initial.b = vm->prefix.color1.b;
+
+            vm->color1Final.r = GET_INT_VAR(2);
+            vm->color1Final.g = GET_INT_VAR(3);
+            vm->color1Final.b = GET_INT_VAR(4);
+            break;
+        case AnmOpcode_AlphaTime:
+            vm->prefix.interpCurrentTimers[AnmInterp_Alpha1] = 0;
+            vm->prefix.interpEndTimers[AnmInterp_Alpha1] = GET_INT_VAR(0);
+            vm->prefix.interpModes[AnmInterp_Alpha1] = instruction->intArgs[1];
+
+            vm->color1Initial.a = vm->prefix.color1.a;
+            vm->color1Final.a = GET_INT_VAR(2);
+            break;
+        case AnmOpcode_Color2Time:
+            vm->prefix.interpCurrentTimers[AnmInterp_RGB2] = 0;
+
+            vm->prefix.interpEndTimers[AnmInterp_RGB2] = GET_INT_VAR(0);
+
+            vm->prefix.interpModes[AnmInterp_RGB2] = instruction->intArgs[1];
+            vm->color2Initial.r = vm->prefix.color2.r;
+            vm->color2Initial.g = vm->prefix.color2.g;
+            vm->color2Initial.b = vm->prefix.color2.b;
+
+            vm->color2Final.r = GET_INT_VAR(2);
+            vm->color2Final.g = GET_INT_VAR(3);
+            vm->color2Final.b = GET_INT_VAR(4);
+            break;
+        case AnmOpcode_Alpha2Time:
+            vm->prefix.interpCurrentTimers[AnmInterp_Alpha2] = 0;
+            vm->prefix.interpEndTimers[AnmInterp_Alpha2] = GET_INT_VAR(0);
+            vm->prefix.interpModes[AnmInterp_Alpha2] = instruction->intArgs[1];
+
+            vm->color2Initial.a = vm->prefix.color2.a;
+            vm->color2Final.a = GET_INT_VAR(2);
+            break;
+        case AnmOpcode_RotateTime:
+            vm->prefix.interpCurrentTimers[AnmInterp_Rotate] = 0;
+
+            vm->prefix.interpEndTimers[AnmInterp_Rotate] = GET_INT_VAR(0);
+
+            vm->prefix.interpModes[AnmInterp_Rotate] = instruction->intArgs[1];
+            vm->rotateInitial = vm->prefix.rotation;
+
+            vm->rotateFinal.x = GET_FLOAT_VAR(2);
+            vm->rotateFinal.y = GET_FLOAT_VAR(3);
+            vm->rotateFinal.z = GET_FLOAT_VAR(4);
+
+            vm->prefix.updateRotation = true;
+            break;
+        case AnmOpcode_ScaleTime:
+            vm->prefix.interpCurrentTimers[AnmInterp_Scale] = 0;
+            vm->prefix.interpEndTimers[AnmInterp_Scale] = GET_INT_VAR(0);
+
+            vm->prefix.interpModes[AnmInterp_Scale] = instruction->intArgs[1];
+            vm->scaleInitial = vm->prefix.scale;
+
+            vm->scaleFinal.x = GET_FLOAT_VAR(2);
+            vm->scaleFinal.y = GET_FLOAT_VAR(3);
+            vm->prefix.updateScale = true;
+            break;
+        case AnmOpcode_Ins83:
+            vm->prefix.playerBulletHitAnimationType = instruction->intArgs[0];
+            break;
+        case AnmOpcode_ISet:
+            *GET_INT_VAR_PTR(0) = GET_INT_VAR(1);
+            break;
+        case AnmOpcode_FSet:
+            *GET_FLOAT_VAR_PTR(0) = GET_FLOAT_VAR(1);
+            break;
+        case AnmOpcode_ISetAdd:
+            *GET_INT_VAR_PTR(0) = GET_INT_VAR(1) + GET_INT_VAR(2);
+            break;
+        case AnmOpcode_FSetAdd:
+            *GET_FLOAT_VAR_PTR(0) = GET_FLOAT_VAR(1) + GET_FLOAT_VAR(2);
+            break;
+        case AnmOpcode_ISetSub:
+            *GET_INT_VAR_PTR(0) = GET_INT_VAR(1) - GET_INT_VAR(2);
+            break;
+        case AnmOpcode_FSetSub:
+            *GET_FLOAT_VAR_PTR(0) = GET_FLOAT_VAR(1) - GET_FLOAT_VAR(2);
+            break;
+        case AnmOpcode_ISetMul:
+            *GET_INT_VAR_PTR(0) = GET_INT_VAR(1) * GET_INT_VAR(2);
+            break;
+        case AnmOpcode_FSetMul:
+            *GET_FLOAT_VAR_PTR(0) = GET_FLOAT_VAR(1) * GET_FLOAT_VAR(2);
+            break;
+        case AnmOpcode_ISetDiv:
+            *GET_INT_VAR_PTR(0) = GET_INT_VAR(1) / GET_INT_VAR(2);
+            break;
+        case AnmOpcode_FSetDiv:
+            *GET_FLOAT_VAR_PTR(0) = GET_FLOAT_VAR(1) / GET_FLOAT_VAR(2);
+            break;
+        case AnmOpcode_ISetMod:
+            *GET_INT_VAR_PTR(0) = GET_INT_VAR(1) % GET_INT_VAR(2);
+            break;
+        case AnmOpcode_FSetMod:
+            *GET_FLOAT_VAR_PTR(0) = fmodf(GET_FLOAT_VAR(1), GET_FLOAT_VAR(2));
+            break;
+        case AnmOpcode_IAdd:
+            *GET_INT_VAR_PTR(0) += GET_INT_VAR(1);
+            break;
+        case AnmOpcode_FAdd:
+            *GET_FLOAT_VAR_PTR(0) += GET_FLOAT_VAR(1);
+            break;
+        case AnmOpcode_ISub:
+            *GET_INT_VAR_PTR(0) -= GET_INT_VAR(1);
+            break;
+        case AnmOpcode_FSub:
+            *GET_FLOAT_VAR_PTR(0) -= GET_FLOAT_VAR(1);
+            break;
+        case AnmOpcode_IMul:
+            *GET_INT_VAR_PTR(0) *= GET_INT_VAR(1);
+            break;
+        case AnmOpcode_FMul:
+            *GET_FLOAT_VAR_PTR(0) *= GET_FLOAT_VAR(1);
+            break;
+        case AnmOpcode_IDiv:
+            *GET_INT_VAR_PTR(0) /= GET_INT_VAR(1);
+            break;
+        case AnmOpcode_FDiv:
+            *GET_FLOAT_VAR_PTR(0) /= GET_FLOAT_VAR(1);
+            break;
+        case AnmOpcode_IMod:
+            *GET_INT_VAR_PTR(0) %= GET_INT_VAR(1);
+            break;
+        case AnmOpcode_FMod:
+            *GET_FLOAT_VAR_PTR(0) = fmodf(GET_FLOAT_VAR(0), GET_FLOAT_VAR(1));
+            break;
+        case AnmOpcode_ISetRand:
+            *GET_INT_VAR_PTR(0) = g_Rng.GetRandomU32InRange(GET_INT_VAR(1));
+            break;
+        case AnmOpcode_FSetRand:
+            *GET_FLOAT_VAR_PTR(0) = g_Rng.GetRandomF32InRange(GET_FLOAT_VAR(1));
+            break;
+        case AnmOpcode_FSin:
+            *GET_FLOAT_VAR_PTR(0) = sinf(GET_FLOAT_VAR(1));
+            break;
+        case AnmOpcode_FCos:
+            *GET_FLOAT_VAR_PTR(0) = cosf(GET_FLOAT_VAR(1));
+            break;
+        case AnmOpcode_FTan:
+            *GET_FLOAT_VAR_PTR(0) = tanf(GET_FLOAT_VAR(1));
+            break;
+        case AnmOpcode_FAcos:
+            *GET_FLOAT_VAR_PTR(0) = acosf(GET_FLOAT_VAR(1));
+            break;
+        case AnmOpcode_FAtan:
+            *GET_FLOAT_VAR_PTR(0) = atanf(GET_FLOAT_VAR(1));
+            break;
+        case AnmOpcode_NormalizeAngle:
+            *GET_FLOAT_VAR_PTR(0) = AddNormalizeAngle(GET_FLOAT_VAR(0), 0);
+            break;
+        case AnmOpcode_IJmpEq:
+            if (GET_INT_VAR(0) == GET_INT_VAR(1))
+            {
+                goto jump;
+            }
+            break;
+        case AnmOpcode_FJmpEq:
+            if (GET_FLOAT_VAR(0) == GET_FLOAT_VAR(1))
+            {
+                goto jump;
+            }
+            break;
+        case AnmOpcode_IJmpNeq:
+            if (GET_INT_VAR(0) != GET_INT_VAR(1))
+            {
+                goto jump;
+            }
+            break;
+        case AnmOpcode_FJmpNeq:
+            if (GET_FLOAT_VAR(0) != GET_FLOAT_VAR(1))
+            {
+                goto jump;
+            }
+            break;
+        case AnmOpcode_IJmpLess:
+            if (GET_INT_VAR(0) < GET_INT_VAR(1))
+            {
+                goto jump;
+            }
+            break;
+        case AnmOpcode_FJmpLess:
+            if (GET_FLOAT_VAR(0) < GET_FLOAT_VAR(1))
+            {
+                goto jump;
+            }
+            break;
+        case AnmOpcode_IJmpLessOrEq:
+            if (GET_INT_VAR(0) <= GET_INT_VAR(1))
+            {
+                goto jump;
+            }
+            break;
+        case AnmOpcode_FJmpLessOrEq:
+            if (GET_FLOAT_VAR(0) <= GET_FLOAT_VAR(1))
+            {
+                goto jump;
+            }
+            break;
+        case AnmOpcode_IJmpGreater:
+            if (GET_INT_VAR(0) > GET_INT_VAR(1))
+            {
+                goto jump;
+            }
+            break;
+        case AnmOpcode_FJmpGreater:
+            if (GET_FLOAT_VAR(0) > GET_FLOAT_VAR(1))
+            {
+                goto jump;
+            }
+            break;
+        case AnmOpcode_IJmpGreaterOrEq:
+            if (GET_INT_VAR(0) >= GET_INT_VAR(1))
+            {
+                goto jump;
+            }
+            break;
+        case AnmOpcode_FJmpGreaterOrEq:
+            if (GET_FLOAT_VAR(0) >= GET_FLOAT_VAR(1))
+            {
+                goto jump;
+            }
+            break;
+        case AnmOpcode_Ins88:
+            vm->prefix.flag17 = instruction->byteArgs[1];
+            break;
+        jump:
+            vm->prefix.currentTimeInScript = instruction->intArgs[3];
+            vm->currentInstruction = (AnmRawInstr *)(((u8 *)vm->beginningOfScript) + instruction->intArgs[2]);
+            continue;
+        default:
+            break;
+        }
+#undef GET_FLOAT_VAR_PTR
+#undef GET_INT_VAR_PTR
+#undef GET_FLOAT_VAR
+#undef GET_INT_VAR
+
+        vm->currentInstruction = (AnmRawInstr *)((u8 *)instruction + instruction->instructionSize);
+    }
+stop:
+    if (vm->prefix.angleVel.x != 0.0f)
+    {
+        vm->prefix.rotation.x =
+            AddNormalizeAngle(vm->prefix.rotation.x, g_Supervisor.framerateMultiplier * vm->prefix.angleVel.x);
+        vm->prefix.updateRotation = true;
+    }
+
+    if (vm->prefix.angleVel.y != 0.0f)
+    {
+        vm->prefix.rotation.y =
+            AddNormalizeAngle(vm->prefix.rotation.y, g_Supervisor.framerateMultiplier * vm->prefix.angleVel.y);
+        vm->prefix.updateRotation = true;
+    }
+
+    if (vm->prefix.angleVel.z != 0.0f)
+    {
+        vm->prefix.rotation.z =
+            AddNormalizeAngle(vm->prefix.rotation.z, g_Supervisor.framerateMultiplier * vm->prefix.angleVel.z);
+        vm->prefix.updateRotation = true;
+    }
+
+    for (i = 0; i < AnmInterp_Last; i++)
+    {
+        if (vm->prefix.interpEndTimers[i] > 0)
+        {
+            vm->prefix.interpCurrentTimers[i]++;
+            if (vm->prefix.interpCurrentTimers[i] >= (int)vm->prefix.interpEndTimers[i])
+            {
+                interp = 1.0f;
+                vm->prefix.interpEndTimers[i] = 0;
+            }
+            else
+            {
+                interp = (float)vm->prefix.interpCurrentTimers[i] / (float)vm->prefix.interpEndTimers[i];
+            }
+
+            switch (vm->prefix.interpModes[i])
+            {
+            case AnmInterpMode_EaseIn:
+                interp = interp * interp;
+                break;
+            case AnmInterpMode_EaseInCubic:
+                interp = interp * interp * interp;
+                break;
+            case AnmInterpMode_EaseInQuartic:
+                interp = interp * interp;
+                interp = interp * interp;
+                break;
+            case AnmInterpMode_EaseOut:
+                interp = (1.0f - interp);
+                interp *= interp;
+                interp = (1.0f - interp);
+                break;
+            case AnmInterpMode_EaseOutCubic:
+                interp = (1.0f - interp);
+                interp = interp * interp * interp;
+                interp = (1.0f - interp);
+                break;
+            case AnmInterpMode_EaseOutQuartic:
+                interp = (1.0f - interp);
+                interp = interp * interp;
+                interp = interp * interp;
+                interp = (1.0f - interp);
+                break;
+            }
+
+            switch (i)
+            {
+            case AnmInterp_Pos:
+                if (!vm->prefix.usePosOffset)
+                {
+                    vm->pos.x = interp * (vm->posFinal.x - vm->posInitial.x) + vm->posInitial.x;
+                    vm->pos.y = interp * (vm->posFinal.y - vm->posInitial.y) + vm->posInitial.y;
+                    vm->pos.z = interp * (vm->posFinal.z - vm->posInitial.z) + vm->posInitial.z;
+                }
+                else
+                {
+                    vm->pos2.x = interp * (vm->posFinal.x - vm->posInitial.x) + vm->posInitial.x;
+                    vm->pos2.y = interp * (vm->posFinal.y - vm->posInitial.y) + vm->posInitial.y;
+                    vm->pos2.z = interp * (vm->posFinal.z - vm->posInitial.z) + vm->posInitial.z;
+                }
+                break;
+            case AnmInterp_RGB1:
+                vm->prefix.color1.r = interp * ((float)vm->color1Final.r - vm->color1Initial.r) + vm->color1Initial.r;
+                vm->prefix.color1.g = interp * ((float)vm->color1Final.g - vm->color1Initial.g) + vm->color1Initial.g;
+                vm->prefix.color1.b = interp * ((float)vm->color1Final.b - vm->color1Initial.b) + vm->color1Initial.b;
+                break;
+            case AnmInterp_Alpha1:
+                vm->prefix.color1.a = interp * ((float)vm->color1Final.a - vm->color1Initial.a) + vm->color1Initial.a;
+                break;
+            case AnmInterp_RGB2:
+                vm->prefix.color2.r = interp * ((float)vm->color2Final.r - vm->color2Initial.r) + vm->color2Initial.r;
+                vm->prefix.color2.g = interp * ((float)vm->color2Final.g - vm->color2Initial.g) + vm->color2Initial.g;
+                vm->prefix.color2.b = interp * ((float)vm->color2Final.b - vm->color2Initial.b) + vm->color2Initial.b;
+                break;
+            case AnmInterp_Alpha2:
+                vm->prefix.color2.a = interp * ((float)vm->color2Final.a - vm->color2Initial.a) + vm->color2Initial.a;
+                break;
+            case AnmInterp_Rotate:
+                vm->prefix.rotation.x =
+                    AddNormalizeAngle((vm->rotateFinal.x - vm->rotateInitial.x) * interp, vm->rotateInitial.x);
+                vm->prefix.rotation.y =
+                    AddNormalizeAngle((vm->rotateFinal.y - vm->rotateInitial.y) * interp, vm->rotateInitial.y);
+                vm->prefix.rotation.z =
+                    AddNormalizeAngle((vm->rotateFinal.z - vm->rotateInitial.z) * interp, vm->rotateInitial.z);
+                vm->prefix.updateRotation = true;
+                break;
+            case AnmInterp_Scale:
+                vm->prefix.scale.x = interp * (vm->scaleFinal.x - vm->scaleInitial.x) + vm->scaleInitial.x;
+                vm->prefix.scale.y = interp * (vm->scaleFinal.y - vm->scaleInitial.y) + vm->scaleInitial.y;
+                vm->prefix.updateScale = true;
+                break;
+            }
+        }
+    }
+
+    if (vm->prefix.scaleGrowth.y != 0.0f)
+    {
+        vm->prefix.scale.y += g_Supervisor.framerateMultiplier * vm->prefix.scaleGrowth.y;
+        vm->prefix.updateScale = true;
+    }
+
+    if (vm->prefix.scaleGrowth.x != 0.0f)
+    {
+        vm->prefix.scale.x += g_Supervisor.framerateMultiplier * vm->prefix.scaleGrowth.x;
+        vm->prefix.updateScale = true;
+        vm->prefix.updateRotation = true;
+    }
+
+    vm->prefix.uvScrollPos.x += vm->prefix.uvScrollVel.x;
+
+    if (vm->prefix.uvScrollPos.x >= 1.0f)
+    {
+        vm->prefix.uvScrollPos.x -= 1.0f;
+    }
+    else
+    {
+        if (vm->prefix.uvScrollPos.x < 0.0f)
+        {
+            vm->prefix.uvScrollPos.x += 1.0f;
+        }
+    }
+
+    vm->prefix.uvScrollPos.y += vm->prefix.uvScrollVel.y;
+    if (vm->prefix.uvScrollPos.y >= 1.0f)
+    {
+        vm->prefix.uvScrollPos.y -= 1.0f;
+    }
+    else
+    {
+        if (vm->prefix.uvScrollPos.y < 0.0f)
+        {
+            vm->prefix.uvScrollPos.y += 1.0f;
+        }
+    }
+
+    vm->prefix.currentTimeInScript++;
+    this->scriptsExecutedThisFrame++;
+
+    return FALSE;
+}
 
 void AnmManager::ExecuteScriptOnVmArray(AnmVm *sprite, int count)
 {
@@ -22,6 +906,381 @@ void AnmManager::ExecuteScriptOnVmArray(AnmVm *sprite, int count)
         sprite++;
         count--;
     }
+}
+
+u8 MixColors(u8 color1, u8 color2)
+{
+    u32 color = ((color1 * color2) / 128U);
+
+    if (color >= 256)
+    {
+        color = 255;
+    }
+
+    return color;
+}
+
+void AnmManager::SetRenderStateForVm(AnmVm *vm)
+{
+    if (this->currentBlendMode != vm->prefix.blendMode)
+    {
+        this->FlushVertexBuffer();
+        this->currentBlendMode = vm->prefix.blendMode;
+
+        switch (this->currentBlendMode)
+        {
+        case AnmBlendMode_Normal:
+            g_Supervisor.d3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+            break;
+        case AnmBlendMode_Additive:
+            g_Supervisor.d3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
+            break;
+        }
+    }
+
+    if (!g_Supervisor.IsDepthTestDisabled() && this->disableZWrite != vm->prefix.zWriteDisabled)
+    {
+        this->disableZWrite = vm->prefix.zWriteDisabled;
+        if (!this->disableZWrite)
+        {
+            g_Supervisor.SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
+        }
+        else
+        {
+            g_Supervisor.SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
+        }
+    }
+
+    this->renderStateChangesThisFrame++;
+}
+
+static const f32 g_ZeroPointFive = 0.5;
+
+#pragma var_order(triangleY1, triangleY2, triangleX2, triangleX1, color)
+ZunResult AnmManager::DrawInner(AnmVm *vm, i32 flags)
+{
+    ZunColor color;
+    float triangleX1, triangleX2, triangleY1, triangleY2;
+
+    g_QuadVertices[0].pos.x += this->screenShakeOffset.x;
+    g_QuadVertices[0].pos.y += this->screenShakeOffset.y;
+    g_QuadVertices[1].pos.x += this->screenShakeOffset.x;
+    g_QuadVertices[1].pos.y += this->screenShakeOffset.y;
+    g_QuadVertices[2].pos.x += this->screenShakeOffset.x;
+    g_QuadVertices[2].pos.y += this->screenShakeOffset.y;
+    g_QuadVertices[3].pos.x += this->screenShakeOffset.x;
+    g_QuadVertices[3].pos.y += this->screenShakeOffset.y;
+
+    if (flags & 1)
+    {
+        /* same as in EoSD. */
+        __asm
+        {
+            fld g_QuadVertices[0 * TYPE g_QuadVertices].pos.x
+            frndint
+            fsub g_ZeroPointFive
+            fld g_QuadVertices[1 * TYPE g_QuadVertices].pos.x
+            frndint
+            fsub g_ZeroPointFive
+            fld g_QuadVertices[0 * TYPE g_QuadVertices].pos.y
+            frndint
+            fsub g_ZeroPointFive
+            fld g_QuadVertices[2 * TYPE g_QuadVertices].pos.y
+            frndint
+            fsub g_ZeroPointFive
+            fst g_QuadVertices[2 * TYPE g_QuadVertices].pos.y
+            fstp g_QuadVertices[3 * TYPE g_QuadVertices].pos.y
+            fst g_QuadVertices[0 * TYPE g_QuadVertices].pos.y
+            fstp g_QuadVertices[1 * TYPE g_QuadVertices].pos.y
+            fst g_QuadVertices[1 * TYPE g_QuadVertices].pos.x
+            fstp g_QuadVertices[3 * TYPE g_QuadVertices].pos.x
+            fst g_QuadVertices[0 * TYPE g_QuadVertices].pos.x
+            fstp g_QuadVertices[2 * TYPE g_QuadVertices].pos.x
+        }
+    }
+
+    g_QuadVertices[0].textureUV.x = g_QuadVertices[2].textureUV.x =
+        vm->loadedSprite->uvStart.x + vm->prefix.uvScrollPos.x;
+    g_QuadVertices[1].textureUV.x = g_QuadVertices[3].textureUV.x =
+        vm->loadedSprite->uvEnd.x + vm->prefix.uvScrollPos.x;
+    g_QuadVertices[0].textureUV.y = g_QuadVertices[1].textureUV.y =
+        vm->loadedSprite->uvStart.y + vm->prefix.uvScrollPos.y;
+    g_QuadVertices[2].textureUV.y = g_QuadVertices[3].textureUV.y =
+        vm->loadedSprite->uvEnd.y + vm->prefix.uvScrollPos.y;
+
+    triangleX1 = max(g_QuadVertices[0].pos.x, g_QuadVertices[1].pos.x);
+    triangleX1 = max(g_QuadVertices[2].pos.x, triangleX1);
+    triangleX1 = max(g_QuadVertices[3].pos.x, triangleX1);
+
+    triangleY1 = max(g_QuadVertices[0].pos.y, g_QuadVertices[1].pos.y);
+    triangleY1 = max(g_QuadVertices[2].pos.y, triangleY1);
+    triangleY1 = max(g_QuadVertices[3].pos.y, triangleY1);
+
+    triangleX2 = min(g_QuadVertices[0].pos.x, g_QuadVertices[1].pos.x);
+    triangleX2 = min(g_QuadVertices[2].pos.x, triangleX2);
+    triangleX2 = min(g_QuadVertices[3].pos.x, triangleX2);
+
+    triangleY2 = min(g_QuadVertices[0].pos.y, g_QuadVertices[1].pos.y);
+    triangleY2 = min(g_QuadVertices[2].pos.y, triangleY2);
+    triangleY2 = min(g_QuadVertices[3].pos.y, triangleY2);
+
+    if (triangleX1 < g_Supervisor.viewport.X || triangleY1 < g_Supervisor.viewport.Y ||
+        triangleX2 > (g_Supervisor.viewport.X + g_Supervisor.viewport.Width) ||
+        triangleY2 > (g_Supervisor.viewport.Y + g_Supervisor.viewport.Height))
+    {
+        return ZUN_SUCCESS;
+    }
+
+    if (this->currentTexture != vm->loadedSprite->texture)
+    {
+        this->currentTexture = vm->loadedSprite->texture;
+        this->FlushVertexBuffer();
+        g_Supervisor.d3dDevice->SetTexture(0, this->currentTexture);
+    }
+
+    if (this->currentVertexShader != 1)
+    {
+        this->FlushVertexBuffer();
+        this->currentVertexShader = 1;
+    }
+
+    if ((flags & 2) == 0)
+    {
+        color.d3dColor = vm->prefix.flag17 ? vm->prefix.color2.d3dColor : vm->prefix.color1.d3dColor;
+
+        if (this->unk0x4 != 0)
+        {
+            color.r = MixColors(color.r, this->color.r);
+            color.g = MixColors(color.g, this->color.g);
+            color.b = MixColors(color.b, this->color.b);
+            color.a = MixColors(color.a, this->color.a);
+        }
+
+        g_QuadVertices[0].diffuse = color.d3dColor;
+        g_QuadVertices[1].diffuse = color.d3dColor;
+        g_QuadVertices[2].diffuse = color.d3dColor;
+        g_QuadVertices[3].diffuse = color.d3dColor;
+    }
+
+    this->SetRenderStateForVm(vm);
+    this->AddSpriteToDrawBuffer(g_QuadVertices);
+
+    return ZUN_SUCCESS;
+}
+
+void AnmManager::ClearVertexBuffer()
+{
+    this->spritesToDraw = 0;
+    this->vertexBufferStartPtr = this->vertexBufferEndPtr = this->vertexBuffer;
+}
+
+void AnmManager::FlushVertexBuffer()
+{
+    if (this->spritesToDraw == 0)
+    {
+        return;
+    }
+
+    g_Supervisor.d3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
+    g_Supervisor.d3dDevice->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
+    g_Supervisor.d3dDevice->SetVertexShader(D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_TEX1);
+    g_Supervisor.d3dDevice->DrawPrimitiveUP(D3DPT_TRIANGLELIST, this->spritesToDraw * 2, this->vertexBufferStartPtr,
+                                            sizeof(VertexTex1DiffuseXyzrhw));
+
+    this->vertexBufferStartPtr = this->vertexBufferEndPtr;
+    this->spritesToDraw = 0;
+    this->flushesThisFrame++;
+}
+
+/* This function copies 4 vertices creating a quad into 6 vertices
+ * (2 triangles) for rendering.
+ */
+ZunResult AnmManager::AddSpriteToDrawBuffer(VertexTex1DiffuseXyzrhw *vertices)
+{
+    this->vertexBufferEndPtr[0] = vertices[0];
+    this->vertexBufferEndPtr[1] = vertices[1];
+    this->vertexBufferEndPtr[2] = vertices[2];
+    this->vertexBufferEndPtr[3] = vertices[1];
+    this->vertexBufferEndPtr[4] = vertices[2];
+    this->vertexBufferEndPtr[5] = vertices[3];
+
+    this->vertexBufferEndPtr += 6;
+    this->spritesToDraw++;
+
+    return ZUN_SUCCESS;
+}
+
+#pragma var_order(spriteHalfWidth, spriteHalfHeight)
+ZunResult AnmManager::DrawNoRotation(AnmVm *vm)
+{
+    float spriteHalfWidth;
+    float spriteHalfHeight;
+
+    if (!vm->IsVisible())
+    {
+        return ZUN_ERROR;
+    }
+
+    if (!vm->prefix.flag1)
+    {
+        return ZUN_ERROR;
+    }
+
+    if (vm->prefix.color1.a == 0)
+    {
+        return ZUN_ERROR;
+    }
+
+    spriteHalfWidth = (vm->prefix.spriteSize.x * vm->prefix.scale.x) / 2.0f;
+    spriteHalfHeight = (vm->prefix.spriteSize.y * vm->prefix.scale.y) / 2.0f;
+
+    if ((vm->prefix.anchor & 1) == 0)
+    {
+        g_QuadVertices[0].pos.x = g_QuadVertices[2].pos.x = vm->pos.x - spriteHalfWidth;
+        g_QuadVertices[1].pos.x = g_QuadVertices[3].pos.x = spriteHalfWidth + vm->pos.x;
+    }
+    else
+    {
+        g_QuadVertices[0].pos.x = g_QuadVertices[2].pos.x = vm->pos.x;
+        g_QuadVertices[1].pos.x = g_QuadVertices[3].pos.x = spriteHalfWidth + vm->pos.x + spriteHalfWidth;
+    }
+
+    if ((vm->prefix.anchor & 2) == 0)
+    {
+        g_QuadVertices[0].pos.y = g_QuadVertices[1].pos.y = vm->pos.y - spriteHalfHeight;
+        g_QuadVertices[2].pos.y = g_QuadVertices[3].pos.y = spriteHalfHeight + vm->pos.y;
+    }
+    else
+    {
+        g_QuadVertices[0].pos.y = g_QuadVertices[1].pos.y = vm->pos.y;
+        g_QuadVertices[2].pos.y = g_QuadVertices[3].pos.y = spriteHalfHeight + vm->pos.y + spriteHalfHeight;
+    }
+
+    g_QuadVertices[0].pos.z = g_QuadVertices[1].pos.z = g_QuadVertices[2].pos.z = g_QuadVertices[3].pos.z = vm->pos.z;
+
+    return this->DrawInner(vm, 1);
+}
+
+void AnmManager::TranslateRotation(VertexTex1DiffuseXyzrhw *vertex, float x, float y, float sine, float cosine,
+                                   float xOffset, float yOffset)
+{
+    vertex->pos.x = x * cosine - y * sine + xOffset;
+    vertex->pos.y = x * sine + y * cosine + yOffset;
+}
+
+#pragma var_order(sine, rotation, cosine, x, y, yOffset, xOffset)
+ZunResult AnmManager::Draw2D(AnmVm *vm)
+{
+    float sine, cosine, rotation, xOffset, yOffset, x, y;
+
+    if (vm->prefix.rotation.z == 0.0f)
+    {
+        return this->DrawNoRotation(vm);
+    }
+
+    if (!vm->IsVisible())
+    {
+        return ZUN_ERROR;
+    }
+
+    if (!vm->prefix.flag1)
+    {
+        return ZUN_ERROR;
+    }
+
+    if (vm->prefix.color1.a == 0)
+    {
+        return ZUN_ERROR;
+    }
+
+    rotation = vm->prefix.rotation.z;
+
+    sincos(rotation, sine, cosine);
+
+    xOffset = vm->pos.x;
+    yOffset = vm->pos.y;
+
+    x = (vm->prefix.spriteSize.x * vm->prefix.scale.x) / 2.0f;
+    y = (vm->prefix.spriteSize.y * vm->prefix.scale.y) / 2.0f;
+
+    this->TranslateRotation(&g_QuadVertices[0], -x, -y, sine, cosine, xOffset, yOffset);
+    this->TranslateRotation(&g_QuadVertices[1], x, -y, sine, cosine, xOffset, yOffset);
+    this->TranslateRotation(&g_QuadVertices[2], -x, y, sine, cosine, xOffset, yOffset);
+    this->TranslateRotation(&g_QuadVertices[3], x, y, sine, cosine, xOffset, yOffset);
+
+    g_QuadVertices[0].pos.z = g_QuadVertices[1].pos.z = g_QuadVertices[2].pos.z = g_QuadVertices[3].pos.z = vm->pos.z;
+
+    if (vm->prefix.anchor & 1)
+    {
+        g_QuadVertices[0].pos.x += x;
+        g_QuadVertices[1].pos.x += x;
+        g_QuadVertices[2].pos.x += x;
+        g_QuadVertices[3].pos.x += x;
+    }
+
+    if (vm->prefix.anchor & 2)
+    {
+        g_QuadVertices[0].pos.y += y;
+        g_QuadVertices[1].pos.y += y;
+        g_QuadVertices[2].pos.y += y;
+        g_QuadVertices[3].pos.y += y;
+    }
+
+    return this->DrawInner(vm, 0);
+}
+
+/* This is identical to DrawNoRotation except for 0 being passed to DrawInner,
+ * which doesn't round and subtract 0.5 from each vertex.
+ */
+#pragma var_order(spriteHalfWidth, spriteHalfHeight)
+ZunResult AnmManager::DrawNoRotationNoRound(AnmVm *vm)
+{
+    float spriteHalfWidth;
+    float spriteHalfHeight;
+
+    if (!vm->IsVisible())
+    {
+        return ZUN_ERROR;
+    }
+
+    if (!vm->prefix.flag1)
+    {
+        return ZUN_ERROR;
+    }
+
+    if (vm->prefix.color1.a == 0)
+    {
+        return ZUN_ERROR;
+    }
+
+    spriteHalfWidth = (vm->prefix.spriteSize.x * vm->prefix.scale.x) / 2.0f;
+    spriteHalfHeight = (vm->prefix.spriteSize.y * vm->prefix.scale.y) / 2.0f;
+
+    if ((vm->prefix.anchor & 1) == 0)
+    {
+        g_QuadVertices[0].pos.x = g_QuadVertices[2].pos.x = vm->pos.x - spriteHalfWidth;
+        g_QuadVertices[1].pos.x = g_QuadVertices[3].pos.x = spriteHalfWidth + vm->pos.x;
+    }
+    else
+    {
+        g_QuadVertices[0].pos.x = g_QuadVertices[2].pos.x = vm->pos.x;
+        g_QuadVertices[1].pos.x = g_QuadVertices[3].pos.x = spriteHalfWidth + vm->pos.x + spriteHalfWidth;
+    }
+
+    if ((vm->prefix.anchor & 2) == 0)
+    {
+        g_QuadVertices[0].pos.y = g_QuadVertices[1].pos.y = vm->pos.y - spriteHalfHeight;
+        g_QuadVertices[2].pos.y = g_QuadVertices[3].pos.y = spriteHalfHeight + vm->pos.y;
+    }
+    else
+    {
+        g_QuadVertices[0].pos.y = g_QuadVertices[1].pos.y = vm->pos.y;
+        g_QuadVertices[2].pos.y = g_QuadVertices[3].pos.y = spriteHalfHeight + vm->pos.y + spriteHalfHeight;
+    }
+
+    g_QuadVertices[0].pos.z = g_QuadVertices[1].pos.z = g_QuadVertices[2].pos.z = g_QuadVertices[3].pos.z = vm->pos.z;
+
+    return this->DrawInner(vm, 0);
 }
 
 // STUB: th08 0x465070
@@ -139,26 +1398,26 @@ ZunResult AnmManager::CreateEmptyTexture(IDirect3DTexture8 **outTexture, i32 wid
     return ZUN_SUCCESS;
 }
 
-AnmFileDesc *AnmManager::LoadAnm(i32 anmIdx, const char *filename)
+AnmLoaded *AnmManager::LoadAnm(i32 anmIdx, const char *filename)
 {
     utils::DebugPrint("::loadAnim : %s\n", filename);
-    AnmFileDesc *fileDesc = this->ReadAnmEntries(anmIdx, filename);
-    if (fileDesc != NULL)
+    AnmLoaded *anmLoaded = this->ReadAnmEntries(anmIdx, filename);
+    if (anmLoaded != NULL)
     {
-        fileDesc->numberEntriesToBeLoaded = 1;
+        anmLoaded->numberEntriesToBeLoaded = 1;
 
         /* ZUN bug: no NULL check! */
-        while (fileDesc->numberEntriesToBeLoaded != 0)
+        while (anmLoaded->numberEntriesToBeLoaded != 0)
         {
-            fileDesc = this->PostloadAnmEntry(fileDesc);
+            anmLoaded = this->PostloadAnmEntry(anmLoaded);
         }
     }
 
-    return fileDesc;
+    return anmLoaded;
 }
 
-#pragma var_order(curEntryNum, totalSprites, totalEntries, fileDesc, entry, result, totalScripts, curEntry)
-AnmFileDesc *AnmManager::ReadAnmEntries(int anmIdx, const char *filename)
+#pragma var_order(curEntryNum, totalSprites, totalEntries, anmLoaded, entry, result, totalScripts, curEntry)
+AnmLoaded *AnmManager::ReadAnmEntries(int anmIdx, const char *filename)
 {
     i32 result;
 
@@ -178,14 +1437,14 @@ AnmFileDesc *AnmManager::ReadAnmEntries(int anmIdx, const char *filename)
     i32 totalSprites = 0;
     i32 curEntryNum = 0;
 
-    AnmFileDesc *fileDesc = this->anmFiles + anmIdx;
+    AnmLoaded *anmLoaded = this->anmFiles + anmIdx;
     if (entry == NULL)
     {
         return NULL;
     }
 
-    fileDesc->anmIdx = anmIdx;
-    fileDesc->rawData = entry;
+    anmLoaded->anmIdx = anmIdx;
+    anmLoaded->rawData = entry;
     AnmRawEntry *curEntry = entry;
 
     while (true)
@@ -202,12 +1461,12 @@ AnmFileDesc *AnmManager::ReadAnmEntries(int anmIdx, const char *filename)
         curEntry = (AnmRawEntry *)(((u8 *)curEntry) + curEntry->nextOffset);
     }
 
-    fileDesc->totalEntries = totalEntries;
+    anmLoaded->totalEntries = totalEntries;
 
-    fileDesc->textures = (AnmEntry *)g_ZunMemory.Alloc(totalEntries * sizeof(AnmEntry));
-    memset(fileDesc->textures, 0, sizeof(AnmEntry) * totalEntries);
-    fileDesc->sprites = (AnmLoadedSprite *)g_ZunMemory.Alloc(totalSprites * sizeof(AnmLoadedSprite));
-    fileDesc->scripts = (AnmRawInstr **)g_ZunMemory.Alloc(totalScripts * sizeof(void *));
+    anmLoaded->textures = (AnmEntry *)g_ZunMemory.Alloc(totalEntries * sizeof(AnmEntry));
+    memset(anmLoaded->textures, 0, sizeof(AnmEntry) * totalEntries);
+    anmLoaded->sprites = (AnmLoadedSprite *)g_ZunMemory.Alloc(totalSprites * sizeof(AnmLoadedSprite));
+    anmLoaded->scripts = (AnmRawInstr **)g_ZunMemory.Alloc(totalScripts * sizeof(void *));
 
     curEntry = entry;
     totalEntries = 0;
@@ -216,7 +1475,7 @@ AnmFileDesc *AnmManager::ReadAnmEntries(int anmIdx, const char *filename)
 
     while (true)
     {
-        result = this->LoadExternalTextureData(fileDesc, curEntryNum, &totalSprites, &totalScripts, curEntry);
+        result = this->LoadExternalTextureData(anmLoaded, curEntryNum, &totalSprites, &totalScripts, curEntry);
         if (result < ZUN_SUCCESS)
         {
             return NULL;
@@ -232,41 +1491,41 @@ AnmFileDesc *AnmManager::ReadAnmEntries(int anmIdx, const char *filename)
         curEntry = (AnmRawEntry *)(((u8 *)curEntry) + curEntry->nextOffset);
     }
 
-    return fileDesc;
+    return anmLoaded;
 }
 
-AnmFileDesc *AnmManager::PreloadAnm(i32 anmIdx, const char *filename)
+AnmLoaded *AnmManager::PreloadAnm(i32 anmIdx, const char *filename)
 {
-    AnmFileDesc *fileDesc = this->ReadAnmEntries(anmIdx, filename);
-    if (fileDesc == NULL)
+    AnmLoaded *anmLoaded = this->ReadAnmEntries(anmIdx, filename);
+    if (anmLoaded == NULL)
     {
         return NULL;
     }
 
-    fileDesc->numberEntriesToBeLoaded = 1;
-    while (fileDesc->numberEntriesToBeLoaded != 0 && !g_Supervisor.subthreadCloseRequestActive)
+    anmLoaded->numberEntriesToBeLoaded = 1;
+    while (anmLoaded->numberEntriesToBeLoaded != 0 && !g_Supervisor.subthreadCloseRequestActive)
     {
         Sleep(1);
     }
     utils::DebugPrint("::preloadAnimEnd : %s\n", filename);
 
-    return g_Supervisor.subthreadCloseRequestActive ? NULL : fileDesc;
+    return g_Supervisor.subthreadCloseRequestActive ? NULL : anmLoaded;
 }
 
-i32 AnmManager::LoadExternalTextureData(AnmFileDesc *fileDesc, i32 entryNumber, i32 *sprites, i32 *scripts,
+i32 AnmManager::LoadExternalTextureData(AnmLoaded *anmLoaded, i32 entryNumber, i32 *sprites, i32 *scripts,
                                         AnmRawEntry *rawEntry)
 {
     return 0;
 }
 
 #pragma var_order(currentEntryNumber, currentNumSprites, entryLoadNumber, data, result, currentNumScripts, rawEntry)
-AnmFileDesc *AnmManager::PostloadAnmEntry(AnmFileDesc *fileDesc)
+AnmLoaded *AnmManager::PostloadAnmEntry(AnmLoaded *anmLoaded)
 {
     i32 result;
 
-    utils::DebugPrint("::postloadAnim : %d, %d\n", fileDesc->anmIdx, fileDesc->numberEntriesToBeLoaded);
+    utils::DebugPrint("::postloadAnim : %d, %d\n", anmLoaded->anmIdx, anmLoaded->numberEntriesToBeLoaded);
 
-    AnmRawEntry *rawData = fileDesc->rawData;
+    AnmRawEntry *rawData = anmLoaded->rawData;
 
     i32 entryLoadNumber = 0;
     i32 currentNumScripts = 0;
@@ -274,16 +1533,16 @@ AnmFileDesc *AnmManager::PostloadAnmEntry(AnmFileDesc *fileDesc)
     i32 currentEntryNumber = 0;
 
     /* ??? */
-    fileDesc->rawData = rawData;
+    anmLoaded->rawData = rawData;
     AnmRawEntry *rawEntry = rawData;
 
     while (true)
     {
-        if (entryLoadNumber == fileDesc->numberEntriesToBeLoaded - 1 &&
-            (result = this->LoadTextureData(fileDesc, currentEntryNumber, currentNumSprites, currentNumScripts,
+        if (entryLoadNumber == anmLoaded->numberEntriesToBeLoaded - 1 &&
+            (result = this->LoadTextureData(anmLoaded, currentEntryNumber, currentNumSprites, currentNumScripts,
                                             rawEntry)) < ZUN_SUCCESS)
         {
-            fileDesc->numberEntriesToBeLoaded = 0;
+            anmLoaded->numberEntriesToBeLoaded = 0;
             return NULL;
         }
 
@@ -299,21 +1558,21 @@ AnmFileDesc *AnmManager::PostloadAnmEntry(AnmFileDesc *fileDesc)
         rawEntry = (AnmRawEntry *)(((u8 *)rawEntry) + rawEntry->nextOffset);
         entryLoadNumber++;
 
-        if (entryLoadNumber == fileDesc->numberEntriesToBeLoaded)
+        if (entryLoadNumber == anmLoaded->numberEntriesToBeLoaded)
         {
-            fileDesc->numberEntriesToBeLoaded++;
-            return fileDesc;
+            anmLoaded->numberEntriesToBeLoaded++;
+            return anmLoaded;
         }
     }
 
-    fileDesc->numberEntriesToBeLoaded = 0;
+    anmLoaded->numberEntriesToBeLoaded = 0;
 
-    return fileDesc;
+    return anmLoaded;
 }
 
 #pragma var_order(result, startOfEntry, surfaceDesc, path, rawSprite, i, currentOffset, loadedSprite)
-int AnmManager::LoadTextureData(AnmFileDesc *fileDesc, i32 entryNumber, i32 currentSpriteNumber,
-                                i32 currentScriptNumber, AnmRawEntry *rawEntry)
+int AnmManager::LoadTextureData(AnmLoaded *anmLoaded, i32 entryNumber, i32 currentSpriteNumber, i32 currentScriptNumber,
+                                AnmRawEntry *rawEntry)
 {
     int result = 0;
     AnmLoadedSprite loadedSprite;
@@ -340,12 +1599,12 @@ int AnmManager::LoadTextureData(AnmFileDesc *fileDesc, i32 entryNumber, i32 curr
 
         if (path[0] == '@')
         {
-            this->CreateEmptyTexture(&fileDesc->textures[entryNumber].texture, startOfEntry->width,
+            this->CreateEmptyTexture(&anmLoaded->textures[entryNumber].texture, startOfEntry->width,
                                      startOfEntry->height, startOfEntry->format);
         }
         else
         {
-            if (this->CreateTextureFromFile(&fileDesc->textures[entryNumber].texture, startOfEntry->format,
+            if (this->CreateTextureFromFile(&anmLoaded->textures[entryNumber].texture, startOfEntry->format,
                                             startOfEntry->colorKey) != ZUN_SUCCESS)
             {
                 g_GameErrorContext.Fatal(TH_ERR_ANMMANAGER_EXTERN_TEXTURE_CORRUPTED, path);
@@ -355,7 +1614,7 @@ int AnmManager::LoadTextureData(AnmFileDesc *fileDesc, i32 entryNumber, i32 curr
     }
     else
     {
-        if (this->CreateTextureFromAnm(&fileDesc->textures[entryNumber].texture,
+        if (this->CreateTextureFromAnm(&anmLoaded->textures[entryNumber].texture,
                                        (AnmTextureHeader *)(((u8 *)startOfEntry) + startOfEntry->textureOffset),
                                        startOfEntry->format) != ZUN_SUCCESS)
         {
@@ -364,12 +1623,12 @@ int AnmManager::LoadTextureData(AnmFileDesc *fileDesc, i32 entryNumber, i32 curr
         }
     }
 
-    fileDesc->textures[entryNumber].texture->SetPriority(startOfEntry->priority);
-    fileDesc->textures[entryNumber].texture->PreLoad();
+    anmLoaded->textures[entryNumber].texture->SetPriority(startOfEntry->priority);
+    anmLoaded->textures[entryNumber].texture->PreLoad();
 
     D3DSURFACE_DESC surfaceDesc;
 
-    fileDesc->textures[entryNumber].texture->GetLevelDesc(0, &surfaceDesc);
+    anmLoaded->textures[entryNumber].texture->GetLevelDesc(0, &surfaceDesc);
 
     u32 *currentOffset = (u32 *)((u8 *)startOfEntry + sizeof(AnmRawEntry));
 
@@ -379,8 +1638,8 @@ int AnmManager::LoadTextureData(AnmFileDesc *fileDesc, i32 entryNumber, i32 curr
     {
         rawSprite = (AnmRawSprite *)((u8 *)startOfEntry + *currentOffset);
 
-        loadedSprite.anmIdx = fileDesc->anmIdx;
-        loadedSprite.texture = fileDesc->textures[entryNumber].texture;
+        loadedSprite.anmIdx = anmLoaded->anmIdx;
+        loadedSprite.texture = anmLoaded->textures[entryNumber].texture;
         loadedSprite.scaleFactor.x = surfaceDesc.Width / (float)startOfEntry->width;
         loadedSprite.scaleFactor.y = surfaceDesc.Height / (float)startOfEntry->height;
 
@@ -391,14 +1650,14 @@ int AnmManager::LoadTextureData(AnmFileDesc *fileDesc, i32 entryNumber, i32 curr
         loadedSprite.width = surfaceDesc.Width;
         loadedSprite.height = surfaceDesc.Height;
 
-        fileDesc->LoadSprite(currentSpriteNumber, &loadedSprite);
+        anmLoaded->LoadSprite(currentSpriteNumber, &loadedSprite);
 
         currentSpriteNumber++;
     }
 
     for (i = 0; i < startOfEntry->numScripts; i++, currentOffset += 2)
     {
-        fileDesc->scripts[currentScriptNumber] = (AnmRawInstr *)(((u8 *)startOfEntry) + currentOffset[1]);
+        anmLoaded->scripts[currentScriptNumber] = (AnmRawInstr *)(((u8 *)startOfEntry) + currentOffset[1]);
         currentScriptNumber++;
     }
 
@@ -437,7 +1696,7 @@ void AnmManager::ReleaseAnm(i32 anmIdx)
         g_ZunMemory.Free(this->anmFiles[anmIdx].scripts);
         g_ZunMemory.Free(this->anmFiles[anmIdx].rawData);
 
-        memset(&this->anmFiles[anmIdx], 0, sizeof(AnmFileDesc));
+        memset(&this->anmFiles[anmIdx], 0, sizeof(AnmLoaded));
     }
 }
 
@@ -455,7 +1714,7 @@ void AnmManager::ReleaseAnmEntry(AnmEntry *entry)
     }
 }
 
-void AnmFileDesc::LoadSprite(i32 spriteIdx, AnmLoadedSprite *loadedSprite)
+void AnmLoaded::LoadSprite(i32 spriteIdx, AnmLoadedSprite *loadedSprite)
 {
     this->sprites[spriteIdx] = *loadedSprite;
 
