@@ -1,7 +1,7 @@
 #include "AnmManager.hpp"
+#include "ZunMath.hpp"
 #include "i18n.hpp"
 #include "utils.hpp"
-#include "ZunMath.hpp"
 
 namespace th08
 {
@@ -69,7 +69,7 @@ void AnmLoaded::SetAndExecuteScript(AnmVm *vm, AnmRawInstr *beginningOfScript)
 
 f32 AnmVm::GetFloatVar(f32 varId)
 {
-    switch ((int) varId)
+    switch ((int)varId)
     {
     case AnmVariable_I0:
         return this->prefix.intVar0;
@@ -132,7 +132,7 @@ f32 *AnmVm::GetFloatVarPtr(f32 *varPtr, u16 varMask, u32 variableNumber)
         return varPtr;
     }
 
-    switch ((int) *varPtr)
+    switch ((int)*varPtr)
     {
     case AnmVariable_F0:
         return &this->prefix.floatVar0;
@@ -196,18 +196,18 @@ ZunBool AnmManager::ExecuteScript(AnmVm *vm)
         goto handleInterrupt;
     }
 
-    while (instruction = vm->currentInstruction, instruction->time <= (int) vm->prefix.currentTimeInScript)
+    while (instruction = vm->currentInstruction, instruction->time <= (int)vm->prefix.currentTimeInScript)
     {
-#define GET_INT_VAR(argNumber) \
-    ((instruction->varMask & (1 << argNumber)) ? vm->GetIntVar(instruction->intArgs[argNumber]) : instruction->intArgs[argNumber])
-#define GET_FLOAT_VAR(argNumber) \
-    ((instruction->varMask & (1 << argNumber)) ? vm->GetFloatVar(instruction->floatArgs[argNumber]) : instruction->floatArgs[argNumber])
+#define GET_INT_VAR(argNumber)                                                                                         \
+    ((instruction->varMask & (1 << argNumber)) ? vm->GetIntVar(instruction->intArgs[argNumber])                        \
+                                               : instruction->intArgs[argNumber])
+#define GET_FLOAT_VAR(argNumber)                                                                                       \
+    ((instruction->varMask & (1 << argNumber)) ? vm->GetFloatVar(instruction->floatArgs[argNumber])                    \
+                                               : instruction->floatArgs[argNumber])
 
-#define GET_INT_VAR_PTR(idx) \
-    vm->GetIntVarPtr(&instruction->intArgs[idx], instruction->varMask, idx)
+#define GET_INT_VAR_PTR(idx) vm->GetIntVarPtr(&instruction->intArgs[idx], instruction->varMask, idx)
 
-#define GET_FLOAT_VAR_PTR(idx) \
-    vm->GetFloatVarPtr(&instruction->floatArgs[idx], instruction->varMask, idx)
+#define GET_FLOAT_VAR_PTR(idx) vm->GetFloatVarPtr(&instruction->floatArgs[idx], instruction->varMask, idx)
 
         switch (instruction->opcode)
         {
@@ -221,7 +221,7 @@ ZunBool AnmManager::ExecuteScript(AnmVm *vm)
             vm->prefix.visible = true;
 
             vm->prefix.anmFile->SetSprite(vm, GET_INT_VAR(0));
-            vm->timeOfLastSpriteSet = (int) vm->prefix.currentTimeInScript;
+            vm->timeOfLastSpriteSet = (int)vm->prefix.currentTimeInScript;
             break;
         case AnmOpcode_Scale:
             vm->prefix.scale.x = GET_FLOAT_VAR(0);
@@ -247,7 +247,7 @@ ZunBool AnmManager::ExecuteScript(AnmVm *vm)
             break;
         case AnmOpcode_Jmp:
             vm->prefix.currentTimeInScript = instruction->intArgs[1];
-            vm->currentInstruction = (AnmRawInstr *) (((u8 *) vm->beginningOfScript) + instruction->intArgs[0]);
+            vm->currentInstruction = (AnmRawInstr *)(((u8 *)vm->beginningOfScript) + instruction->intArgs[0]);
             continue;
         case AnmOpcode_JmpDec:
             *GET_INT_VAR_PTR(0) -= 1;
@@ -255,7 +255,7 @@ ZunBool AnmManager::ExecuteScript(AnmVm *vm)
             if (GET_INT_VAR(0) > 0)
             {
                 vm->prefix.currentTimeInScript = instruction->intArgs[2];
-                vm->currentInstruction = (AnmRawInstr *) (((u8 *) vm->beginningOfScript) + instruction->intArgs[1]);
+                vm->currentInstruction = (AnmRawInstr *)(((u8 *)vm->beginningOfScript) + instruction->intArgs[1]);
                 continue;
             }
             break;
@@ -333,7 +333,7 @@ ZunBool AnmManager::ExecuteScript(AnmVm *vm)
             goto posTime;
         case AnmOpcode_PosTimeLinear:
             vm->prefix.interpModes[AnmInterp_Pos] = AnmInterpMode_Linear;
-posTime:
+        posTime:
             if (!vm->prefix.usePosOffset)
             {
                 vm->posInitial = vm->pos;
@@ -375,19 +375,18 @@ posTime:
                 goto stop;
             }
 
-handleInterrupt:
+        handleInterrupt:
             nextInstruction = NULL;
             instruction = vm->beginningOfScript;
             while (!(instruction->opcode == AnmOpcode_InterruptLabel &&
-                   vm->prefix.pendingInterrupt == instruction->intArgs[0])
-                   && instruction->opcode != AnmOpcode_EndOfScript)
+                     vm->prefix.pendingInterrupt == instruction->intArgs[0]) &&
+                   instruction->opcode != AnmOpcode_EndOfScript)
             {
-                if (instruction->opcode == AnmOpcode_InterruptLabel
-                    && instruction->intArgs[0] == -1)
+                if (instruction->opcode == AnmOpcode_InterruptLabel && instruction->intArgs[0] == -1)
                 {
                     nextInstruction = instruction;
                 }
-                instruction = (AnmRawInstr *) ((u8 *) instruction + instruction->instructionSize);
+                instruction = (AnmRawInstr *)((u8 *)instruction + instruction->instructionSize);
             }
 
             vm->prefix.pendingInterrupt = 0;
@@ -405,7 +404,7 @@ handleInterrupt:
 
             vm->interruptReturnTime = vm->prefix.currentTimeInScript;
             vm->interruptReturnInstruction = vm->currentInstruction;
-            instruction = (AnmRawInstr *) ((u8 *) instruction + instruction->instructionSize);
+            instruction = (AnmRawInstr *)((u8 *)instruction + instruction->instructionSize);
             vm->currentInstruction = instruction;
             vm->prefix.currentTimeInScript = vm->currentInstruction->time;
             vm->prefix.visible = true;
@@ -424,7 +423,8 @@ handleInterrupt:
             vm->prefix.type = instruction->intArgs[0];
             break;
         case AnmOpcode_AddU:
-            vm->prefix.uvScrollPos.x += GET_FLOAT_VAR(0);;
+            vm->prefix.uvScrollPos.x += GET_FLOAT_VAR(0);
+            ;
             if (vm->prefix.uvScrollPos.x >= 1.0f)
             {
                 vm->prefix.uvScrollPos.x -= 1.0f;
@@ -718,9 +718,9 @@ handleInterrupt:
         case AnmOpcode_Ins88:
             vm->prefix.flag17 = instruction->byteArgs[1];
             break;
-jump:
+        jump:
             vm->prefix.currentTimeInScript = instruction->intArgs[3];
-            vm->currentInstruction = (AnmRawInstr *) (((u8 *) vm->beginningOfScript) + instruction->intArgs[2]);
+            vm->currentInstruction = (AnmRawInstr *)(((u8 *)vm->beginningOfScript) + instruction->intArgs[2]);
             continue;
         default:
             break;
@@ -730,24 +730,27 @@ jump:
 #undef GET_FLOAT_VAR
 #undef GET_INT_VAR
 
-        vm->currentInstruction = (AnmRawInstr *) ((u8 *)instruction + instruction->instructionSize);
+        vm->currentInstruction = (AnmRawInstr *)((u8 *)instruction + instruction->instructionSize);
     }
 stop:
     if (vm->prefix.angleVel.x != 0.0f)
     {
-        vm->prefix.rotation.x = AddNormalizeAngle(vm->prefix.rotation.x, g_Supervisor.framerateMultiplier * vm->prefix.angleVel.x);
+        vm->prefix.rotation.x =
+            AddNormalizeAngle(vm->prefix.rotation.x, g_Supervisor.framerateMultiplier * vm->prefix.angleVel.x);
         vm->prefix.updateRotation = true;
     }
 
     if (vm->prefix.angleVel.y != 0.0f)
     {
-        vm->prefix.rotation.y = AddNormalizeAngle(vm->prefix.rotation.y, g_Supervisor.framerateMultiplier * vm->prefix.angleVel.y);
+        vm->prefix.rotation.y =
+            AddNormalizeAngle(vm->prefix.rotation.y, g_Supervisor.framerateMultiplier * vm->prefix.angleVel.y);
         vm->prefix.updateRotation = true;
     }
 
     if (vm->prefix.angleVel.z != 0.0f)
     {
-        vm->prefix.rotation.z = AddNormalizeAngle(vm->prefix.rotation.z, g_Supervisor.framerateMultiplier * vm->prefix.angleVel.z);
+        vm->prefix.rotation.z =
+            AddNormalizeAngle(vm->prefix.rotation.z, g_Supervisor.framerateMultiplier * vm->prefix.angleVel.z);
         vm->prefix.updateRotation = true;
     }
 
@@ -756,14 +759,14 @@ stop:
         if (vm->prefix.interpEndTimers[i] > 0)
         {
             vm->prefix.interpCurrentTimers[i]++;
-            if (vm->prefix.interpCurrentTimers[i] >= (int) vm->prefix.interpEndTimers[i])
+            if (vm->prefix.interpCurrentTimers[i] >= (int)vm->prefix.interpEndTimers[i])
             {
                 interp = 1.0f;
                 vm->prefix.interpEndTimers[i] = 0;
             }
             else
             {
-                interp = (float) vm->prefix.interpCurrentTimers[i] / (float) vm->prefix.interpEndTimers[i];
+                interp = (float)vm->prefix.interpCurrentTimers[i] / (float)vm->prefix.interpEndTimers[i];
             }
 
             switch (vm->prefix.interpModes[i])
@@ -813,12 +816,12 @@ stop:
                 }
                 break;
             case AnmInterp_RGB1:
-                vm->prefix.color1.r = interp * ((float) vm->color1Final.r - vm->color1Initial.r) + vm->color1Initial.r;
-                vm->prefix.color1.g = interp * ((float) vm->color1Final.g - vm->color1Initial.g) + vm->color1Initial.g;
-                vm->prefix.color1.b = interp * ((float) vm->color1Final.b - vm->color1Initial.b) + vm->color1Initial.b;
+                vm->prefix.color1.r = interp * ((float)vm->color1Final.r - vm->color1Initial.r) + vm->color1Initial.r;
+                vm->prefix.color1.g = interp * ((float)vm->color1Final.g - vm->color1Initial.g) + vm->color1Initial.g;
+                vm->prefix.color1.b = interp * ((float)vm->color1Final.b - vm->color1Initial.b) + vm->color1Initial.b;
                 break;
             case AnmInterp_Alpha1:
-                vm->prefix.color1.a = interp * ((float) vm->color1Final.a - vm->color1Initial.a) + vm->color1Initial.a;
+                vm->prefix.color1.a = interp * ((float)vm->color1Final.a - vm->color1Initial.a) + vm->color1Initial.a;
                 break;
             case AnmInterp_RGB2:
                 vm->prefix.color2.r = interp * ((float)vm->color2Final.r - vm->color2Initial.r) + vm->color2Initial.r;
@@ -829,9 +832,12 @@ stop:
                 vm->prefix.color2.a = interp * ((float)vm->color2Final.a - vm->color2Initial.a) + vm->color2Initial.a;
                 break;
             case AnmInterp_Rotate:
-                vm->prefix.rotation.x = AddNormalizeAngle((vm->rotateFinal.x - vm->rotateInitial.x) * interp, vm->rotateInitial.x);
-                vm->prefix.rotation.y = AddNormalizeAngle((vm->rotateFinal.y - vm->rotateInitial.y) * interp, vm->rotateInitial.y);
-                vm->prefix.rotation.z = AddNormalizeAngle((vm->rotateFinal.z - vm->rotateInitial.z) * interp, vm->rotateInitial.z);
+                vm->prefix.rotation.x =
+                    AddNormalizeAngle((vm->rotateFinal.x - vm->rotateInitial.x) * interp, vm->rotateInitial.x);
+                vm->prefix.rotation.y =
+                    AddNormalizeAngle((vm->rotateFinal.y - vm->rotateInitial.y) * interp, vm->rotateInitial.y);
+                vm->prefix.rotation.z =
+                    AddNormalizeAngle((vm->rotateFinal.z - vm->rotateInitial.z) * interp, vm->rotateInitial.z);
                 vm->prefix.updateRotation = true;
                 break;
             case AnmInterp_Scale:
@@ -914,7 +920,6 @@ u8 MixColors(u8 color1, u8 color2)
     return color;
 }
 
-
 void AnmManager::SetRenderStateForVm(AnmVm *vm)
 {
     if (this->currentBlendMode != vm->prefix.blendMode)
@@ -933,8 +938,7 @@ void AnmManager::SetRenderStateForVm(AnmVm *vm)
         }
     }
 
-    if (!g_Supervisor.IsDepthTestDisabled()
-        && this->disableZWrite != vm->prefix.zWriteDisabled)
+    if (!g_Supervisor.IsDepthTestDisabled() && this->disableZWrite != vm->prefix.zWriteDisabled)
     {
         this->disableZWrite = vm->prefix.zWriteDisabled;
         if (!this->disableZWrite)
@@ -995,10 +999,14 @@ ZunResult AnmManager::DrawInner(AnmVm *vm, i32 flags)
         }
     }
 
-    g_QuadVertices[0].textureUV.x = g_QuadVertices[2].textureUV.x = vm->loadedSprite->uvStart.x + vm->prefix.uvScrollPos.x;
-    g_QuadVertices[1].textureUV.x = g_QuadVertices[3].textureUV.x = vm->loadedSprite->uvEnd.x + vm->prefix.uvScrollPos.x;
-    g_QuadVertices[0].textureUV.y = g_QuadVertices[1].textureUV.y = vm->loadedSprite->uvStart.y + vm->prefix.uvScrollPos.y;
-    g_QuadVertices[2].textureUV.y = g_QuadVertices[3].textureUV.y = vm->loadedSprite->uvEnd.y + vm->prefix.uvScrollPos.y;
+    g_QuadVertices[0].textureUV.x = g_QuadVertices[2].textureUV.x =
+        vm->loadedSprite->uvStart.x + vm->prefix.uvScrollPos.x;
+    g_QuadVertices[1].textureUV.x = g_QuadVertices[3].textureUV.x =
+        vm->loadedSprite->uvEnd.x + vm->prefix.uvScrollPos.x;
+    g_QuadVertices[0].textureUV.y = g_QuadVertices[1].textureUV.y =
+        vm->loadedSprite->uvStart.y + vm->prefix.uvScrollPos.y;
+    g_QuadVertices[2].textureUV.y = g_QuadVertices[3].textureUV.y =
+        vm->loadedSprite->uvEnd.y + vm->prefix.uvScrollPos.y;
 
     triangleX1 = max(g_QuadVertices[0].pos.x, g_QuadVertices[1].pos.x);
     triangleX1 = max(g_QuadVertices[2].pos.x, triangleX1);
@@ -1016,10 +1024,9 @@ ZunResult AnmManager::DrawInner(AnmVm *vm, i32 flags)
     triangleY2 = min(g_QuadVertices[2].pos.y, triangleY2);
     triangleY2 = min(g_QuadVertices[3].pos.y, triangleY2);
 
-    if (triangleX1 < g_Supervisor.viewport.X
-        || triangleY1 < g_Supervisor.viewport.Y
-        || triangleX2 > (g_Supervisor.viewport.X + g_Supervisor.viewport.Width)
-        || triangleY2 > (g_Supervisor.viewport.Y + g_Supervisor.viewport.Height))
+    if (triangleX1 < g_Supervisor.viewport.X || triangleY1 < g_Supervisor.viewport.Y ||
+        triangleX2 > (g_Supervisor.viewport.X + g_Supervisor.viewport.Width) ||
+        triangleY2 > (g_Supervisor.viewport.Y + g_Supervisor.viewport.Height))
     {
         return ZUN_SUCCESS;
     }
@@ -1077,7 +1084,8 @@ void AnmManager::FlushVertexBuffer()
     g_Supervisor.d3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
     g_Supervisor.d3dDevice->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
     g_Supervisor.d3dDevice->SetVertexShader(D3DFVF_XYZRHW | D3DFVF_DIFFUSE | D3DFVF_TEX1);
-    g_Supervisor.d3dDevice->DrawPrimitiveUP(D3DPT_TRIANGLELIST, this->spritesToDraw * 2, this->vertexBufferStartPtr, sizeof(VertexTex1DiffuseXyzrhw));
+    g_Supervisor.d3dDevice->DrawPrimitiveUP(D3DPT_TRIANGLELIST, this->spritesToDraw * 2, this->vertexBufferStartPtr,
+                                            sizeof(VertexTex1DiffuseXyzrhw));
 
     this->vertexBufferStartPtr = this->vertexBufferEndPtr;
     this->spritesToDraw = 0;
@@ -1153,7 +1161,8 @@ ZunResult AnmManager::DrawNoRotation(AnmVm *vm)
     return this->DrawInner(vm, 1);
 }
 
-void AnmManager::TranslateRotation(VertexTex1DiffuseXyzrhw *vertex, float x, float y, float sine, float cosine, float xOffset, float yOffset)
+void AnmManager::TranslateRotation(VertexTex1DiffuseXyzrhw *vertex, float x, float y, float sine, float cosine,
+                                   float xOffset, float yOffset)
 {
     vertex->pos.x = x * cosine - y * sine + xOffset;
     vertex->pos.y = x * sine + y * cosine + yOffset;
@@ -1195,9 +1204,9 @@ ZunResult AnmManager::Draw2D(AnmVm *vm)
     y = (vm->prefix.spriteSize.y * vm->prefix.scale.y) / 2.0f;
 
     this->TranslateRotation(&g_QuadVertices[0], -x, -y, sine, cosine, xOffset, yOffset);
-    this->TranslateRotation(&g_QuadVertices[1],  x, -y, sine, cosine, xOffset, yOffset);
-    this->TranslateRotation(&g_QuadVertices[2], -x,  y, sine, cosine, xOffset, yOffset);
-    this->TranslateRotation(&g_QuadVertices[3],  x,  y, sine, cosine, xOffset, yOffset);
+    this->TranslateRotation(&g_QuadVertices[1], x, -y, sine, cosine, xOffset, yOffset);
+    this->TranslateRotation(&g_QuadVertices[2], -x, y, sine, cosine, xOffset, yOffset);
+    this->TranslateRotation(&g_QuadVertices[3], x, y, sine, cosine, xOffset, yOffset);
 
     g_QuadVertices[0].pos.z = g_QuadVertices[1].pos.z = g_QuadVertices[2].pos.z = g_QuadVertices[3].pos.z = vm->pos.z;
 
@@ -1562,8 +1571,8 @@ AnmLoaded *AnmManager::PostloadAnmEntry(AnmLoaded *anmLoaded)
 }
 
 #pragma var_order(result, startOfEntry, surfaceDesc, path, rawSprite, i, currentOffset, loadedSprite)
-int AnmManager::LoadTextureData(AnmLoaded *anmLoaded, i32 entryNumber, i32 currentSpriteNumber,
-                                i32 currentScriptNumber, AnmRawEntry *rawEntry)
+int AnmManager::LoadTextureData(AnmLoaded *anmLoaded, i32 entryNumber, i32 currentSpriteNumber, i32 currentScriptNumber,
+                                AnmRawEntry *rawEntry)
 {
     int result = 0;
     AnmLoadedSprite loadedSprite;
