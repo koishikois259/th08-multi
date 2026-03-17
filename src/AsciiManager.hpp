@@ -1,3 +1,4 @@
+#pragma once
 #include "ZunResult.hpp"
 #include "diffbuild.hpp"
 #include "inttypes.hpp"
