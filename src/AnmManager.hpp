@@ -374,9 +374,15 @@ struct AnmVm
         this->activeSpriteIndex = -1;
     }
 
+
     ZunBool IsVisible()
     {
         return this->prefix.visible;
+    }
+
+    void SetInterrupt(i16 interrupt)
+    {
+        this->prefix.pendingInterrupt = interrupt;
     }
 
     f32 GetFloatVar(f32 varId);

@@ -159,18 +159,9 @@ struct GameManager
     void AdvanceToNextStage()
     {
     }
-    BOOL FinalBClearedWithAnyTeam()
-    {
-        return FALSE;
-    }
-    BOOL FinalAClearedWithAnyTeam()
-    {
-        return FALSE;
-    }
-    BOOL FinalBClearedWithAllTeams()
-    {
-        return FALSE;
-    }
+    ZunBool FinalBClearedWithAnyTeam();
+    ZunBool FinalAClearedWithAnyTeam();
+    ZunBool FinalBClearedWithAllTeams();
 
     ZunBool IsUnknown()
     {

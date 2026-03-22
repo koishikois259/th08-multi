@@ -25,4 +25,19 @@ void GameManager::CutChain()
     g_Supervisor.framerateMultiplier = 1.0f;
 }
 
+ZunBool GameManager::FinalBClearedWithAnyTeam()
+{
+    return FALSE;
+}
+
+ZunBool GameManager::FinalAClearedWithAnyTeam()
+{
+    return FALSE;
+}
+
+ZunBool GameManager::FinalBClearedWithAllTeams()
+{
+    return FALSE;
+}
+
 }; // Namespace th08

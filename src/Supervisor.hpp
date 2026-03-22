@@ -4,7 +4,6 @@
 #include <d3dx8math.h>
 #include <dinput.h>
 
-#include "AsciiManager.hpp"
 #include "Global.hpp"
 #include "Midi.hpp"
 #include "ZunBool.hpp"
