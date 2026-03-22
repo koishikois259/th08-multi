@@ -40,7 +40,7 @@ def configure(build_type):
         writer.variable("link", "link.exe")
         writer.variable(
             "th08_link_flags",
-            "/subsystem:windows /machine:X86 /filealign:512 /incremental:no /opt:icf /opt:ref /map /mapinfo:exports /mapinfo:lines",
+            "/subsystem:windows /machine:X86 /filealign:512 /incremental:no /opt:noref /map /mapinfo:exports /mapinfo:lines",
         )
 
         writer.variable("msvc_deps_prefix", "Note: including file:")
