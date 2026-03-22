@@ -414,7 +414,7 @@ ChainCallbackResult Supervisor::OnUpdate(Supervisor *s)
 
     g_AnmManager->ResetFrameDebugInfo();
     g_AnmManager->ClearCameraSettings();
-    g_AnmManager->ResetMoreStuff();
+    g_AnmManager->SetMixColorDefault();
     g_AnmManager->screenShakeOffset.x = g_AnmManager->screenShakeOffset.y = 0.0f;
 
     g_AnmManager->ExecuteScriptOnVmArray(g_SupervisorLoadingVms, ARRAY_SIZE(g_SupervisorLoadingVms));

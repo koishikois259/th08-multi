@@ -1048,7 +1048,7 @@ ZunResult AnmManager::DrawInner(AnmVm *vm, i32 flags)
     {
         color.d3dColor = vm->prefix.flag17 ? vm->prefix.color2.d3dColor : vm->prefix.color1.d3dColor;
 
-        if (this->unk0x4 != 0)
+        if (this->useMixColor)
         {
             color.r = MixColors(color.r, this->color.r);
             color.g = MixColors(color.g, this->color.g);
