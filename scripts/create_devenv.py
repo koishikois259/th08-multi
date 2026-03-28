@@ -129,7 +129,7 @@ def check_file(path: Path, message: str) -> Path:
     return path.absolute()
 
 
-ONLY_CHOICES = ["vs", "dx8", "py", "pragma", "ninja", "satsuki", "ghidra", "objdiff"]
+ONLY_CHOICES = ["vs", "dx8", "py", "pragma", "ninja", "ghidra"]
 
 
 def parse_arguments() -> Namespace:
@@ -412,101 +412,6 @@ def download_requirements(dl_cache_path, steps, should_torrent, no_download):
             "sha256": "18f55bc5de27c20092e86ace8ef3dd3311662dc6193157e3b65c6bc94ce006d5",
         },
         {
-            "name": "satsuki",
-            "only": "satsuki",
-            "condition": is_win() and is_x86_64(),
-            "url": [
-                "https://github.com/happyhavoc/satsuki/releases/download/v0.1.2/x86_64-windows-satsuki.exe"
-            ],
-            "filename": "satsuki.exe",
-            "filename-alternative": "x86_64-windows-satsuki.exe",
-            "filesize": 7513088,
-            "sha256": "93baba162813f291f9975bce2440fb4c709bb40c5b120c2188852309a2025908",
-        },
-        {
-            "name": "satsuki",
-            "only": "satsuki",
-            "condition": is_win() and is_x86(),
-            "url": [
-                "https://github.com/happyhavoc/satsuki/releases/download/v0.1.2/i686-windows-satsuki.exe"
-            ],
-            "filename": "satsuki.exe",
-            "sha256": "fabda8be8b6c927d4f98f44aad80f5eaac9b8f6bc81eea7d834c1cea0b877a91",
-        },
-        {
-            "name": "satsuki",
-            "only": "satsuki",
-            "condition": sys.platform == "darwin" and is_x86_64(),
-            "url": [
-                "https://github.com/happyhavoc/satsuki/releases/download/v0.1.2/x86_64-macos-satsuki"
-            ],
-            "filename": "satsuki",
-            "sha256": "6ebe6df938767443e78103f2188dc3ea6fb2955a5c7cc91ff22c841cdcbc2a9f",
-        },
-        {
-            "name": "satsuki",
-            "only": "satsuki",
-            "condition": sys.platform == "darwin" and platform.machine() == "arm64",
-            "url": [
-                "https://github.com/happyhavoc/satsuki/releases/download/v0.1.2/aarch64-macos-satsuki"
-            ],
-            "filename": "satsuki",
-            "sha256": "410b520173cf2897b1414eee96bad089f4d9d24f18f697e3f6546786eb27702d",
-        },
-        {
-            "name": "satsuki",
-            "only": "satsuki",
-            "condition": sys.platform == "linux" and is_x86_64(),
-            "url": [
-                "https://github.com/happyhavoc/satsuki/releases/download/v0.1.2/x86_64-linux-satsuki"
-            ],
-            "filename": "satsuki",
-            "sha256": "e7a5f586b0f8febe5a1a6a3a0178486ec124c5dabc8ffb17bf0b892194dd8116",
-        },
-        # TODO: objdiff windows x86
-        {
-            "name": "objdiff-cli",
-            "only": "objdiff",
-            "condition": is_win() and is_x86_64(),
-            "url": [
-                "https://github.com/encounter/objdiff/releases/download/v2.0.0-beta.6/objdiff-cli-windows-x86_64.exe"
-            ],
-            "filename": "objdiff-cli.exe",
-            "filename-alternative": "objdiff-cli-windows-x86_64.exe",
-            "filesize": 7110144,
-            "sha256": "7e757fe74dc7949f62b684eed740eb18ee361e9cb414fa550283175713e88961",
-        },
-        {
-            "name": "objdiff-cli",
-            "only": "objdiff",
-            "condition": sys.platform == "darwin" and is_x86_64(),
-            "url": [
-                "https://github.com/encounter/objdiff/releases/download/v2.0.0-beta.6/objdiff-cli-macos-x86_64"
-            ],
-            "filename": "objdiff-cli",
-            "sha256": "00dba386808ef9ba3ec5ae57b8f2799aa4117982d95eed0b14f5586dac42803a",
-        },
-        {
-            "name": "objdiff-cli",
-            "only": "objdiff",
-            "condition": sys.platform == "darwin" and platform.machine() == "arm64",
-            "url": [
-                "https://github.com/encounter/objdiff/releases/download/v2.0.0-beta.6/objdiff-cli-macos-arm64"
-            ],
-            "filename": "objdiff-cli",
-            "sha256": "d0b885f0a20323befe620b84c8205b0866020ddc5e9af8bd3666f231ae33fcbe",
-        },
-        {
-            "name": "objdiff-cli",
-            "only": "objdiff",
-            "condition": sys.platform == "linux" and is_x86_64(),
-            "url": [
-                "https://github.com/encounter/objdiff/releases/download/v2.0.0-beta.6/objdiff-cli-linux-x86_64"
-            ],
-            "filename": "objdiff-cli",
-            "sha256": "f76a7976e694db496686eb14495e54dd83ee9cdef286a98537bfbce0c2328ba1",
-        },
-        {
             "name": "ghidra",
             "only": "ghidra",
             "url": [
@@ -516,17 +421,6 @@ def download_requirements(dl_cache_path, steps, should_torrent, no_download):
             "filename-alternative": "release.zip",
             "filesize": 501858473,
             "sha256": "524f6bdfa134afbe722498953eb21efacd93a876842e31fd04f93592270976a3",
-        },
-        {
-            "name": "ghidra-delinker",
-            "only": "ghidra",
-            "url": [
-                "https://github.com/happyhavoc/ghidra-delinker-extension/releases/download/v0.5.0-th06.1/ghidra_11.1_PUBLIC_20240831_ghidra-delinker-extension.zip"
-            ],
-            "filename": "ghidra-delinker.zip",
-            "filename-alternative": "ghidra_11.1_PUBLIC_20240831_ghidra-delinker-extension.zip",
-            "filesize": 7850347,
-            "sha256": "a9b063294412fb095d749d06905a05cdd42714b82818141d6844955f11680691",
         },
     ]
 
@@ -731,20 +625,6 @@ def install_ninja(ninja_zip_path, output_path):
     shutil.unpack_archive(str(ninja_zip_path), str(install_path))
 
 
-def install_satsuki(dl_cache_path, output_path):
-    print("Installing satsuki")
-    if sys.platform in ["win32", "cygwin"]:
-        satsuki_name = "satsuki.exe"
-    else:
-        satsuki_name = "satsuki"
-
-    install_path = output_path / "satsuki"
-    os.makedirs(str(install_path), exist_ok=True)
-    shutil.copyfile(str(dl_cache_path / satsuki_name), str(install_path / satsuki_name))
-    mode = os.stat(str(install_path / satsuki_name)).st_mode | stat.S_IXUSR
-    os.chmod(str(install_path / satsuki_name), mode)
-
-
 def install_ghidra(dl_cache_path, tmp_dir, output_path):
     install_path = output_path / "ghidra"
     with zipfile.ZipFile(str(dl_cache_path / "ghidra.zip")) as ghidra_zip:
@@ -760,29 +640,6 @@ def install_ghidra(dl_cache_path, tmp_dir, output_path):
             print(str(item) + "->" + str(install_path))
             shutil.move(str(item), str(install_path))
             break
-
-    # Next, install ghidra-delinker-extension
-    shutil.unpack_archive(
-        str(dl_cache_path / "ghidra-delinker.zip"),
-        str(install_path / "Ghidra" / "Extensions"),
-        format="zip",
-    )
-
-
-def install_objdiff(dl_cache_path, output_path):
-    print("Installing objdiff")
-    if sys.platform in ["win32", "cygwin"]:
-        objdiff_cli_name = "objdiff-cli.exe"
-    else:
-        objdiff_cli_name = "objdiff-cli"
-
-    install_path = output_path / "objdiff"
-    os.makedirs(str(install_path), exist_ok=True)
-    shutil.copyfile(
-        str(dl_cache_path / objdiff_cli_name), str(install_path / objdiff_cli_name)
-    )
-    mode = os.stat(str(install_path / objdiff_cli_name)).st_mode | stat.S_IXUSR
-    os.chmod(str(install_path / objdiff_cli_name), mode)
 
 
 def main(args: Namespace) -> int:
@@ -822,12 +679,8 @@ def main(args: Namespace) -> int:
             install_pragma_var_order(tmp_dir, output_path)
         if "ninja" in steps:
             install_ninja(ninja_zip_path, output_path)
-        if "satsuki" in steps:
-            install_satsuki(dl_cache_path, output_path)
         if "ghidra" in steps:
             install_ghidra(dl_cache_path, tmp_dir, output_path)
-        if "objdiff" in steps:
-            install_objdiff(dl_cache_path, output_path)
 
     return 0
 
