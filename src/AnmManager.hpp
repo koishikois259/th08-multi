@@ -374,7 +374,6 @@ struct AnmVm
         this->activeSpriteIndex = -1;
     }
 
-
     ZunBool IsVisible()
     {
         return this->prefix.visible;

@@ -6,7 +6,6 @@ import os.path
 from pathlib import Path
 import platform
 import shutil
-import stat
 import subprocess
 import sys
 import zipfile

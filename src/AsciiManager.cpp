@@ -47,20 +47,20 @@ ZunResult AsciiManager::RegisterChain()
 {
     AsciiManager *ascii = &g_AsciiManager;
 
-    g_AsciiManagerCalcChain.SetCallback((ChainCallback) AsciiManager::OnUpdate);
-    g_AsciiManagerCalcChain.addedCallback = (ChainLifetimeCallback) AsciiManager::AddedCallback;
-    g_AsciiManagerCalcChain.deletedCallback = (ChainLifetimeCallback) AsciiManager::DeletedCallback;
+    g_AsciiManagerCalcChain.SetCallback((ChainCallback)AsciiManager::OnUpdate);
+    g_AsciiManagerCalcChain.addedCallback = (ChainLifetimeCallback)AsciiManager::AddedCallback;
+    g_AsciiManagerCalcChain.deletedCallback = (ChainLifetimeCallback)AsciiManager::DeletedCallback;
     g_AsciiManagerCalcChain.arg = ascii;
     if (g_Chain.AddToCalcChain(&g_AsciiManagerCalcChain, 1) != ZUN_SUCCESS)
     {
         return ZUN_ERROR;
     }
 
-    g_AsciiManagerDrawChainLowPrio.SetCallback((ChainCallback) AsciiManager::OnDrawLowPrio);
+    g_AsciiManagerDrawChainLowPrio.SetCallback((ChainCallback)AsciiManager::OnDrawLowPrio);
     g_AsciiManagerDrawChainLowPrio.arg = ascii;
     g_Chain.AddToDrawChain(&g_AsciiManagerDrawChainLowPrio, 20);
 
-    g_AsciiManagerDrawChainHighPrio.SetCallback((ChainCallback) AsciiManager::OnDrawHighPrio);
+    g_AsciiManagerDrawChainHighPrio.SetCallback((ChainCallback)AsciiManager::OnDrawHighPrio);
     g_AsciiManagerDrawChainHighPrio.arg = ascii;
     g_Chain.AddToDrawChain(&g_AsciiManagerDrawChainHighPrio, 14);
 
@@ -112,7 +112,6 @@ void AsciiManager::AddFormatString2(D3DXVECTOR3 *position, const char *fmt, ...)
 
 void AsciiManager::OnDrawLowPrioImpl()
 {
-
 }
 
 void AsciiManager::CreateScorePopup(D3DXVECTOR3 *position, i32 number, D3DCOLOR color)

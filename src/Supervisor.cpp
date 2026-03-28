@@ -1,3 +1,4 @@
+#include "Supervisor.hpp"
 #include "AnmManager.hpp"
 #include "AsciiManager.hpp"
 #include "Ending.hpp"
@@ -8,7 +9,6 @@
 #include "ResultScreen.hpp"
 #include "ScoreDat.hpp"
 #include "SoundPlayer.hpp"
-#include "Supervisor.hpp"
 #include "TextHelper.hpp"
 #include "Title.hpp"
 #include "i18n.hpp"

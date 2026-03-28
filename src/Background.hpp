@@ -1,9 +1,9 @@
 #pragma once
+#include "Global.hpp"
+#include "ZunResult.hpp"
 #include "diffbuild.hpp"
 #include "inttypes.hpp"
 #include "utils.hpp"
-#include "ZunResult.hpp"
-#include "Global.hpp"
 #include <windows.h>
 
 namespace th08

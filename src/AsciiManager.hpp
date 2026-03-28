@@ -1,18 +1,18 @@
 #pragma once
-#include "Supervisor.hpp"
-#include "diffbuild.hpp"
-#include "inttypes.hpp"
-#include "Global.hpp"
 #include "AnmManager.hpp"
+#include "Global.hpp"
+#include "Supervisor.hpp"
 #include "ZunColor.hpp"
 #include "ZunResult.hpp"
+#include "diffbuild.hpp"
+#include "inttypes.hpp"
 
 #include <d3dx8.h>
 
-#define ASCII_MAX_STRINGS               256
-#define ASCII_MAX_SCORE_POPUPS          720
-#define ASCII_MAX_PLAYER_POPUPS         3
-#define ASCII_MAX_TIME_POPUPS           128
+#define ASCII_MAX_STRINGS 256
+#define ASCII_MAX_SCORE_POPUPS 720
+#define ASCII_MAX_PLAYER_POPUPS 3
+#define ASCII_MAX_TIME_POPUPS 128
 
 namespace th08
 {
