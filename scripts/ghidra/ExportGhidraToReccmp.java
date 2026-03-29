@@ -228,7 +228,7 @@ public class ExportGhidraToReccmp extends GhidraScript
     @Override public void run() throws Exception
     {
         String fileContents = makeReccmpSymbolCSV();
-        File outputFile = askFile("reccmp-symbol.csv", "Save");
+        File outputFile = askFile("reccmp-symbols.csv", "Save");
         Files.write(outputFile.toPath(), fileContents.getBytes());
 
         fileContents = makeReccmpStringsCSV();

@@ -245,3 +245,16 @@ address,type,size
 0x4c7ff0,float,4
 0x4c7ff4,float,4
 0x4c7ff8,float,4
+0x4c9fd0,float,4
+0x4c9fe0,float,4
+0x4ca180,float,4
+0x4ca190,float,4
+0x18da00c,float,4
+0x18da010,float,4
+0x18da014,float,4
+0x18da220,float,4
+0x18da224,float,4
+0x18da228,float,4
+0x18da22c,float,4
+0x18da230,float,4
+0x18da234,float,4

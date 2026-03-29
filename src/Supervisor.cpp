@@ -1,5 +1,6 @@
 #include "Supervisor.hpp"
 #include "AnmManager.hpp"
+#include "AsciiManager.hpp"
 #include "Ending.hpp"
 #include "GameManager.hpp"
 #include "Global.hpp"
@@ -29,6 +30,11 @@ Supervisor::Supervisor()
 
     this->flags.unk6 = true;
     this->flags.unk8 = true;
+}
+
+ChainCallbackResult Supervisor::DrawFpsCounter(Supervisor *s)
+{
+    return CHAIN_CALLBACK_RESULT_CONTINUE;
 }
 
 ChainCallbackResult Supervisor::OnDraw2(Supervisor *s)
@@ -387,6 +393,11 @@ ZunResult Supervisor::SetupDInput()
     return ZUN_ERROR;
 }
 
+ZunResult Supervisor::DeletedCallback(Supervisor *s)
+{
+    return ZUN_SUCCESS;
+}
+
 ChainCallbackResult Supervisor::OnUpdate(Supervisor *s)
 {
     if (s->flags.receivedCloseMsg && !s->IsSubthreadRunning())
@@ -403,7 +414,7 @@ ChainCallbackResult Supervisor::OnUpdate(Supervisor *s)
 
     g_AnmManager->ResetFrameDebugInfo();
     g_AnmManager->ClearCameraSettings();
-    g_AnmManager->ResetMoreStuff();
+    g_AnmManager->SetMixColorDefault();
     g_AnmManager->screenShakeOffset.x = g_AnmManager->screenShakeOffset.y = 0.0f;
 
     g_AnmManager->ExecuteScriptOnVmArray(g_SupervisorLoadingVms, ARRAY_SIZE(g_SupervisorLoadingVms));
@@ -752,6 +763,11 @@ void Supervisor::TickTimer(int *frames, float *subframes)
     }
 }
 
+ZunBool Supervisor::TakeSnapshot(const char *filePath)
+{
+    return FALSE;
+}
+
 #pragma var_order(fileSize, configFileBuffer, bgmHandle, bytesRead, bgmBuffer, bgmHandle2, bytesRead2, bgmBuffer2)
 ZunResult Supervisor::LoadConfig(char *configFile)
 {
@@ -974,6 +990,10 @@ void Supervisor::InitializeCriticalSections()
     }
 }
 
+void Supervisor::DeleteCriticalSections()
+{
+}
+
 i32 Supervisor::EnableFog()
 {
     g_AnmManager->FlushVertexBuffer();
@@ -1091,6 +1111,11 @@ void Supervisor::UpdatePlayTime(Supervisor *s)
     }
 
     s->totalPlayTime = playTime;
+}
+
+ZunResult Supervisor::VerifyExeIntegrity(const char *version, i32 exeSize, i32 checksum)
+{
+    return ZUN_ERROR;
 }
 
 }; // namespace th08

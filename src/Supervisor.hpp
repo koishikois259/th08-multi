@@ -4,7 +4,6 @@
 #include <d3dx8math.h>
 #include <dinput.h>
 
-#include "AsciiManager.hpp"
 #include "Global.hpp"
 #include "Midi.hpp"
 #include "ZunBool.hpp"
@@ -122,7 +121,7 @@ struct Supervisor
     static ChainCallbackResult DrawFpsCounter(Supervisor *s);
     static ChainCallbackResult OnDraw2(Supervisor *s);
     static ChainCallbackResult OnDraw3(Supervisor *s);
-    ZunResult VerifyExeIntegrity(char *version, i32 exeSize, i32 exeChecksum);
+    ZunResult VerifyExeIntegrity(const char *version, i32 exeSize, i32 exeChecksum);
 
     ZunResult LoadConfig(char *configFile);
     void ThreadClose();
@@ -130,7 +129,7 @@ struct Supervisor
     void InitializeCriticalSections();
     void DeleteCriticalSections();
     void TickTimer(i32 *frames, float *subframes);
-    ZunBool TakeSnapshot(char *filePath);
+    ZunBool TakeSnapshot(const char *filePath);
     void SetRenderState(D3DRENDERSTATETYPE renderStateType, int value);
     i32 DisableFog();
     i32 EnableFog();

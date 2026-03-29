@@ -156,10 +156,12 @@ struct GameManager
 {
     static ZunResult RegisterChain();
     static void CutChain();
-    void AdvanceToNextStage();
-    BOOL FinalBClearedWithAnyTeam();
-    BOOL FinalAClearedWithAnyTeam();
-    BOOL FinalBClearedWithAllTeams();
+    void AdvanceToNextStage()
+    {
+    }
+    ZunBool FinalBClearedWithAnyTeam();
+    ZunBool FinalAClearedWithAnyTeam();
+    ZunBool FinalBClearedWithAllTeams();
 
     ZunBool IsUnknown()
     {

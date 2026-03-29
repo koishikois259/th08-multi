@@ -8,6 +8,11 @@ DIFFABLE_STATIC(GameManager, g_GameManager);
 DIFFABLE_STATIC(ChainElem, g_GameManagerCalcChain);
 DIFFABLE_STATIC(ChainElem, g_GameManagerDrawChain);
 
+ZunResult GameManager::RegisterChain()
+{
+    return ZUN_ERROR;
+}
+
 void GameManager::CutChain()
 {
     g_Chain.Cut(&g_GameManagerCalcChain);
@@ -18,6 +23,21 @@ void GameManager::CutChain()
     }
     g_GameManager.globals->displayScore = g_GameManager.globals->score;
     g_Supervisor.framerateMultiplier = 1.0f;
+}
+
+ZunBool GameManager::FinalBClearedWithAnyTeam()
+{
+    return FALSE;
+}
+
+ZunBool GameManager::FinalAClearedWithAnyTeam()
+{
+    return FALSE;
+}
+
+ZunBool GameManager::FinalBClearedWithAllTeams()
+{
+    return FALSE;
 }
 
 }; // Namespace th08

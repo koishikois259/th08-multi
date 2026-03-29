@@ -1048,7 +1048,7 @@ ZunResult AnmManager::DrawInner(AnmVm *vm, i32 flags)
     {
         color.d3dColor = vm->prefix.flag17 ? vm->prefix.color2.d3dColor : vm->prefix.color1.d3dColor;
 
-        if (this->unk0x4 != 0)
+        if (this->useMixColor)
         {
             color.r = MixColors(color.r, this->color.r);
             color.g = MixColors(color.g, this->color.g);
@@ -1888,4 +1888,14 @@ void AnmManager::CopySurfaceToBackbuffer(i32 surfaceIdx, i32 left, i32 top, i32 
     g_Supervisor.d3dDevice->CopyRects(this->surfaces[surfaceIdx], &sourceRect, 1, destSurface, &destPoint);
     destSurface->Release();
 }
+
+void AnmManager::CaptureToTexture(i32 captureAnmIdx, i32 srcX, i32 srcY, i32 srcW, i32 srcH, i32 dstX, i32 dstY,
+                                  i32 dstW, i32 dstH)
+{
+}
+void AnmManager::CaptureToSurface(i32 captureSurfaceIdx, i32 srcX, i32 srcY, i32 srcW, i32 srcH, i32 dstX, i32 dstY,
+                                  i32 dstW, i32 dstH)
+{
+}
+
 }; // Namespace th08

@@ -1,4 +1,6 @@
 #pragma once
+#include "Global.hpp"
+#include "ZunResult.hpp"
 #include "diffbuild.hpp"
 #include "inttypes.hpp"
 #include "utils.hpp"
@@ -8,6 +10,25 @@ namespace th08
 {
 struct Background
 {
+    Background();
+
+    static ChainCallbackResult OnUpdate(Background *background);
+    static ChainCallbackResult OnDrawHighPrio(Background *background);
+    static ChainCallbackResult OnDrawLowPrio(Background *background);
+    static ZunResult AddedCallback(Background *background);
+    static ZunResult RegisterChain();
+    static ZunResult DeletedCallback();
+    static void CutChain();
+    ZunResult LoadStageData();
+
+    void SetCamera1()
+    {
+    }
+
+    void SetCamera2()
+    {
+    }
+
     unknown_fields(0x0, 0xb20);
     u8 skyFogNeedsSetup; // Leftover from earlier games. Never checked in IN
     unknown_fields(0xb21, 0x5adf);

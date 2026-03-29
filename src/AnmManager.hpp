@@ -379,6 +379,11 @@ struct AnmVm
         return this->prefix.visible;
     }
 
+    void SetInterrupt(i16 interrupt)
+    {
+        this->prefix.pendingInterrupt = interrupt;
+    }
+
     f32 GetFloatVar(f32 varId);
     i32 GetIntVar(i32 varId);
     f32 *GetFloatVarPtr(f32 *varPtr, u16 varMask, u32 variableNumber);
@@ -553,10 +558,16 @@ struct AnmManager
         }
     }
 
-    void ResetMoreStuff()
+    void SetMixColorDefault()
     {
-        unk0x4 = 0;
+        this->useMixColor = FALSE;
         this->color.d3dColor = 0x80808080;
+    }
+
+    void SetMixColor(D3DCOLOR color)
+    {
+        this->useMixColor = TRUE;
+        this->color.d3dColor = color;
     }
 
     void CaptureToTexture(i32 captureAnmIdx, i32 srcX, i32 srcY, i32 srcW, i32 srcH, i32 dstX, i32 dstY, i32 dstW,
@@ -568,7 +579,7 @@ struct AnmManager
     void FlushVertexBuffer();
 
     ZunColor color;
-    i32 unk0x4;
+    ZunBool useMixColor;
     i32 captureSurfaceIdx;
     u32 unk0xc;
     u32 scriptsExecutedThisFrame;
