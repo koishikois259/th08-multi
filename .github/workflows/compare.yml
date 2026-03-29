@@ -54,8 +54,8 @@ jobs:
           Write-Host "Got: $hash"
           exit 1
         }
-        ORIGINAL_URL: ${{ secrets.ORIGINAL_URL }}
       env:
+        ORIGINAL_URL: ${{ secrets.ORIGINAL_URL }}
     - name: Download reimplemented game binary for comparison (1/2)
       uses: actions/github-script@v6
       with:
