@@ -16,10 +16,10 @@ struct Gui
 
     static ZunResult AddedCallback(Gui *gui);
     static ZunResult DeletedCallback(Gui *gui);
-    
+
     static ZunResult RegisterChain();
     static void CutChain();
-    
+
     ZunResult ActualAddedCallback();
     ZunResult LoadMsg(const char *path);
     void FreeMsgFile();

@@ -19,7 +19,6 @@ ZunResult TitleScreen::ActualAddedCallback()
 
 void TitleScreen::TitleSetupThread(void)
 {
-
 }
 
 void TitleScreen::DisplayInfoImage(const char *path)

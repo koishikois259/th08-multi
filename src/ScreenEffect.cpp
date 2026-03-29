@@ -21,7 +21,8 @@ void ScreenEffect::DrawSquare(ZunRect *rectDimensions, D3DCOLOR color)
 {
 }
 
-void ScreenEffect::DrawSquareShaded(ZunRect *rect, D3DCOLOR topLeft, D3DCOLOR topRight, D3DCOLOR bottomLeft, D3DCOLOR bottomRight)
+void ScreenEffect::DrawSquareShaded(ZunRect *rect, D3DCOLOR topLeft, D3DCOLOR topRight, D3DCOLOR bottomLeft,
+                                    D3DCOLOR bottomRight)
 {
 }
 
@@ -30,7 +31,8 @@ ChainCallbackResult ScreenEffect::CalcFadeOut(ScreenEffect *screenEffect)
     return CHAIN_CALLBACK_RESULT_CONTINUE;
 }
 
-ScreenEffect *ScreenEffect::RegisterChain(ScreenEffectType effect, i32 ticks, i32 param_3, i32 param_4, i32 param_5, i32 param_6)
+ScreenEffect *ScreenEffect::RegisterChain(ScreenEffectType effect, i32 ticks, i32 param_3, i32 param_4, i32 param_5,
+                                          i32 param_6)
 {
     return NULL;
 }

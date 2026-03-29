@@ -24,7 +24,6 @@ namespace th08
 DIFFABLE_STATIC(Supervisor, g_Supervisor);
 DIFFABLE_STATIC_ARRAY(AnmVm, 3, g_SupervisorLoadingVms);
 
-
 ChainCallbackResult Supervisor::OnUpdate(Supervisor *s)
 {
     if (s->flags.receivedCloseMsg && !s->IsSubthreadRunning())
@@ -976,7 +975,6 @@ ZunBool Supervisor::IsSlowModeEnabled()
 {
     return FALSE;
 }
-
 
 i32 Supervisor::EnableFog()
 {

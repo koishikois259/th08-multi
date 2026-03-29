@@ -128,15 +128,15 @@ def configure(build_type):
             "Ending",
             "EnemyManager",
             "BulletManager",  # etama.obj
-            "Gui",            # front.obj
+            "Gui",  # front.obj
             "GameManager",
             "utils",
             "Global",
-            "TextHelper",     # grpfont.obj
+            "TextHelper",  # grpfont.obj
             "ItemManager",
             "main",
             "Midi",
-            "Supervisor",     # mother.obj
+            "Supervisor",  # mother.obj
             "MusicRoom",
             "Player",
             "ReplayManager",
@@ -144,7 +144,7 @@ def configure(build_type):
             "ScoreDat",
             "ScreenEffect",
             "SoundPlayer",
-            "AnmManager",     # sprtlib.obj
+            "AnmManager",  # sprtlib.obj
             "TitleScreen",
             "zwave",
         ]

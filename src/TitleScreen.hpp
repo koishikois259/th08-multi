@@ -1,7 +1,7 @@
 #pragma once
 
-#include "ZunResult.hpp"
 #include "Global.hpp"
+#include "ZunResult.hpp"
 
 namespace th08
 {

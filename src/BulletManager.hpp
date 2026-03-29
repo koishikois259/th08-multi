@@ -7,7 +7,6 @@ namespace th08
 
 struct BulletTypeSprites
 {
-    
 };
 
 struct Laser
@@ -21,7 +20,7 @@ struct Bullet
 struct BulletManager
 {
     void Initialize();
-    
+
     static ZunResult RegisterChain();
     static ChainCallbackResult OnUpdate(BulletManager *bulletManager);
     static ChainCallbackResult OnDraw(BulletManager *bulletManager);

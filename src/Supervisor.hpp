@@ -290,7 +290,7 @@ struct Supervisor
 C_ASSERT(sizeof(Supervisor) == 0x364);
 DIFFABLE_EXTERN(Supervisor, g_Supervisor);
 
-#define CRASH_GAME()        memset(&g_Supervisor, -1, sizeof(g_Supervisor))
+#define CRASH_GAME() memset(&g_Supervisor, -1, sizeof(g_Supervisor))
 
 struct ZunTimer
 {

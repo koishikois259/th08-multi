@@ -60,4 +60,4 @@ C_ASSERT(sizeof(ItemManager) == 0x17b094);
 
 DIFFABLE_EXTERN(ItemManager, g_ItemManager);
 
-};
+}; // namespace th08

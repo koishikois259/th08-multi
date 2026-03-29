@@ -1,9 +1,9 @@
 #pragma once
 
+#include "Global.hpp"
 #include "ZunResult.hpp"
 #include "inttypes.hpp"
 #include "utils.hpp"
-#include "Global.hpp"
 
 namespace th08
 {

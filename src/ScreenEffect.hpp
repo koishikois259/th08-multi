@@ -1,8 +1,8 @@
 #pragma once
 
+#include "Global.hpp"
 #include "inttypes.hpp"
 #include "utils.hpp"
-#include "Global.hpp"
 #include <d3dx8.h>
 
 namespace th08
@@ -19,10 +19,12 @@ struct ScreenEffect
 
     static ChainCallbackResult CalcFadeIn(ScreenEffect *screenEffect);
     static void DrawSquare(ZunRect *rectDimensions, D3DCOLOR color);
-    static void DrawSquareShaded(ZunRect *rect, D3DCOLOR topLeft, D3DCOLOR topRight, D3DCOLOR bottomLeft, D3DCOLOR bottomRight);
+    static void DrawSquareShaded(ZunRect *rect, D3DCOLOR topLeft, D3DCOLOR topRight, D3DCOLOR bottomLeft,
+                                 D3DCOLOR bottomRight);
     static ChainCallbackResult CalcFadeOut(ScreenEffect *screenEffect);
 
-    static ScreenEffect *RegisterChain(ScreenEffectType effect, i32 ticks, i32 param_3, i32 param_4, i32 param_5, i32 param_6);
+    static ScreenEffect *RegisterChain(ScreenEffectType effect, i32 ticks, i32 param_3, i32 param_4, i32 param_5,
+                                       i32 param_6);
 
     static ChainCallbackResult DrawFullFade(ScreenEffect *screenEffect);
 
