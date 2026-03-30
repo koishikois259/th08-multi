@@ -47,7 +47,7 @@ jobs:
       if: steps.cache.outputs.cache-hit != 'true'
       run: |
         curl -L $env:ORIGINAL_URL -o resources/th08.exe
-        $hash = (Get-FileHash resources/game.exe).Hash
+        $hash = (Get-FileHash resources/th08.exe).Hash
         if ($hash -ne $env:EXPECTED_HASH) {
           Write-Host "Downloaded file with unexpected hash."
           Write-Host "Expected: " $env:EXPECTED_HASH
