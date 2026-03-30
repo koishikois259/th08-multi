@@ -7,7 +7,7 @@ def main():
     report_filename = tempfile.mktemp()
 
     subprocess.run(
-        ["reccmp-reccmp", "--target", "th08", "--json", report_filename], check=True
+        ["reccmp-reccmp", "--target", "th08", "--json", report_filename], check=True, stdout=subprocess.DEVNULL
     )
 
     reccmp_data = ""
