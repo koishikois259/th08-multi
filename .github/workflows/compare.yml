@@ -41,12 +41,12 @@ jobs:
       uses: actions/cache@v4
       id: cache
       with:
-        path: resources/game.exe
+        path: resources/th08.exe
         key: 9f76483c46256804792399296619c1274363c31cd8f1775fafb55106fb852245
     - name: Download original game binary for comparison
       if: steps.cache.outputs.cache-hit != 'true'
       run: |
-        curl -L $env:ORIGINAL_URL -o resources/game.exe
+        curl -L $env:ORIGINAL_URL -o resources/th08.exe
         $hash = (Get-FileHash resources/game.exe).Hash
         if ($hash -ne $env:EXPECTED_HASH) {
           Write-Host "Downloaded file with unexpected hash."
@@ -94,19 +94,11 @@ jobs:
           core.setOutput("head_repository_full_name", workflowRunInfo.data.head_repository.full_name)
           core.setOutput("head_sha", workflowRunInfo.data.head_sha)
           console.log(workflowRunInfo.data.head_repository.full_name, workflowRunInfo.data.head_sha)
-    - name: Use reccmp-project.yml from target repo
-      run: curl -L https://raw.githubusercontent.com/${{steps.workflow_run_info.outputs.head_repository_full_name}}/${{steps.workflow_run_info.outputs.head_sha}}/reccmp-project.yml -o reccmp-project.yml --fail
-    - name: Use reccmp-symbols.csv from target repo
-      run: curl -L https://raw.githubusercontent.com/${{steps.workflow_run_info.outputs.head_repository_full_name}}/${{steps.workflow_run_info.outputs.head_sha}}/config/reccmp-symbols.csv -o config/reccmp-symbols.csv --fail
-    - name: Use reccmp-strings.csv from target repo
-      run: curl -L https://raw.githubusercontent.com/${{steps.workflow_run_info.outputs.head_repository_full_name}}/${{steps.workflow_run_info.outputs.head_sha}}/config/reccmp-strings.csv -o config/reccmp-strings.csv --fail
-    - name: Use reccmp-floats.csv from target repo
-      run: curl -L https://raw.githubusercontent.com/${{steps.workflow_run_info.outputs.head_repository_full_name}}/${{steps.workflow_run_info.outputs.head_sha}}/config/reccmp-floats.csv -o config/reccmp-floats.csv --fail
     - name: Install reccmp
       run: pip install reccmp
     - name: Setup reccmp
       run: |
-        reccmp-project detect --search-path .
+        reccmp-project detect --search-path resources/
         cd recompiled
         reccmp-project detect --what recompiled
     - name: Create diff summary
