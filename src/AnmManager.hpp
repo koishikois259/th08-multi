@@ -391,6 +391,8 @@ struct AnmVm
 
     void Initialize()
     {
+        memset(this, 0, sizeof(AnmVm));
+
         this->prefix.scale.x = 1.0f;
         this->prefix.scale.y = 1.0f;
         this->prefix.color1.d3dColor = COLOR_WHITE;
