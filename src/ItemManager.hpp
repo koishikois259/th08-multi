@@ -68,7 +68,7 @@ struct ItemManager
     static void UpdatePointItemExtendThreshold();
     void OnUpdate();
     void AutoCollectAllItems();
-    void ConventAllPowerItemsToTimeOrbs(Item *item);
+    void ConvertAllPowerItemsToTimeOrbs(Item *item);
     void CancelAutoCollect();
     void OnDraw();
     i32 GetTimeOrbCount();

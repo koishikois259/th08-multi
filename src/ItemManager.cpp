@@ -42,6 +42,7 @@ void ItemManager::UpdatePointItemExtendThreshold()
 
 void ItemManager::OnUpdate()
 {
+    // TODO: NEEDS WORK ON Gui
 }
 
 void Item::CollectPowerSmall()
@@ -68,8 +69,9 @@ void ItemManager::AutoCollectAllItems()
 {
 }
 
-void ItemManager::ConventAllPowerItemsToTimeOrbs(Item *item)
+void ItemManager::ConvertAllPowerItemsToTimeOrbs(Item *item)
 {
+    // TODO: NEEDS WORK ON EffectManager
 }
 
 void ItemManager::CancelAutoCollect()
