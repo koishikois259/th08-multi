@@ -99,6 +99,11 @@ struct AsciiManager
     void ResetStrings();
     void SetSpaceWidth(i32 spaceWidth);
 
+    void SetColor(D3DCOLOR color)
+    {
+        this->color = color;
+    }
+
     AnmVm largeText;
     AnmVm smallScoreText;
     AnmVm popupText;

@@ -154,6 +154,7 @@ struct Supervisor
 
     void ThreadClose();
     void SetupLoadingVms(D3DXVECTOR3 *position);
+    void SetupLoadingVmsAndInitCapture(D3DXVECTOR3 *position);
     void InitializeCriticalSections();
     void DeleteCriticalSections();
     void TickTimer(i32 *frames, float *subframes);

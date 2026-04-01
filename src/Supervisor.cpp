@@ -1131,19 +1131,50 @@ void Supervisor::ThreadClose()
     }
 }
 
-void Supervisor::SetupLoadingVms(D3DXVECTOR3 *position)
+void Supervisor::SetupLoadingVms(D3DXVECTOR3* position)
 {
-    if (!this->loadingVmsHaveBeenSetup)
+    if (this->loadingVmsHaveBeenSetup == 0)
     {
         this->loadingAnm->ExecuteAnmIdx(&g_SupervisorLoadingVms[0], 0);
         this->loadingAnm->ExecuteAnmIdx(&g_SupervisorLoadingVms[1], 1);
         this->loadingAnm->ExecuteAnmIdx(&g_SupervisorLoadingVms[2], 2);
 
-        this->loadingVmsHaveBeenSetup = TRUE;
+        this->loadingVmsHaveBeenSetup = 1;
 
         g_SupervisorLoadingVms[0].pos = *position;
         g_SupervisorLoadingVms[1].pos = *position;
         g_SupervisorLoadingVms[2].pos = *position;
+    }
+}
+
+void Supervisor::SetupLoadingVmsAndInitCapture(D3DXVECTOR3 *position)
+{
+    if (this->loadingVmsHaveBeenSetup == 0)
+    {
+        this->loadingAnm->ExecuteAnmIdx(&g_SupervisorLoadingVms[0], 0);
+        this->loadingAnm->ExecuteAnmIdx(&g_SupervisorLoadingVms[1], 1);
+        this->loadingAnm->ExecuteAnmIdx(&g_SupervisorLoadingVms[2], 2);
+
+        this->loadingVmsHaveBeenSetup = 1;
+
+        g_SupervisorLoadingVms[0].pos = *position;
+        g_SupervisorLoadingVms[1].pos = *position;
+        g_SupervisorLoadingVms[2].pos = *position;
+    }
+
+    if (g_AnmManager->captureSurfaceIdx < 0)
+    {
+        g_AnmManager->captureSurfaceIdx = 8;
+
+        g_AnmManager->surfaceCaptureSrcX = 0;
+        g_AnmManager->surfaceCaptureSrcY = 0;
+        g_AnmManager->surfaceCaptureSrcW = 640;
+        g_AnmManager->surfaceCaptureSrcH = 480;
+
+        g_AnmManager->surfaceCaptureDstX = 0;
+        g_AnmManager->surfaceCaptureDstY = 0;
+        g_AnmManager->surfaceCaptureDstW = 640;
+        g_AnmManager->surfaceCaptureDstH = 480;
     }
 }
 

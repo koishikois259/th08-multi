@@ -105,3 +105,11 @@ ERR_DAT_NOT_FOUND,"error : データファイルが存在しません\r\n","erro
 ERR_DAT_WRONG_VERSION,"error : データのバージョンが違います\r\n","error: data versions do not match\r\n"
 ERR_FAILED_TO_INIT_ASCII,"error : 文字の初期化に失敗しました\r\n","error: Failed to initialize text\r\n"
 ERR_FAILED_TO_INIT_BGM,"error : BGM の初期化に失敗しました\r\n","error: Failed to initialize BGM\r\n"
+SONG_NAME_NOT_UNLOCKED,"？？？？？？？？","???????"
+WARN_BGM_NOT_UNLOCKED0,"＊＊＊注意＊＊＊","***Warning***"
+WARN_BGM_NOT_UNLOCKED1,"　この曲はまだ、ゲーム中で流れておりません","This track has not yet been featured in the game."
+WARN_BGM_NOT_UNLOCKED2,"　自分でプレイする前に聴きたくない、コメントを見たくない、","If you don’t want to hear this or see the comments before playing the game yourself, "
+WARN_BGM_NOT_UNLOCKED3,"　という方は一刻も早くここから立ち去る事をお奨めします。","I strongly recommend you leave this page immediately."
+WARN_BGM_NOT_UNLOCKED4,"　"," "
+WARN_BGM_NOT_UNLOCKED5,"　（なお、ここで決定ボタンを押せば、他の曲と同様、","Please note that if you press the “Confirm” button here,"
+WARN_BGM_NOT_UNLOCKED6,"　　曲の再生とコメント表示が行われますので、注意）","the song will play and the comments will be displayed, just as with other songs.)".
