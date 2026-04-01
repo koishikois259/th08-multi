@@ -82,6 +82,16 @@ void ItemManager::OnDraw()
 
 void Item::Delete()
 {
+    this->isInUse = false;
+    this->prev->next = this->next;
+    if (this->next != NULL)
+    {
+        this->next->prev = this->prev;
+    }
+    if (g_ItemManager.itemListTail == this)
+    {
+        g_ItemManager.itemListTail = this->prev;
+    }
 }
 
 i32 ItemManager::GetTimeOrbCount()

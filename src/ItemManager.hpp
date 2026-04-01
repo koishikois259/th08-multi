@@ -56,7 +56,7 @@ struct ItemManager
     u32 itemCount;
 
     Item itemListHead;
-    Item *listListTail;
+    Item *itemListTail;
 
     Item *SpawnItem(D3DXVECTOR3 *position, ItemType itemType, int state);
     static void UpdatePointItemExtendThreshold();
