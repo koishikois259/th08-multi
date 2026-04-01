@@ -320,7 +320,7 @@ struct ZunGlobals
     /* 2 bytes pad */
     i32 pointItemsCollectedInStage;
     i32 pointItemsCollected;
-    i32 pointItemExtendsSoFar;
+    u32 pointItemExtendsSoFar;
     i32 nextPointItemExtendThreshold;
     i32 currentTimeOrbs;
     i32 lastSpellTimeOrbThreshold;

@@ -212,6 +212,11 @@ struct GameManager
         return FALSE;
     }
 
+    i32 GetPower()
+    {
+        return this->globals->playerPower;
+    }
+
     i32 GetClockIncrement();
     void AdvanceToNextStage();
 

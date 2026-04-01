@@ -9,8 +9,17 @@ struct PlayerRawShtFile
 {
 };
 
+enum PlayerState
+{
+    PLAYER_STATE_ALIVE,
+    PLAYER_STATE_SPAWNING,
+    PLAYER_STATE_DEAD,
+};
+
 struct Player
 {
+    i8 playerState;
+
     static ZunResult RegisterChain(u32 param);
     static ChainCallbackResult OnUpdate(Player *player);
     static ChainCallbackResult OnDrawHighPrio(Player *player);
