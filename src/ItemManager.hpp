@@ -18,12 +18,18 @@ enum ItemType
     ITEM_POINT_SMALL,
 };
 
+enum ItemState
+{
+    ITEM_STATE_DEFAULT,
+    ITEM_STATE_AUTOCOLLECT,
+};
+
 struct Item
 {
     AnmVm sprite;
 
     D3DXVECTOR3 currentPosition;
-    D3DXVECTOR3 startPosition;
+    D3DXVECTOR3 startPositionOrVelocity;
     D3DXVECTOR3 targetPosition;
 
     ZunTimer timer;

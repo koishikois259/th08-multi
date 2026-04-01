@@ -74,6 +74,18 @@ void ItemManager::ConventAllPowerItemsToTimeOrbs(Item *item)
 
 void ItemManager::CancelAutoCollect()
 {
+    Item *item = this->itemListHead.next;
+    while (item != NULL)
+    {
+        if (item->state == ITEM_STATE_AUTOCOLLECT)
+        {
+            item->state = ITEM_STATE_DEFAULT;
+            item->startPositionOrVelocity.x = 0.0f;
+            item->startPositionOrVelocity.y = -0.9f;
+            item->startPositionOrVelocity.z = 0.0f;
+        }
+        item = item->next;
+    }
 }
 
 void ItemManager::OnDraw()
