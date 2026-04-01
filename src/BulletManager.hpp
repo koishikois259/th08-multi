@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Global.hpp"
+#include "AnmManager.hpp"
 
 namespace th08
 {

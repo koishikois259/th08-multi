@@ -1,14 +1,125 @@
 #include "ItemManager.hpp"
 #include "GameManager.hpp"
+#include "Player.hpp"
+#include "BulletManager.hpp"
 
 namespace th08
 {
 
 DIFFABLE_STATIC(ItemManager, g_ItemManager);
 
+#pragma var_order(i, item)
 Item *ItemManager::SpawnItem(D3DXVECTOR3 *position, ItemType itemType, i32 state)
 {
-    return NULL;
+    i32 i;
+    Item *item = &this->items[this->nextIndex];
+
+    if (position->x < -64.0f || position->x > 448.0f)
+    {
+        return &this->items[MAX_ITEMS];
+    }
+
+    if (g_GameManager.GetPower() >= 128 && (itemType == ITEM_POWER_SMALL || itemType == ITEM_POWER_BIG))
+    {
+        itemType = ITEM_POINT_SMALL;
+    }
+    if (itemType == ITEM_TIME)
+    {
+        state = ITEM_STATE_UNK3;
+    }
+    else if (itemType == ITEM_TIME2)
+    {
+        state = ITEM_STATE_UNK5;
+        itemType = ITEM_TIME;
+    }
+
+    for (i = 0; i < MAX_ITEMS; i++)
+    {
+        this->nextIndex++;
+
+        if (item->isInUse)
+        {
+            if (this->nextIndex >= MAX_ITEMS)
+            {
+                this->nextIndex = 0;
+                item = &this->items[0];
+            }
+            else
+            {
+                item++;
+            }
+
+            if (itemType == ITEM_TIME)
+            {
+                return &this->items[MAX_ITEMS];
+            }
+
+            continue;
+        }
+            
+        if (this->nextIndex >= MAX_ITEMS)
+        {
+            this->nextIndex = 0;
+        }
+
+        item->isInUse = true;
+        item->currentPosition = *position;
+        item->startPositionOrVelocity.x = 0.0f;
+        item->startPositionOrVelocity.y = -2.2f;
+        item->startPositionOrVelocity.z = 0.0f;
+        item->itemType = itemType;
+        item->state = state;
+        item->timer = 0;
+
+        if (state == ITEM_STATE_UNK2)
+        {
+            item->targetPosition.x = g_Rng.GetRandomF32InRange(288.0f) + 48.0f;
+            item->targetPosition.y = g_Rng.GetRandomF32InRange(192.0f) - 64.0f;
+            item->targetPosition.z = 0.0f;
+            item->startPositionOrVelocity = item->currentPosition;
+        }
+        else if (state == ITEM_STATE_UNK3)
+        {
+            item->startPositionOrVelocity.y = -2.0f - g_Rng.GetRandomF32InRange(0.2f);
+            item->startPositionOrVelocity.x = g_Rng.GetRandomF32SignedInRange(0.6f);
+
+            if (g_Player.playerState == PLAYER_STATE_DEAD)
+            {
+                item->state = ITEM_STATE_DEFAULT;
+                item->startPositionOrVelocity.x = 0.0f;
+                item->startPositionOrVelocity.y = -0.9f;
+                item->startPositionOrVelocity.z = 0.0f;
+            }
+        }
+        // ZUN bloat: This is just a duplicate of the above state!
+        else if (state == ITEM_STATE_UNK5)
+        {
+            item->startPositionOrVelocity.y = -2.0f - g_Rng.GetRandomF32InRange(0.2f);
+            item->startPositionOrVelocity.x = g_Rng.GetRandomF32SignedInRange(0.6f);
+
+            if (g_Player.playerState == PLAYER_STATE_DEAD)
+            {
+                item->state = ITEM_STATE_DEFAULT;
+                item->startPositionOrVelocity.x = 0.0f;
+                item->startPositionOrVelocity.y = -0.9f;
+                item->startPositionOrVelocity.z = 0.0f;
+            }
+        }
+
+        // TODO: Uncomment this when BulletManager is actually done
+        //g_BulletManager.bulletAnm->SetAndExecuteScriptIdx(&item->sprite, itemType + 61);
+
+        item->sprite.prefix.color1.d3dColor = 0xFFFFFFFF;
+        item->sprite.prefix.zWriteDisabled = true;
+        item->isMaxValue = false;
+        item->isOnscreen = true;
+        this->itemListTail->next = item;
+        item->prev = this->itemListTail;
+        item->next = NULL;
+        this->itemListTail = item;
+
+        return i < MAX_ITEMS ? item : &this->items[MAX_ITEMS];
+    }
 }
 
 DIFFABLE_STATIC_ARRAY_ASSIGN(i32, 6, g_PointItemExtendThresholds) = {100, 250, 500, 800, 1100, 9999};

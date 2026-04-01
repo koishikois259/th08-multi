@@ -16,12 +16,19 @@ enum ItemType
     ITEM_POINT_STAR,
     ITEM_TIME,
     ITEM_POINT_SMALL,
+    ITEM_UNK9,
+    ITEM_TIME2,
 };
 
 enum ItemState
 {
     ITEM_STATE_DEFAULT,
     ITEM_STATE_AUTOCOLLECT,
+    // TODO: Document these
+    ITEM_STATE_UNK2,
+    ITEM_STATE_UNK3,
+    ITEM_STATE_UNK4,
+    ITEM_STATE_UNK5,
 };
 
 struct Item
@@ -51,12 +58,13 @@ struct Item
 
     void Delete();
 };
-
 C_ASSERT(sizeof(Item) == 0x2e4);
+
+#define MAX_ITEMS 2096
 
 struct ItemManager
 {
-    Item items[2097];
+    Item items[MAX_ITEMS + 1];
 
     i32 nextIndex;
     u32 itemCount;
@@ -73,7 +81,6 @@ struct ItemManager
     void OnDraw();
     i32 GetTimeOrbCount();
 };
-
 C_ASSERT(sizeof(ItemManager) == 0x17b094);
 
 DIFFABLE_EXTERN(ItemManager, g_ItemManager);
