@@ -6,7 +6,7 @@ namespace th08
 
 DIFFABLE_STATIC(ItemManager, g_ItemManager);
 
-Item *ItemManager::SpawnItem(D3DXVECTOR3 *position, i32 itemType, i32 state)
+Item *ItemManager::SpawnItem(D3DXVECTOR3 *position, ItemType itemType, i32 state)
 {
     return NULL;
 }
@@ -86,7 +86,19 @@ void Item::Delete()
 
 i32 ItemManager::GetTimeOrbCount()
 {
-    return 0;
+    Item *next = this->itemListHead.next;
+    i32 count = 0;
+
+    while (next != NULL)
+    {
+        if (next->itemType == ITEM_TIME)
+        {
+            count++;
+        }
+        next = next->next;
+    }
+
+    return count;
 }
 
 } /* namespace th08 */

@@ -5,6 +5,18 @@
 
 namespace th08
 {
+enum ItemType
+{
+    ITEM_POWER_SMALL,
+    ITEM_POINT,
+    ITEM_POWER_BIG,
+    ITEM_BOMB,
+    ITEM_POWER_FULL,
+    ITEM_EXTEND,
+    ITEM_POINT_STAR,
+    ITEM_TIME,
+    ITEM_POINT_SMALL,
+};
 
 struct Item
 {
@@ -46,7 +58,7 @@ struct ItemManager
     Item itemListHead;
     Item *listListTail;
 
-    Item *SpawnItem(D3DXVECTOR3 *position, int itemType, int state);
+    Item *SpawnItem(D3DXVECTOR3 *position, ItemType itemType, int state);
     static void UpdatePointItemExtendThreshold();
     void OnUpdate();
     void AutoCollectAllItems();
