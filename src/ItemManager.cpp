@@ -1,7 +1,7 @@
 #include "ItemManager.hpp"
+#include "BulletManager.hpp"
 #include "GameManager.hpp"
 #include "Player.hpp"
-#include "BulletManager.hpp"
 
 namespace th08
 {
@@ -56,7 +56,7 @@ Item *ItemManager::SpawnItem(D3DXVECTOR3 *position, ItemType itemType, i32 state
 
             continue;
         }
-            
+
         if (this->nextIndex >= MAX_ITEMS)
         {
             this->nextIndex = 0;
@@ -107,7 +107,7 @@ Item *ItemManager::SpawnItem(D3DXVECTOR3 *position, ItemType itemType, i32 state
         }
 
         // TODO: Uncomment this when BulletManager is actually done
-        //g_BulletManager.bulletAnm->SetAndExecuteScriptIdx(&item->sprite, itemType + 61);
+        // g_BulletManager.bulletAnm->SetAndExecuteScriptIdx(&item->sprite, itemType + 61);
 
         item->sprite.prefix.color1.d3dColor = 0xFFFFFFFF;
         item->sprite.prefix.zWriteDisabled = true;
@@ -131,18 +131,21 @@ void ItemManager::UpdatePointItemExtendThreshold()
     {
         if (g_GameManager.globals->pointItemExtendsSoFar < 6)
         {
-            g_GameManager.globals->nextPointItemExtendThreshold = g_PointItemExtendThresholds[g_GameManager.globals->pointItemExtendsSoFar];
+            g_GameManager.globals->nextPointItemExtendThreshold =
+                g_PointItemExtendThresholds[g_GameManager.globals->pointItemExtendsSoFar];
         }
         else
         {
-            g_GameManager.globals->nextPointItemExtendThreshold = (g_GameManager.globals->pointItemExtendsSoFar - 5) * 500 + g_PointItemExtendThresholds[5];
+            g_GameManager.globals->nextPointItemExtendThreshold =
+                (g_GameManager.globals->pointItemExtendsSoFar - 5) * 500 + g_PointItemExtendThresholds[5];
         }
     }
     else
     {
         if (g_GameManager.globals->pointItemExtendsSoFar < 3)
         {
-            g_GameManager.globals->nextPointItemExtendThreshold = g_ExPointItemExtendThresholds[g_GameManager.globals->pointItemExtendsSoFar];
+            g_GameManager.globals->nextPointItemExtendThreshold =
+                g_ExPointItemExtendThresholds[g_GameManager.globals->pointItemExtendsSoFar];
         }
         else
         {
