@@ -1,7 +1,10 @@
 #include "AnmManager.hpp"
 #include "ZunMath.hpp"
 #include "i18n.hpp"
+#include "TextHelper.hpp"
 #include "utils.hpp"
+#include <stdio.h>
+#include <stdarg.h>
 
 namespace th08
 {
@@ -1730,6 +1733,45 @@ void AnmLoaded::LoadSprite(i32 spriteIdx, AnmLoadedSprite *loadedSprite)
     this->sprites[spriteIdx].heightPx =
         (this->sprites[spriteIdx].endPixelInclusive.y - this->sprites[spriteIdx].startPixelInclusive.y) /
         (loadedSprite->scaleFactor.y);
+}
+
+void AnmManager::DrawVmText(IDirect3DTexture8 *outTexture, i32 x, i32 y, i32 width, i32 height, i32 fontWidth, i32 fontHeight, COLORREF textColor, COLORREF outlineColor, const char *buffer, float scaleFactorX, float scaleFactorY)
+{
+    if (fontWidth <= 0)
+    {
+        fontWidth = 15;
+    }
+
+    if (fontHeight <= 0)
+    {
+        fontHeight = 15;
+    }
+
+    if (fontWidth > 8)
+    {
+        TextHelper::RenderTextToTextureBold(x, y, width, height, fontWidth * scaleFactorX, fontHeight * scaleFactorY, textColor, outlineColor, buffer, outTexture);
+    }
+    else
+    {
+        TextHelper::RenderTextToTexture(x, y, width, height, 8, 8, textColor, outlineColor, buffer, outTexture);
+    }
+}
+
+#pragma var_order(buf, fontWidth)
+void AnmManager::DrawVmTextFmt(AnmVm *vm, COLORREF textColor, COLORREF shadowColor, const char *fmt, ...)
+{
+    char buf[128];
+    int fontWidth = vm->fontWidth;
+
+    va_list args;
+
+    va_start(args, fmt);
+    vsprintf(buf, fmt, args);
+    va_end(args);
+
+    this->DrawVmText(vm->loadedSprite->texture, vm->loadedSprite->startPixelInclusive.x, vm->loadedSprite->startPixelInclusive.y, vm->loadedSprite->width, vm->loadedSprite->height, fontWidth, vm->fontHeight, textColor, shadowColor, buf, vm->loadedSprite->scaleFactor.x, vm->loadedSprite->scaleFactor.y);
+
+    vm->prefix.visible = true;
 }
 
 #pragma var_order(surface, fileSize, fileData)

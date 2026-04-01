@@ -41,10 +41,10 @@ class TextHelper
     static void CreateTextBuffer();
     static void ReleaseTextBuffer();
     static void RenderTextToTextureBold(i32 xPos, i32 yPos, i32 spriteWidth, i32 spriteHeight, i32 fontHeight,
-                                        i32 fontWidth, COLORREF textColor, i32 outlineType, char *string,
+                                        i32 fontWidth, COLORREF textColor, COLORREF outlineType, const char *string,
                                         IDirect3DTexture8 *outTexture);
     static void RenderTextToTexture(i32 xPos, i32 yPos, i32 spriteWidth, i32 spriteHeight, i32 fontHeight,
-                                    i32 fontWidth, COLORREF textColor, i32 outlineType, char *string,
+                                    i32 fontWidth, COLORREF textColor, COLORREF outlineType, const char *string,
                                     IDirect3DTexture8 *outTexture);
 
   private:
