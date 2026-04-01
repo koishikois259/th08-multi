@@ -47,7 +47,7 @@ struct ItemManager
     Item *listListTail;
 
     Item *SpawnItem(D3DXVECTOR3 *position, int itemType, int state);
-    void UpdatePointItemExtendThreshold();
+    static void UpdatePointItemExtendThreshold();
     void OnUpdate();
     void AutoCollectAllItems();
     void ConventAllPowerItemsToTimeOrbs(Item *item);
