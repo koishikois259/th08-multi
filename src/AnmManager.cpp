@@ -1505,6 +1505,10 @@ AnmLoaded *AnmManager::PreloadAnm(i32 anmIdx, const char *filename)
         return NULL;
     }
 
+    /* AnmManager::ServicePreloadedAnims, called on the main thread every
+     * frame through Supervisor::OnUpdate will process one entry on each
+     * loading file until loading is finished
+     */
     anmLoaded->numberEntriesToBeLoaded = 1;
     while (anmLoaded->numberEntriesToBeLoaded != 0 && !g_Supervisor.subthreadCloseRequestActive)
     {
