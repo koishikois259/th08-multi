@@ -1,10 +1,10 @@
 #include "AnmManager.hpp"
+#include "TextHelper.hpp"
 #include "ZunMath.hpp"
 #include "i18n.hpp"
-#include "TextHelper.hpp"
 #include "utils.hpp"
-#include <stdio.h>
 #include <stdarg.h>
+#include <stdio.h>
 
 namespace th08
 {
@@ -1739,7 +1739,9 @@ void AnmLoaded::LoadSprite(i32 spriteIdx, AnmLoadedSprite *loadedSprite)
         (loadedSprite->scaleFactor.y);
 }
 
-void AnmManager::DrawVmText(IDirect3DTexture8 *outTexture, i32 x, i32 y, i32 width, i32 height, i32 fontWidth, i32 fontHeight, COLORREF textColor, COLORREF outlineColor, const char *buffer, float scaleFactorX, float scaleFactorY)
+void AnmManager::DrawVmText(IDirect3DTexture8 *outTexture, i32 x, i32 y, i32 width, i32 height, i32 fontWidth,
+                            i32 fontHeight, COLORREF textColor, COLORREF outlineColor, const char *buffer,
+                            float scaleFactorX, float scaleFactorY)
 {
     if (fontWidth <= 0)
     {
@@ -1753,7 +1755,8 @@ void AnmManager::DrawVmText(IDirect3DTexture8 *outTexture, i32 x, i32 y, i32 wid
 
     if (fontWidth > 8)
     {
-        TextHelper::RenderTextToTextureBold(x, y, width, height, fontWidth * scaleFactorX, fontHeight * scaleFactorY, textColor, outlineColor, buffer, outTexture);
+        TextHelper::RenderTextToTextureBold(x, y, width, height, fontWidth * scaleFactorX, fontHeight * scaleFactorY,
+                                            textColor, outlineColor, buffer, outTexture);
     }
     else
     {
@@ -1773,7 +1776,10 @@ void AnmManager::DrawVmTextFmt(AnmVm *vm, COLORREF textColor, COLORREF shadowCol
     vsprintf(buf, fmt, args);
     va_end(args);
 
-    this->DrawVmText(vm->loadedSprite->texture, vm->loadedSprite->startPixelInclusive.x, vm->loadedSprite->startPixelInclusive.y, vm->loadedSprite->width, vm->loadedSprite->height, fontWidth, vm->fontHeight, textColor, shadowColor, buf, vm->loadedSprite->scaleFactor.x, vm->loadedSprite->scaleFactor.y);
+    this->DrawVmText(vm->loadedSprite->texture, vm->loadedSprite->startPixelInclusive.x,
+                     vm->loadedSprite->startPixelInclusive.y, vm->loadedSprite->width, vm->loadedSprite->height,
+                     fontWidth, vm->fontHeight, textColor, shadowColor, buf, vm->loadedSprite->scaleFactor.x,
+                     vm->loadedSprite->scaleFactor.y);
 
     vm->prefix.visible = true;
 }

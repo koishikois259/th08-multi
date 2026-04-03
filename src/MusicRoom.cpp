@@ -1,22 +1,15 @@
+#include "MusicRoom.hpp"
 #include "AsciiManager.hpp"
 #include "GameManager.hpp"
-#include "i18n.hpp"
-#include "MusicRoom.hpp"
 #include "SoundPlayer.hpp"
+#include "i18n.hpp"
 
 namespace th08
 {
 
-const char *g_BgmNotUnlockedWarning[] = 
-{
-    TH_WARN_BGM_NOT_UNLOCKED0,
-    TH_WARN_BGM_NOT_UNLOCKED1,
-    TH_WARN_BGM_NOT_UNLOCKED2,
-    TH_WARN_BGM_NOT_UNLOCKED3,
-    TH_WARN_BGM_NOT_UNLOCKED4,
-    TH_WARN_BGM_NOT_UNLOCKED5,
-    TH_WARN_BGM_NOT_UNLOCKED6,
-    NULL,
+const char *g_BgmNotUnlockedWarning[] = {
+    TH_WARN_BGM_NOT_UNLOCKED0, TH_WARN_BGM_NOT_UNLOCKED1, TH_WARN_BGM_NOT_UNLOCKED2, TH_WARN_BGM_NOT_UNLOCKED3,
+    TH_WARN_BGM_NOT_UNLOCKED4, TH_WARN_BGM_NOT_UNLOCKED5, TH_WARN_BGM_NOT_UNLOCKED6, NULL,
 };
 
 ZunResult MusicRoom::CheckInputEnable()
@@ -254,17 +247,17 @@ ZunResult MusicRoom::RegisterChain()
 
     memset(musicRoom, 0, sizeof(MusicRoom));
 
-    musicRoom->calcChain = g_Chain.CreateElem((ChainCallback) MusicRoom::OnUpdate);
+    musicRoom->calcChain = g_Chain.CreateElem((ChainCallback)MusicRoom::OnUpdate);
     musicRoom->calcChain->arg = musicRoom;
-    musicRoom->calcChain->addedCallback = (ChainLifetimeCallback) MusicRoom::AddedCallback;
-    musicRoom->calcChain->deletedCallback = (ChainLifetimeCallback) MusicRoom::DeletedCallback;
+    musicRoom->calcChain->addedCallback = (ChainLifetimeCallback)MusicRoom::AddedCallback;
+    musicRoom->calcChain->deletedCallback = (ChainLifetimeCallback)MusicRoom::DeletedCallback;
 
     if (g_Chain.AddToCalcChain(musicRoom->calcChain, 4) != ZUN_SUCCESS)
     {
         return ZUN_ERROR;
     }
 
-    musicRoom->drawChain = g_Chain.CreateElem((ChainCallback) MusicRoom::OnDraw);
+    musicRoom->drawChain = g_Chain.CreateElem((ChainCallback)MusicRoom::OnDraw);
     musicRoom->drawChain->arg = musicRoom;
     g_Chain.AddToDrawChain(musicRoom->drawChain, 3);
 
@@ -317,7 +310,6 @@ start:
 
     return CHAIN_CALLBACK_RESULT_CONTINUE;
 }
-
 
 #pragma var_order(color, i, arrowText, position)
 ChainCallbackResult MusicRoom::OnDraw(MusicRoom *musicRoom)
@@ -415,7 +407,7 @@ ZunResult MusicRoom::AddedCallback(MusicRoom *musicRoom)
     char *musicCmtFile;
     char *ptr;
 
-    musicCmtFile = ptr = (char *) FileSystem::OpenFile("sprt/musiccmt.txt", (i32 *) &fileSize, FALSE);
+    musicCmtFile = ptr = (char *)FileSystem::OpenFile("sprt/musiccmt.txt", (i32 *)&fileSize, FALSE);
     if (ptr == NULL)
     {
         return ZUN_ERROR;
@@ -490,7 +482,8 @@ ZunResult MusicRoom::AddedCallback(MusicRoom *musicRoom)
                     break;
                 }
 
-                memset(&musicRoom->trackDescriptors[i].descriptors[currentLine], 0, sizeof(musicRoom->trackDescriptors[i].descriptors[0]));
+                memset(&musicRoom->trackDescriptors[i].descriptors[currentLine], 0,
+                       sizeof(musicRoom->trackDescriptors[i].descriptors[0]));
 
                 charIdx = 0;
 
@@ -537,7 +530,8 @@ out:
         musicRoom->musicAnm->SetAndExecuteScriptIdx(&musicRoom->songNameVms[i], 1 + i);
         if (musicRoom->bgmUnlocked[i])
         {
-            g_AnmManager->DrawVmTextFmt(&musicRoom->songNameVms[i], 0xc0e0ff, 0x302080, musicRoom->trackDescriptors[i].title);
+            g_AnmManager->DrawVmTextFmt(&musicRoom->songNameVms[i], 0xc0e0ff, 0x302080,
+                                        musicRoom->trackDescriptors[i].title);
         }
         else
         {

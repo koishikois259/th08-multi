@@ -14,8 +14,10 @@ class BuildType(Enum):
     DLLBUILD = 4
     OBJDIFFBUILD = 5
 
+
 debug_codegen = "/Od /RTCu"
 small_codegen = "/Os"
+
 
 def configure(build_type):
     with (SCRIPTS_DIR.parent / "build.ninja").open("w") as f:

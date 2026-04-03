@@ -1131,7 +1131,7 @@ void Supervisor::ThreadClose()
     }
 }
 
-void Supervisor::SetupLoadingVms(D3DXVECTOR3* position)
+void Supervisor::SetupLoadingVms(D3DXVECTOR3 *position)
 {
     if (this->loadingVmsHaveBeenSetup == 0)
     {

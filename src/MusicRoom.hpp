@@ -1,11 +1,10 @@
 #pragma once
 
+#include "AnmManager.hpp"
 #include "Global.hpp"
 #include "ZunResult.hpp"
 #include "diffbuild.hpp"
 #include "inttypes.hpp"
-#include "Global.hpp"
-#include "AnmManager.hpp"
 
 namespace th08
 {
