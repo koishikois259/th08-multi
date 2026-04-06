@@ -43,7 +43,7 @@ struct Plst
     u32 gameMilliseconds;
     PlstPlayCounts playDataByDifficulty[6];
     PlstPlayCounts playDataTotals;
-    u8 bgmUnlocked[32];
+    i8 bgmUnlocked[32];
 };
 
 C_ASSERT(sizeof(Plst) == 0x228);

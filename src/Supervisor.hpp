@@ -103,6 +103,24 @@ struct SupervisorFlags
     u32 unk8 : 1;
 };
 
+enum SupervisorState
+{
+    SupervisorState_ExitGame = -1,
+    SupervisorState_Init = 0,
+    SupervisorState_TitleScreen = 1,
+    SupervisorState_GameManager = 2,
+    SupervisorState_GameManagerReInit = 3,
+    SupervisorState_ExitGame2 = 4,
+    SupervisorState_ResultScreen = 5,
+    SupervisorState_ResultScreenFromGame = 6,
+    SupervisorState_FinishReplay = 7,
+    SupervisorState_MusicRoom = 8,
+    SupervisorState_Ending = 9,
+    SupervisorState_GameManagerRestartFromBeginning = 10,
+    SupervisorState_SpellcardPracticeRestart = 11,
+    SupervisorState_GameManagerNextStageWeird = 12,
+};
+
 /* This forward declaration is to prevent including AnmManager.hpp */
 struct AnmLoaded;
 
@@ -136,6 +154,7 @@ struct Supervisor
 
     void ThreadClose();
     void SetupLoadingVms(D3DXVECTOR3 *position);
+    void SetupLoadingVmsAndInitCapture(D3DXVECTOR3 *position);
     void InitializeCriticalSections();
     void DeleteCriticalSections();
     void TickTimer(i32 *frames, float *subframes);

@@ -84,8 +84,8 @@ struct AsciiManager
     static ZunResult DeletedCallback(AsciiManager *mgr);
     static void CutChain();
     void AddString(D3DXVECTOR3 *position, const char *string);
-    void AddFormatString(D3DXVECTOR3 *position, const char *fmt, ...);
-    void AddFormatString2(D3DXVECTOR3 *position, const char *fmt, ...);
+    void AddFormatText(D3DXVECTOR3 *position, const char *fmt, ...);
+    void AddFormatText2(D3DXVECTOR3 *position, const char *fmt, ...);
     void OnDrawLowPrioImpl();
     void CreateScorePopup(D3DXVECTOR3 *position, i32 number, D3DCOLOR color);
     void CreatePlayerPointPopup(D3DXVECTOR3 *position, i32 number, D3DCOLOR color);
@@ -98,6 +98,11 @@ struct AsciiManager
     i32 GetGaugeInterrupt();
     void ResetStrings();
     void SetSpaceWidth(i32 spaceWidth);
+
+    void SetColor(D3DCOLOR color)
+    {
+        this->color = color;
+    }
 
     AnmVm largeText;
     AnmVm smallScoreText;

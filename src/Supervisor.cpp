@@ -107,41 +107,42 @@ ChainCallbackResult Supervisor::OnUpdate(Supervisor *s)
         utils::GuiDebugPrint("scene %d -> %d\r\n", s->wantedState, s->curState);
         switch (s->wantedState)
         {
-        case 0:
+        case SupervisorState_Init:
         init_titlescreen:
-            s->curState = 1;
+            s->curState = SupervisorState_TitleScreen;
             g_Supervisor.d3dDevice->ResourceManagerDiscardBytes(0);
             if (TitleScreen::RegisterChain(0) != ZUN_SUCCESS)
             {
                 return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
             }
             break;
-        case 1:
+        case SupervisorState_TitleScreen:
             switch (s->curState)
             {
-            case -1:
+            case SupervisorState_ExitGame:
                 return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
-            case 2:
+            case SupervisorState_GameManager:
                 if (GameManager::RegisterChain() != ZUN_SUCCESS)
                 {
                     return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
                 }
                 break;
-            case 4:
+            /* Seems to be completely unused */
+            case SupervisorState_ExitGame2:
                 return CHAIN_CALLBACK_RESULT_EXIT_GAME_ERROR;
-            case 5:
+            case SupervisorState_ResultScreen:
                 if (ResultScreen::RegisterChain(0) != ZUN_SUCCESS)
                 {
                     return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
                 }
                 break;
-            case 8:
+            case SupervisorState_MusicRoom:
                 if (MusicRoom::RegisterChain() != ZUN_SUCCESS)
                 {
                     return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
                 }
                 break;
-            case 9:
+            case SupervisorState_Ending:
                 GameManager::CutChain();
                 if (Ending::RegisterChain() != ZUN_SUCCESS)
                 {
@@ -150,35 +151,35 @@ ChainCallbackResult Supervisor::OnUpdate(Supervisor *s)
                 break;
             }
             break;
-        case 5:
+        case SupervisorState_ResultScreen:
             switch (s->curState)
             {
-            case -1:
+            case SupervisorState_ExitGame:
                 return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
-            case 1:
-                s->curState = 0;
+            case SupervisorState_TitleScreen:
+                s->curState = SupervisorState_Init;
                 goto init_titlescreen;
             }
             break;
-        case 2:
+        case SupervisorState_GameManager:
             switch (s->curState)
             {
-            case -1:
+            case SupervisorState_ExitGame:
                 return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
-            case 1:
+            case SupervisorState_TitleScreen:
                 GameManager::CutChain();
-                s->curState = 0;
+                s->curState = SupervisorState_Init;
                 ReplayManager::SaveReplay(NULL, NULL);
 
                 goto init_titlescreen;
-            case 6:
+            case SupervisorState_ResultScreenFromGame:
                 GameManager::CutChain();
                 if (ResultScreen::RegisterChain(1) != ZUN_SUCCESS)
                 {
                     return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
                 }
                 break;
-            case 10:
+            case SupervisorState_GameManagerRestartFromBeginning:
                 GameManager::CutChain();
                 if ((g_GameManager.flags.unk0) == 0 && g_GameManager.difficulty < 4)
                 {
@@ -189,10 +190,10 @@ ChainCallbackResult Supervisor::OnUpdate(Supervisor *s)
                 {
                     return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
                 }
-                s->curState = 2;
+                s->curState = SupervisorState_GameManager;
                 break;
-            case 11:
-                g_Supervisor.curState = 3;
+            case SupervisorState_SpellcardPracticeRestart:
+                g_Supervisor.curState = SupervisorState_GameManagerReInit;
                 g_Supervisor.unk16c = 1;
 
                 GameManager::CutChain();
@@ -201,10 +202,11 @@ ChainCallbackResult Supervisor::OnUpdate(Supervisor *s)
                 {
                     return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
                 }
-                s->curState = 2;
+                s->curState = SupervisorState_GameManager;
                 break;
-            case 12:
-                g_Supervisor.curState = 3;
+            /* Also seems to be completely unused */
+            case SupervisorState_GameManagerNextStageWeird:
+                g_Supervisor.curState = SupervisorState_GameManagerReInit;
                 GameManager::CutChain();
                 g_GameManager.AdvanceToNextStage();
 
@@ -212,9 +214,9 @@ ChainCallbackResult Supervisor::OnUpdate(Supervisor *s)
                 {
                     return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
                 }
-                s->curState = 2;
+                s->curState = SupervisorState_GameManager;
                 break;
-            case 3:
+            case SupervisorState_GameManagerReInit:
                 GameManager::CutChain();
 
                 if (GameManager::RegisterChain() != ZUN_SUCCESS)
@@ -222,14 +224,14 @@ ChainCallbackResult Supervisor::OnUpdate(Supervisor *s)
                     return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
                 }
 
-                s->curState = 2;
+                s->curState = SupervisorState_GameManager;
                 break;
-            case 7:
+            case SupervisorState_FinishReplay:
                 GameManager::CutChain();
 
-                s->curState = 0;
+                s->curState = SupervisorState_Init;
                 ReplayManager::SaveReplay(NULL, NULL);
-                s->curState = 1;
+                s->curState = SupervisorState_TitleScreen;
 
                 g_Supervisor.d3dDevice->ResourceManagerDiscardBytes(0);
 
@@ -238,7 +240,7 @@ ChainCallbackResult Supervisor::OnUpdate(Supervisor *s)
                     return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
                 }
                 break;
-            case 9:
+            case SupervisorState_Ending:
                 GameManager::CutChain();
                 if (Ending::RegisterChain() != ZUN_SUCCESS)
                 {
@@ -247,41 +249,41 @@ ChainCallbackResult Supervisor::OnUpdate(Supervisor *s)
                 break;
             }
             break;
-        case 6:
+        case SupervisorState_ResultScreenFromGame:
             switch (s->curState)
             {
-            case -1:
+            case SupervisorState_ExitGame:
                 ReplayManager::SaveReplay(NULL, NULL);
                 return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
-            case 1:
-                s->curState = 0;
+            case SupervisorState_TitleScreen:
+                s->curState = SupervisorState_Init;
 
                 ReplayManager::SaveReplay(NULL, NULL);
 
                 goto init_titlescreen;
             }
             break;
-        case 8:
+        case SupervisorState_MusicRoom:
             switch (s->curState)
             {
-            case -1:
+            case SupervisorState_ExitGame:
                 return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
-            case 1:
-                s->curState = 0;
+            case SupervisorState_TitleScreen:
+                s->curState = SupervisorState_Init;
 
                 goto init_titlescreen;
             }
             break;
-        case 9:
+        case SupervisorState_Ending:
             switch (s->curState)
             {
-            case -1:
+            case SupervisorState_ExitGame:
                 return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
-            case 1:
-                s->curState = 0;
+            case SupervisorState_TitleScreen:
+                s->curState = SupervisorState_Init;
 
                 goto init_titlescreen;
-            case 6:
+            case SupervisorState_ResultScreenFromGame:
                 if (ResultScreen::RegisterChain(1) != ZUN_SUCCESS)
                 {
                     return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
@@ -372,8 +374,8 @@ ZunResult Supervisor::RegisterChain()
 {
     Supervisor *supervisor = &g_Supervisor;
 
-    supervisor->wantedState = 0;
-    supervisor->curState = -1;
+    supervisor->wantedState = SupervisorState_Init;
+    supervisor->curState = SupervisorState_ExitGame;
     supervisor->calcCount = 0;
 
     ChainElem *elem = g_Chain.CreateElem((ChainCallback)Supervisor::OnUpdate);
@@ -1131,17 +1133,48 @@ void Supervisor::ThreadClose()
 
 void Supervisor::SetupLoadingVms(D3DXVECTOR3 *position)
 {
-    if (!this->loadingVmsHaveBeenSetup)
+    if (this->loadingVmsHaveBeenSetup == 0)
     {
         this->loadingAnm->ExecuteAnmIdx(&g_SupervisorLoadingVms[0], 0);
         this->loadingAnm->ExecuteAnmIdx(&g_SupervisorLoadingVms[1], 1);
         this->loadingAnm->ExecuteAnmIdx(&g_SupervisorLoadingVms[2], 2);
 
-        this->loadingVmsHaveBeenSetup = TRUE;
+        this->loadingVmsHaveBeenSetup = 1;
 
         g_SupervisorLoadingVms[0].pos = *position;
         g_SupervisorLoadingVms[1].pos = *position;
         g_SupervisorLoadingVms[2].pos = *position;
+    }
+}
+
+void Supervisor::SetupLoadingVmsAndInitCapture(D3DXVECTOR3 *position)
+{
+    if (this->loadingVmsHaveBeenSetup == 0)
+    {
+        this->loadingAnm->ExecuteAnmIdx(&g_SupervisorLoadingVms[0], 0);
+        this->loadingAnm->ExecuteAnmIdx(&g_SupervisorLoadingVms[1], 1);
+        this->loadingAnm->ExecuteAnmIdx(&g_SupervisorLoadingVms[2], 2);
+
+        this->loadingVmsHaveBeenSetup = 1;
+
+        g_SupervisorLoadingVms[0].pos = *position;
+        g_SupervisorLoadingVms[1].pos = *position;
+        g_SupervisorLoadingVms[2].pos = *position;
+    }
+
+    if (g_AnmManager->captureSurfaceIdx < 0)
+    {
+        g_AnmManager->captureSurfaceIdx = 8;
+
+        g_AnmManager->surfaceCaptureSrcX = 0;
+        g_AnmManager->surfaceCaptureSrcY = 0;
+        g_AnmManager->surfaceCaptureSrcW = 640;
+        g_AnmManager->surfaceCaptureSrcH = 480;
+
+        g_AnmManager->surfaceCaptureDstX = 0;
+        g_AnmManager->surfaceCaptureDstY = 0;
+        g_AnmManager->surfaceCaptureDstW = 640;
+        g_AnmManager->surfaceCaptureDstH = 480;
     }
 }
 

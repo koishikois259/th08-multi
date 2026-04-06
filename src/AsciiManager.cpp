@@ -102,11 +102,11 @@ void AsciiManager::AddString(D3DXVECTOR3 *position, const char *string)
 {
 }
 
-void AsciiManager::AddFormatString(D3DXVECTOR3 *position, const char *fmt, ...)
+void AsciiManager::AddFormatText(D3DXVECTOR3 *position, const char *fmt, ...)
 {
 }
 
-void AsciiManager::AddFormatString2(D3DXVECTOR3 *position, const char *fmt, ...)
+void AsciiManager::AddFormatText2(D3DXVECTOR3 *position, const char *fmt, ...)
 {
 }
 

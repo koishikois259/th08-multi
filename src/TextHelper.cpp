@@ -336,7 +336,7 @@ void TextHelper::ReleaseTextBuffer()
 #pragma function(strlen)
 #pragma var_order(hdc, font, textSurfaceDesc, h, textHelper, hdc, srcRect, destRect, destSurface)
 void TextHelper::RenderTextToTextureBold(i32 xPos, i32 yPos, i32 spriteWidth, i32 spriteHeight, i32 fontHeight,
-                                         i32 fontWidth, COLORREF textColor, i32 outlineType, char *string,
+                                         i32 fontWidth, COLORREF textColor, COLORREF outlineType, const char *string,
                                          IDirect3DTexture8 *outTexture)
 {
     HGDIOBJ h;
@@ -405,7 +405,7 @@ void TextHelper::RenderTextToTextureBold(i32 xPos, i32 yPos, i32 spriteWidth, i3
 #pragma function(strlen)
 #pragma var_order(hdc, font, textSurfaceDesc, h, textHelper, hdc, srcRect, destRect, destSurface)
 void TextHelper::RenderTextToTexture(i32 xPos, i32 yPos, i32 spriteWidth, i32 spriteHeight, i32 fontHeight,
-                                     i32 fontWidth, COLORREF textColor, i32 outlineType, char *string,
+                                     i32 fontWidth, COLORREF textColor, COLORREF outlineType, const char *string,
                                      IDirect3DTexture8 *outTexture)
 {
     HGDIOBJ h;
