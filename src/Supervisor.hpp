@@ -227,6 +227,11 @@ struct Supervisor
         return this->cfg.windowed;
     }
 
+    ZunBool IsSoftwareTexturing()
+    {
+        return this->cfg.opts.disableColorCompositing | this->cfg.opts.useSwTextureBlending;
+    }
+
     ZunBool IsSubthreadRunning()
     {
         return this->runningSubthreadHandle != NULL;
