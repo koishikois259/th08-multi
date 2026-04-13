@@ -436,6 +436,18 @@ struct AnmLoaded
         this->SetAndExecuteScript(vm, this->scripts[scriptIdx]);
     }
 
+    void InitializeAndSetSprite(AnmVm *vm, i32 sprite)
+    {
+        vm->Initialize();
+        vm->prefix.anmFile = this;
+        this->SetSprite(vm, sprite);
+    }
+
+    AnmLoadedSprite *GetSprite(int sprite)
+    {
+        return &this->sprites[sprite];
+    }
+
     ZunResult SetSprite(AnmVm *vm, int spriteIdx);
     void SetAndExecuteScript(AnmVm *vm, AnmRawInstr *beginningOfScript);
 };

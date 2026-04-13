@@ -1,5 +1,9 @@
 #include "AsciiManager.hpp"
 #include "AnmManager.hpp"
+#include "GameManager.hpp"
+
+#include <stdarg.h>
+#include <stdio.h>
 
 namespace th08
 {
@@ -37,10 +41,53 @@ ChainCallbackResult AsciiManager::OnDrawHighPrio(AsciiManager *ascii)
 
 void AsciiManager::Reset()
 {
+    memset(&this->smallScoreText, 0, sizeof(AnmVm));
+    memset(&this->popupText, 0, sizeof(AnmVm));
+    memset(&this->largeText, 0, sizeof(AnmVm));
+    memset(&this->strings, 0, sizeof(this->strings));
+    memset(&this->pauseMenu, 0, sizeof(PauseMenu));
+    memset(&this->retryMenu, 0, sizeof(RetryMenu));
+    memset(&this->scorePopups, 0, sizeof(this->scorePopups));
+    memset(&this->timePopups, 0, sizeof(this->timePopups));
+
+    this->numStrings = 0;
+    this->isGui = FALSE;
+    this->isSelected = FALSE;
+    this->nextScorePopupIndex = 0;
+    this->nextPlayerPointPopupIndex = 0;
+    /* nextTimePopupIndex is not set to 0?  */
+    this->unk0x829c = 0;
+    this->color = 0xffffffff;
+    this->scaleX = 1.0f;
+    this->scaleY = 1.0f;
+    this->smallScoreText.prefix.anchor = 3;
+    this->popupText.prefix.anchor = 3;
+    this->asciiAnm->InitializeAndSetSprite(&this->smallScoreText, 0);
+    this->asciiAnm->InitializeAndSetSprite(&this->popupText, 136);
+    this->asciiAnm->InitializeAndSetSprite(&this->largeText, 32);
+    this->smallScoreText.pos.z = 0.1f;
+    /* This was already set to FALSE ? */
+    this->isSelected = FALSE;
+    this->SetSpaceWidth(13);
 }
 
 void AsciiManager::InitializeVms()
 {
+    this->asciiAnm->SetAndExecuteScriptIdx(&this->youkaiGauge, 5);
+    this->asciiAnm->SetAndExecuteScriptIdx(&this->youkaiGaugeYoukaiIcon, 7);
+    this->asciiAnm->SetAndExecuteScriptIdx(&this->youkaiGaugeHumanIcon, 6);
+    this->asciiAnm->SetAndExecuteScriptIdx(&this->youkaiGaugeCursor, 8);
+    this->asciiAnm->SetAndExecuteScriptIdx(&this->percentageText, 4);
+    this->asciiAnm->SetAndExecuteScriptIdx(&this->unk_1520, 9);
+    this->asciiAnm->SetAndExecuteScriptIdx(&this->bossMarkers[0], 10);
+    this->asciiAnm->SetAndExecuteScriptIdx(&this->bossMarkers[1], 10);
+    this->asciiAnm->SetAndExecuteScriptIdx(&this->bossMarkers[2], 10);
+    this->asciiAnm->SetAndExecuteScriptIdx(&this->bossMarkers[3], 10);
+
+    this->youkaiGaugeHumanIcon.pos.x -= (g_GameManager.youkaiGaugeHumanLimit * 56.0f) / -10000.0f;
+    this->youkaiGaugeYoukaiIcon.pos.x += (g_GameManager.youkaiGaugeYoukaiLimit * 56.0f) / -10000.0f;
+
+    this->SetGaugeInterrupt(this->GetGaugeInterrupt());
 }
 
 ZunResult AsciiManager::RegisterChain()
@@ -91,27 +138,156 @@ ZunResult AsciiManager::AddedCallback(AsciiManager *ascii)
 
 ZunResult AsciiManager::DeletedCallback(AsciiManager *ascii)
 {
-    return ZUN_ERROR;
+    g_AnmManager->ReleaseAnm(1);
+    g_AnmManager->ReleaseAnm(3);
+
+    return ZUN_SUCCESS;
 }
 
 void AsciiManager::CutChain()
 {
+    g_Chain.Cut(&g_AsciiManagerCalcChain);
+    g_Chain.Cut(&g_AsciiManagerDrawChainLowPrio);
+    /* ZUN seemingly forgot this: g_Chain.Cut(&g_AsciiManagerDrawChainHighPrio); */
 }
 
+#pragma var_order(nextString)
 void AsciiManager::AddString(D3DXVECTOR3 *position, const char *string)
 {
+    AsciiManagerString *nextString;
+
+    if (this->numStrings >= ARRAY_SIZE_SIGNED(this->strings))
+    {
+        return;
+    }
+
+    nextString = &this->strings[this->numStrings];
+    this->numStrings++;
+
+    strcpy(nextString->text, string);
+
+    nextString->position = *position;
+
+    nextString->color = this->color;
+    nextString->scaleX = this->scaleX;
+    nextString->scaleY = this->scaleY;
+    nextString->isGui = this->isGui;
+
+    if (g_Supervisor.IsSoftwareTexturing())
+    {
+        nextString->isSelected = this->isSelected;
+    }
+    else
+    {
+        nextString->isSelected = FALSE;
+    }
 }
 
 void AsciiManager::AddFormatText(D3DXVECTOR3 *position, const char *fmt, ...)
 {
+    char buf[512];
+    va_list va;
+
+    va_start(va, fmt);
+    vsprintf(buf, fmt, va);
+    this->AddString(position, buf);
+    va_end(va);
 }
 
-void AsciiManager::AddFormatText2(D3DXVECTOR3 *position, const char *fmt, ...)
+int AsciiManager::AddFormatText2(D3DXVECTOR3 *position, const char *fmt, ...)
 {
+    char buf[512];
+    va_list args;
+
+    va_start(args, fmt);
+    vsprintf(buf, fmt, args);
+    this->AddString(position, buf);
+    va_end(args);
+
+    /* Did you know that vsprintf returns the number of characters added to the
+     * buffer? So ZUN did not have to call strlen here.
+     */
+    return strlen(buf);
 }
 
 void AsciiManager::OnDrawLowPrioImpl()
 {
+    D3DXVECTOR3 vector;
+    ZunBool isGui = TRUE;
+    int i;
+    int t1 = this->numStrings;
+    AsciiManagerString *curString = &this->strings[0];
+    const char *text;
+    float spaceWidth;
+
+    this->largeText.prefix.visible = true;
+    this->largeText.prefix.anchor = 3;
+
+    for (i = 0; i < this->numStrings; i++)
+    {
+        this->largeText.pos = curString->position;
+
+        text = curString->text;
+
+        spaceWidth = this->spaceWidth * curString->scaleX;
+
+        if (isGui != curString->isGui)
+        {
+            isGui = curString->isGui;
+
+            g_AnmManager->FlushVertexBuffer();
+
+            if (isGui)
+            {
+                g_Supervisor.viewport.X = g_GameManager.arcadeRegionTopLeftPos.x;
+                g_Supervisor.viewport.Y = g_GameManager.arcadeRegionTopLeftPos.y;
+                g_Supervisor.viewport.Width = g_GameManager.arcadeRegionSize.x;
+                g_Supervisor.viewport.Height = g_GameManager.arcadeRegionSize.y;
+                g_Supervisor.d3dDevice->SetViewport(&g_Supervisor.viewport);
+            }
+            else
+            {
+                g_Supervisor.viewport.X = 0;
+                g_Supervisor.viewport.Y = 0;
+                g_Supervisor.viewport.Width = 640;
+                g_Supervisor.viewport.Height = 480;
+                g_Supervisor.d3dDevice->SetViewport(&g_Supervisor.viewport);
+            }
+        }
+
+        while (*text)
+        {
+            if (*text == '\n')
+            {
+                this->largeText.pos.y += curString->scaleY * 16.0f;
+                this->largeText.pos.x = curString->position.x;
+            }
+            else if (*text == ' ')
+            {
+                this->largeText.pos.x += spaceWidth;
+            }
+            else
+            {
+                if (curString->isSelected)
+                {
+                    this->largeText.loadedSprite = this->asciiAnm->GetSprite((u8)*text + (170 - ' '));
+                    this->largeText.prefix.color1.d3dColor = 0xffffffff;
+                }
+                else
+                {
+                    this->largeText.loadedSprite = this->asciiAnm->GetSprite((u8)*text + (31 - ' '));
+                    this->largeText.prefix.color1.d3dColor = this->color;
+                }
+
+                g_AnmManager->DrawNoRotation(&this->largeText);
+                this->largeText.pos.x += spaceWidth;
+            }
+
+            text++;
+        }
+
+        curString++;
+    }
 }
 
 void AsciiManager::CreateScorePopup(D3DXVECTOR3 *position, i32 number, D3DCOLOR color)

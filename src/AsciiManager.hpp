@@ -48,7 +48,7 @@ struct AsciiManagerString
 {
     char text[64];
     D3DXVECTOR3 position;
-    ZunColor color;
+    D3DCOLOR color;
     f32 scaleX;
     f32 scaleY;
     ZunBool isSelected;
@@ -85,7 +85,7 @@ struct AsciiManager
     static void CutChain();
     void AddString(D3DXVECTOR3 *position, const char *string);
     void AddFormatText(D3DXVECTOR3 *position, const char *fmt, ...);
-    void AddFormatText2(D3DXVECTOR3 *position, const char *fmt, ...);
+    int AddFormatText2(D3DXVECTOR3 *position, const char *fmt, ...);
     void OnDrawLowPrioImpl();
     void CreateScorePopup(D3DXVECTOR3 *position, i32 number, D3DCOLOR color);
     void CreatePlayerPointPopup(D3DXVECTOR3 *position, i32 number, D3DCOLOR color);
@@ -123,8 +123,8 @@ struct AsciiManager
     D3DCOLOR color;
     f32 scaleX;
     f32 scaleY;
-    BOOL isGui;
-    u32 unk0x8278;
+    ZunBool isGui;
+    ZunBool isSelected;
 
     i32 gaugeInterrupt;
     i32 spaceWidth;
@@ -133,11 +133,11 @@ struct AsciiManager
     AnmLoaded *asciiAnm;
     AnmLoaded *captureAnm;
 
-    i32 scorePopupIndex;
-    i32 playerPointPopupIndex;
-    i32 timePopupIndex;
+    i32 nextScorePopupIndex;
+    i32 nextPlayerPointPopupIndex;
+    i32 nextTimePopupIndex;
 
-    u32 unk0x829c;
+    ZunBool unk0x829c;
 
     PauseMenu pauseMenu;
     RetryMenu retryMenu;
