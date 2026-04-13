@@ -90,7 +90,7 @@ struct AsciiManager
     void CreateScorePopup(D3DXVECTOR3 *position, i32 number, D3DCOLOR color);
     void CreatePlayerPointPopup(D3DXVECTOR3 *position, i32 number, D3DCOLOR color);
     void CreateTimePopup(D3DXVECTOR3 *position, i32 number, i32 param3, D3DCOLOR color);
-    void CreateFamiliarPopup(D3DXVECTOR3 *position, i32 param1, i32 param2);
+    void CreateFamiliarPopup(D3DXVECTOR3 *position, i32 number, i32 param3, D3DCOLOR color);
     void OnDrawHighPrioImpl();
     void DrawPercentage(i32 param1, i32 param2, D3DCOLOR color);
     void UpdateVms();

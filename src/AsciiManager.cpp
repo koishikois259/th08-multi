@@ -292,18 +292,200 @@ void AsciiManager::OnDrawLowPrioImpl()
 
 void AsciiManager::CreateScorePopup(D3DXVECTOR3 *position, i32 number, D3DCOLOR color)
 {
+    AsciiManagerPopup *popup;
+    int characterCount;
+
+    if (this->nextScorePopupIndex >= ASCII_MAX_SCORE_POPUPS)
+    {
+        this->nextScorePopupIndex = 0;
+    }
+    popup = &this->scorePopups[nextScorePopupIndex];
+    popup->inUse = true;
+
+    characterCount = 0;
+    if (number >= 0)
+    {
+        while (number != 0)
+        {
+            popup->text[characterCount] = number % 10;
+            characterCount++;
+            number /= 10;
+        }
+    }
+    else
+    {
+        popup->text[characterCount] = 10;
+        characterCount++;
+    }
+
+    if (characterCount == 0)
+    {
+        popup->text[characterCount] = 0;
+        characterCount++;
+    }
+
+    popup->characterCount = characterCount;
+    popup->color = color;
+    popup->timer = 0;
+    popup->position = *position;
+    popup->position.x += g_GameManager.arcadeRegionTopLeftPos.x;
+    popup->position.y += g_GameManager.arcadeRegionTopLeftPos.y;
+    this->nextScorePopupIndex++;
 }
 
 void AsciiManager::CreatePlayerPointPopup(D3DXVECTOR3 *position, i32 number, D3DCOLOR color)
 {
+    AsciiManagerPopup *popup;
+    int characterCount;
+
+    if (this->nextPlayerPointPopupIndex >= ASCII_MAX_PLAYER_POPUPS)
+    {
+        this->nextPlayerPointPopupIndex = 0;
+    }
+    popup = &this->scorePopups[ASCII_MAX_SCORE_POPUPS + nextPlayerPointPopupIndex];
+    popup->inUse = true;
+
+    characterCount = 0;
+    if (number >= 0)
+    {
+        while (number != 0)
+        {
+            popup->text[characterCount] = number % 10;
+            characterCount++;
+            number /= 10;
+        }
+    }
+    else
+    {
+        popup->text[characterCount] = 10;
+        characterCount++;
+    }
+
+    if (characterCount == 0)
+    {
+        popup->text[characterCount] = 0;
+        characterCount++;
+    }
+
+    popup->characterCount = characterCount;
+    popup->color = color;
+    popup->timer = 0;
+    popup->position = *position;
+    popup->position.x += g_GameManager.arcadeRegionTopLeftPos.x;
+    popup->position.y += g_GameManager.arcadeRegionTopLeftPos.y;
+    this->nextPlayerPointPopupIndex++;
 }
 
 void AsciiManager::CreateTimePopup(D3DXVECTOR3 *position, i32 number, i32 param3, D3DCOLOR color)
 {
+    AsciiManagerPopup *popup;
+    int characterCount;
+
+    if (this->nextTimePopupIndex >= ASCII_MAX_TIME_POPUPS)
+    {
+        this->nextTimePopupIndex = 0;
+    }
+    popup = &this->timePopups[nextTimePopupIndex];
+    popup->inUse = true;
+
+    characterCount = 0;
+    if (param3 > 0)
+    {
+        popup->text[characterCount] = 15;
+        characterCount++;
+        while (param3 != 0)
+        {
+            popup->text[characterCount] = param3 % 10;
+            characterCount++;
+            param3 /= 10;
+        }
+        popup->text[characterCount] = 14;
+        characterCount++;
+    }
+
+    if (number > 0)
+    {
+        while (number != 0)
+        {
+            popup->text[characterCount] = number % 10;
+            characterCount++;
+            number /= 10;
+        }
+    }
+    else
+    {
+        popup->text[characterCount] = 0;
+        characterCount++;
+    }
+
+    popup->text[characterCount] = 13;
+    characterCount++;
+
+    popup->characterCount = characterCount;
+    popup->color = color;
+    popup->timer = 0;
+    popup->position = *position;
+    popup->position.x += g_GameManager.arcadeRegionTopLeftPos.x;
+    popup->position.y += g_GameManager.arcadeRegionTopLeftPos.y;
+    popup->scaleX = this->scaleX;
+    popup->scaleY = this->scaleY;
+    this->nextTimePopupIndex++;
 }
 
-void AsciiManager::CreateFamiliarPopup(D3DXVECTOR3 *position, i32 param1, i32 param2)
+void AsciiManager::CreateFamiliarPopup(D3DXVECTOR3 *position, i32 number, i32 param3, D3DCOLOR color)
 {
+    AsciiManagerPopup *popup;
+    int characterCount;
+
+    if (this->nextTimePopupIndex >= ASCII_MAX_TIME_POPUPS)
+    {
+        this->nextTimePopupIndex = 0;
+    }
+    popup = &this->timePopups[nextTimePopupIndex];
+    popup->inUse = true;
+
+    characterCount = 0;
+    if (param3 > 0)
+    {
+        popup->text[characterCount] = 15;
+        characterCount++;
+        while (param3 != 0)
+        {
+            popup->text[characterCount] = param3 % 10;
+            characterCount++;
+            param3 /= 10;
+        }
+        popup->text[characterCount] = 14;
+        characterCount++;
+    }
+
+    if (number > 0)
+    {
+        while (number != 0)
+        {
+            popup->text[characterCount] = number % 10;
+            characterCount++;
+            number /= 10;
+        }
+    }
+    else
+    {
+        popup->text[characterCount] = 0;
+        characterCount++;
+    }
+
+    popup->text[characterCount] = 13;
+    characterCount++;
+
+    popup->characterCount = characterCount;
+    popup->color = color;
+    popup->timer = 88;
+    popup->position = *position;
+    popup->position.x += g_GameManager.arcadeRegionTopLeftPos.x + 3.5f * characterCount;
+    popup->position.y += g_GameManager.arcadeRegionTopLeftPos.y;
+    popup->scaleX = this->scaleX;
+    popup->scaleY = this->scaleY;
+    this->nextTimePopupIndex++;
 }
 
 i32 PauseMenu::OnUpdate()
