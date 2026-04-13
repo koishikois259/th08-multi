@@ -2,8 +2,8 @@
 #include "AnmManager.hpp"
 #include "GameManager.hpp"
 
-#include <stdio.h>
 #include <stdarg.h>
+#include <stdio.h>
 
 namespace th08
 {
@@ -270,12 +270,12 @@ void AsciiManager::OnDrawLowPrioImpl()
             {
                 if (curString->isSelected)
                 {
-                    this->largeText.loadedSprite = this->asciiAnm->GetSprite((u8) *text + (170 - ' '));
+                    this->largeText.loadedSprite = this->asciiAnm->GetSprite((u8)*text + (170 - ' '));
                     this->largeText.prefix.color1.d3dColor = 0xffffffff;
                 }
                 else
                 {
-                    this->largeText.loadedSprite = this->asciiAnm->GetSprite((u8) *text + (31 - ' '));
+                    this->largeText.loadedSprite = this->asciiAnm->GetSprite((u8)*text + (31 - ' '));
                     this->largeText.prefix.color1.d3dColor = this->color;
                 }
 
