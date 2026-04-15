@@ -227,7 +227,7 @@ void AsciiManager::OnDrawLowPrioImpl()
     {
         this->largeText.pos = curString->position;
 
-        text = (u8*)curString->text;
+        text = (u8 *)curString->text;
 
         this->largeText.prefix.scale.x = curString->scaleX;
         this->largeText.prefix.scale.y = curString->scaleY;
@@ -311,7 +311,7 @@ void AsciiManager::OnDrawLowPrioImpl()
             switch (this->bossMarkerStates[i])
             {
             case 0:
-no_flicker:
+            no_flicker:
                 this->bossMarkers[i].prefix.color1.r = 255;
                 this->bossMarkers[i].prefix.color1.g = 255;
                 this->bossMarkers[i].prefix.color1.b = 255;
