@@ -210,25 +210,27 @@ int AsciiManager::AddFormatText2(D3DXVECTOR3 *position, const char *fmt, ...)
     return strlen(buf);
 }
 
+#pragma var_order(spaceWidth, i, curString, text, isGui, vector)
 void AsciiManager::OnDrawLowPrioImpl()
 {
     D3DXVECTOR3 vector;
     ZunBool isGui = TRUE;
     int i;
-    int t1 = this->numStrings;
     AsciiManagerString *curString = &this->strings[0];
-    const char *text;
+    u8 *text;
     float spaceWidth;
 
     this->largeText.prefix.visible = true;
     this->largeText.prefix.anchor = 3;
 
-    for (i = 0; i < this->numStrings; i++)
+    for (i = 0; i < this->numStrings; i++, curString++)
     {
         this->largeText.pos = curString->position;
 
-        text = curString->text;
+        text = (u8*)curString->text;
 
+        this->largeText.prefix.scale.x = curString->scaleX;
+        this->largeText.prefix.scale.y = curString->scaleY;
         spaceWidth = this->spaceWidth * curString->scaleX;
 
         if (isGui != curString->isGui)
@@ -259,7 +261,7 @@ void AsciiManager::OnDrawLowPrioImpl()
         {
             if (*text == '\n')
             {
-                this->largeText.pos.y += curString->scaleY * 16.0f;
+                this->largeText.pos.y += 16.0f * curString->scaleY;
                 this->largeText.pos.x = curString->position.x;
             }
             else if (*text == ' ')
@@ -268,15 +270,15 @@ void AsciiManager::OnDrawLowPrioImpl()
             }
             else
             {
-                if (curString->isSelected)
+                if (!curString->isSelected)
                 {
-                    this->largeText.loadedSprite = this->asciiAnm->GetSprite((u8)*text + (170 - ' '));
-                    this->largeText.prefix.color1.d3dColor = 0xffffffff;
+                    this->largeText.loadedSprite = this->asciiAnm->GetSprite(*text + (31 - ' '));
+                    this->largeText.prefix.color1.d3dColor = curString->color;
                 }
                 else
                 {
-                    this->largeText.loadedSprite = this->asciiAnm->GetSprite((u8)*text + (31 - ' '));
-                    this->largeText.prefix.color1.d3dColor = this->color;
+                    this->largeText.loadedSprite = this->asciiAnm->GetSprite(*text + (170 - ' '));
+                    this->largeText.prefix.color1.d3dColor = 0xffffffff;
                 }
 
                 g_AnmManager->DrawNoRotation(&this->largeText);
@@ -285,8 +287,95 @@ void AsciiManager::OnDrawLowPrioImpl()
 
             text++;
         }
+    }
 
-        curString++;
+    if (isGui)
+    {
+        g_AnmManager->FlushVertexBuffer();
+        g_Supervisor.viewport.X = 0;
+        g_Supervisor.viewport.Y = 0;
+        g_Supervisor.viewport.Width = 640;
+        g_Supervisor.viewport.Height = 480;
+        g_Supervisor.d3dDevice->SetViewport(&g_Supervisor.viewport);
+    }
+
+    for (i = 0; i < ARRAY_SIZE_SIGNED(this->bossMarkers); i++)
+    {
+        if (this->bossMarkers[i].pos.x >= 56.0f && this->bossMarkers[i].pos.x <= 392.0f)
+        {
+            // TODO: This line is not done! The player position is needed in this calculation
+            spaceWidth = fabsf(this->bossMarkers[i].pos.x - 32.0f);
+
+            this->bossMarkers[i].loadedSprite = this->asciiAnm->GetSprite(157);
+
+            switch (this->bossMarkerStates[i])
+            {
+            case 0:
+no_flicker:
+                this->bossMarkers[i].prefix.color1.r = 255;
+                this->bossMarkers[i].prefix.color1.g = 255;
+                this->bossMarkers[i].prefix.color1.b = 255;
+                if (spaceWidth < 64.0f)
+                {
+                    this->bossMarkers[i].prefix.color1.a = (spaceWidth * 64.0f) / 64.0f + 96.0f;
+                }
+                else
+                {
+                    this->bossMarkers[i].prefix.color1.a = 160;
+                }
+                break;
+            case 1:
+                this->bossMarkers[i].prefix.color1.a = 128;
+                this->bossMarkers[i].prefix.color1.r = 255;
+                this->bossMarkers[i].prefix.color1.g = 64;
+                this->bossMarkers[i].prefix.color1.b = 64;
+                break;
+            case 2:
+                if (this->unk_8284 % 8 == 0)
+                {
+                    this->bossMarkers[i].loadedSprite = this->asciiAnm->GetSprite(158);
+                    this->bossMarkers[i].prefix.color1.a = 255;
+                    this->bossMarkers[i].prefix.color1.r = 255;
+                    this->bossMarkers[i].prefix.color1.g = 255;
+                    this->bossMarkers[i].prefix.color1.b = 255;
+                }
+                else
+                {
+                    goto no_flicker;
+                }
+                break;
+            case 3:
+                if (this->unk_8284 % 4 == 0)
+                {
+                    this->bossMarkers[i].loadedSprite = this->asciiAnm->GetSprite(158);
+                    this->bossMarkers[i].prefix.color1.a = 255;
+                    this->bossMarkers[i].prefix.color1.r = 255;
+                    this->bossMarkers[i].prefix.color1.g = 255;
+                    this->bossMarkers[i].prefix.color1.b = 255;
+                }
+                else
+                {
+                    goto no_flicker;
+                }
+                break;
+            case 4:
+                if (this->unk_8284 % 2 == 0)
+                {
+                    this->bossMarkers[i].loadedSprite = this->asciiAnm->GetSprite(158);
+                    this->bossMarkers[i].prefix.color1.a = 255;
+                    this->bossMarkers[i].prefix.color1.r = 255;
+                    this->bossMarkers[i].prefix.color1.g = 255;
+                    this->bossMarkers[i].prefix.color1.b = 255;
+                }
+                else
+                {
+                    goto no_flicker;
+                }
+                break;
+            }
+
+            g_AnmManager->DrawNoRotation(&this->bossMarkers[i]);
+        }
     }
 }
 

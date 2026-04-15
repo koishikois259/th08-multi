@@ -128,7 +128,7 @@ struct AsciiManager
 
     i32 gaugeInterrupt;
     i32 spaceWidth;
-    i32 unk_8284;
+    u32 unk_8284;
 
     AnmLoaded *asciiAnm;
     AnmLoaded *captureAnm;
