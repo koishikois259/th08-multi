@@ -43,7 +43,7 @@ ChainCallbackResult Supervisor::OnUpdate(Supervisor *s)
     g_AnmManager->SetMixColorDefault();
     g_AnmManager->screenShakeOffset.x = g_AnmManager->screenShakeOffset.y = 0.0f;
 
-    g_AnmManager->ExecuteScriptOnVmArray(g_SupervisorLoadingVms, ARRAY_SIZE(g_SupervisorLoadingVms));
+    g_AnmManager->ExecuteScriptArray(g_SupervisorLoadingVms, ARRAY_SIZE(g_SupervisorLoadingVms));
 
     if (g_AnmManager->ServicePreloadedAnims() != ZUN_SUCCESS)
     {
