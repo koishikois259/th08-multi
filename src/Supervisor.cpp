@@ -181,7 +181,7 @@ ChainCallbackResult Supervisor::OnUpdate(Supervisor *s)
                 break;
             case SupervisorState_GameManagerRestartFromBeginning:
                 GameManager::CutChain();
-                if ((g_GameManager.flags.unk0) == 0 && g_GameManager.difficulty < 4)
+                if (!g_GameManager.IsPracticeMode() && g_GameManager.difficulty < 4)
                 {
                     g_GameManager.currentStage = 0;
                 }
@@ -426,9 +426,9 @@ int Supervisor::AddedCallback(Supervisor *s)
 
     ScoreDat::ReleaseScore(score);
 
-    g_GameManager.flags.finalBClearedWithAnyTeam = g_GameManager.FinalBClearedWithAnyTeam();
-    g_GameManager.flags.finalAClearedWithAnyTeam = g_GameManager.FinalAClearedWithAnyTeam();
-    g_GameManager.flags.finalBClearedWithAllTeams = g_GameManager.FinalBClearedWithAllTeams();
+    g_GameManager.flags.isExtraUnlocked = g_GameManager.IsExtraUnlocked();
+    g_GameManager.flags.isSpellPracticeUnlocked = g_GameManager.IsSpellPracticeUnlocked();
+    g_GameManager.flags.isExtraUnlockedWithAllTeams = g_GameManager.IsExtraUnlockedWithAllTeams();
 
     if (Supervisor::LoadDat() != ZUN_SUCCESS)
     {

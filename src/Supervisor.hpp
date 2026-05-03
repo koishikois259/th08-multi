@@ -23,15 +23,6 @@ enum MusicMode
     MIDI = 2
 };
 
-enum Difficulty
-{
-    EASY,
-    NORMAL,
-    HARD,
-    LUNATIC,
-    EXTRA,
-};
-
 enum EffectQuality
 {
     MINIMUM,
