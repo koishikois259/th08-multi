@@ -1,207 +1,174 @@
+#include "TitleScreen.hpp"
 #include "AsciiManager.hpp"
 #include "GameManager.hpp"
-#include "i18n.hpp"
-#include "ScreenEffect.hpp"
 #include "ScoreDat.hpp"
+#include "ScreenEffect.hpp"
 #include "SoundPlayer.hpp"
 #include "Spellcard.hpp"
-#include "TitleScreen.hpp"
 #include "ZunMath.hpp"
+#include "i18n.hpp"
 
-#define TITLE_SPRITE_OPTION_START                       10
+#define TITLE_SPRITE_OPTION_START 10
 
-#define TITLE_SPRITE_OPTION_PLAYER_START                20
-#define TITLE_SPRITE_OPTION_PLAYER_END                  26
+#define TITLE_SPRITE_OPTION_PLAYER_START 20
+#define TITLE_SPRITE_OPTION_PLAYER_END 26
 
-#define TITLE_SPRITE_OPTION_GRAPHICS_MODE_START         27
-#define TITLE_SPRITE_OPTION_GRAPHICS_MODE_END           28
+#define TITLE_SPRITE_OPTION_GRAPHICS_MODE_START 27
+#define TITLE_SPRITE_OPTION_GRAPHICS_MODE_END 28
 
-#define TITLE_SPRITE_OPTION_MUSIC_MODE_START            29
-#define TITLE_SPRITE_OPTION_MUSIC_MODE_END              31
+#define TITLE_SPRITE_OPTION_MUSIC_MODE_START 29
+#define TITLE_SPRITE_OPTION_MUSIC_MODE_END 31
 
-#define TITLE_SPRITE_OPTION_MUSIC_VOLUME_DIGIT3         32
-#define TITLE_SPRITE_OPTION_MUSIC_VOLUME_DIGIT2         33
-#define TITLE_SPRITE_OPTION_MUSIC_VOLUME_DIGIT1         34
+#define TITLE_SPRITE_OPTION_MUSIC_VOLUME_DIGIT3 32
+#define TITLE_SPRITE_OPTION_MUSIC_VOLUME_DIGIT2 33
+#define TITLE_SPRITE_OPTION_MUSIC_VOLUME_DIGIT1 34
 
-#define TITLE_SPRITE_OPTION_SFX_VOLUME_DIGIT3           36
-#define TITLE_SPRITE_OPTION_SFX_VOLUME_DIGIT2           37
-#define TITLE_SPRITE_OPTION_SFX_VOLUME_DIGIT1           38
+#define TITLE_SPRITE_OPTION_SFX_VOLUME_DIGIT3 36
+#define TITLE_SPRITE_OPTION_SFX_VOLUME_DIGIT2 37
+#define TITLE_SPRITE_OPTION_SFX_VOLUME_DIGIT1 38
 
-#define TITLE_SPRITE_OPTION_WINDOWED_START              40
-#define TITLE_SPRITE_OPTION_WINDOWED_END                41
+#define TITLE_SPRITE_OPTION_WINDOWED_START 40
+#define TITLE_SPRITE_OPTION_WINDOWED_END 41
 
-#define TITLE_SPRITE_OPTION_SLOWMODE_START              42
-#define TITLE_SPRITE_OPTION_SLOWMODE_END                43
+#define TITLE_SPRITE_OPTION_SLOWMODE_START 42
+#define TITLE_SPRITE_OPTION_SLOWMODE_END 43
 
-#define TITLE_SPRITE_KEYCONFIG_SLOWSHOT_START           75
-#define TITLE_SPRITE_KEYCONFIG_SLOWSHOT_END             76
+#define TITLE_SPRITE_KEYCONFIG_SLOWSHOT_START 75
+#define TITLE_SPRITE_KEYCONFIG_SLOWSHOT_END 76
 
-#define TITLE_SPRITE_CHARACTER_START                    111
-#define TITLE_SPRITE_CHARACTER_END                      130
-#define TITLE_SPRITE_DIFFICULTY_START                   131
-#define TITLE_SPRITE_DIFFICULTY_EXTRA                   (TITLE_SPRITE_DIFFICULTY_START + 4)
+#define TITLE_SPRITE_CHARACTER_START 111
+#define TITLE_SPRITE_CHARACTER_END 130
+#define TITLE_SPRITE_DIFFICULTY_START 131
+#define TITLE_SPRITE_DIFFICULTY_EXTRA (TITLE_SPRITE_DIFFICULTY_START + 4)
 
 namespace th08
 {
 
 enum
 {
-    TITLE_MENU_ITEM_START_START          = 0,
-    TITLE_MENU_ITEM_START_EXTRA_START    = 1,
+    TITLE_MENU_ITEM_START_START = 0,
+    TITLE_MENU_ITEM_START_EXTRA_START = 1,
     TITLE_MENU_ITEM_START_SPELL_PRACTICE = 2,
     TITLE_MENU_ITEM_START_PRACTICE_START = 3,
-    TITLE_MENU_ITEM_START_REPLAY         = 4,
-    TITLE_MENU_ITEM_START_RESULT         = 5,
-    TITLE_MENU_ITEM_START_MUSIC_ROOM     = 6,
-    TITLE_MENU_ITEM_START_OPTION         = 7,
-    TITLE_MENU_ITEM_START_QUIT           = 8,
+    TITLE_MENU_ITEM_START_REPLAY = 4,
+    TITLE_MENU_ITEM_START_RESULT = 5,
+    TITLE_MENU_ITEM_START_MUSIC_ROOM = 6,
+    TITLE_MENU_ITEM_START_OPTION = 7,
+    TITLE_MENU_ITEM_START_QUIT = 8,
     TITLE_MENU_ITEM_START_NUM_ITEMS
 };
 
 enum
 {
-    TITLE_MENU_ITEM_OPTION_PLAYER    = 0,
-    TITLE_MENU_ITEM_OPTION_GRAPHIC   = 1,
-    TITLE_MENU_ITEM_OPTION_BGM       = 2,
-    TITLE_MENU_ITEM_OPTION_VOL       = 3,
-    TITLE_MENU_ITEM_OPTION_SE_VOL    = 4,
-    TITLE_MENU_ITEM_OPTION_MODE      = 5,
-    TITLE_MENU_ITEM_OPTION_SLOWMODE  = 6,
-    TITLE_MENU_ITEM_OPTION_RESET     = 7,
+    TITLE_MENU_ITEM_OPTION_PLAYER = 0,
+    TITLE_MENU_ITEM_OPTION_GRAPHIC = 1,
+    TITLE_MENU_ITEM_OPTION_BGM = 2,
+    TITLE_MENU_ITEM_OPTION_VOL = 3,
+    TITLE_MENU_ITEM_OPTION_SE_VOL = 4,
+    TITLE_MENU_ITEM_OPTION_MODE = 5,
+    TITLE_MENU_ITEM_OPTION_SLOWMODE = 6,
+    TITLE_MENU_ITEM_OPTION_RESET = 7,
     TITLE_MENU_ITEM_OPTION_KEYCONFIG = 8,
-    TITLE_MENU_ITEM_OPTION_EXIT      = 9,
+    TITLE_MENU_ITEM_OPTION_EXIT = 9,
     TITLE_MENU_ITEM_OPTION_NUM_ITEMS
 };
 
 enum
 {
-    TITLE_MENU_ITEM_KEYCONFIG_SHOT     = 0,
-    TITLE_MENU_ITEM_KEYCONFIG_BOMB     = 1,
-    TITLE_MENU_ITEM_KEYCONFIG_SLOW     = 2,
-    TITLE_MENU_ITEM_KEYCONFIG_SKIP     = 3,
-    TITLE_MENU_ITEM_KEYCONFIG_PAUSE    = 4,
-    TITLE_MENU_ITEM_KEYCONFIG_UP       = 5,
-    TITLE_MENU_ITEM_KEYCONFIG_DOWN     = 6,
-    TITLE_MENU_ITEM_KEYCONFIG_LEFT     = 7,
-    TITLE_MENU_ITEM_KEYCONFIG_RIGHT    = 8,
+    TITLE_MENU_ITEM_KEYCONFIG_SHOT = 0,
+    TITLE_MENU_ITEM_KEYCONFIG_BOMB = 1,
+    TITLE_MENU_ITEM_KEYCONFIG_SLOW = 2,
+    TITLE_MENU_ITEM_KEYCONFIG_SKIP = 3,
+    TITLE_MENU_ITEM_KEYCONFIG_PAUSE = 4,
+    TITLE_MENU_ITEM_KEYCONFIG_UP = 5,
+    TITLE_MENU_ITEM_KEYCONFIG_DOWN = 6,
+    TITLE_MENU_ITEM_KEYCONFIG_LEFT = 7,
+    TITLE_MENU_ITEM_KEYCONFIG_RIGHT = 8,
     TITLE_MENU_ITEM_KEYCONFIG_SHOTSLOW = 9,
-    TITLE_MENU_ITEM_KEYCONFIG_RESET    = 10,
-    TITLE_MENU_ITEM_KEYCONFIG_QUIT     = 11,
+    TITLE_MENU_ITEM_KEYCONFIG_RESET = 10,
+    TITLE_MENU_ITEM_KEYCONFIG_QUIT = 11,
 };
 
 DIFFABLE_STATIC(TitleScreen *, g_TitleScreen);
 
-i32 g_TitleCharacterSpriteIndices[SHOT_ALL][4] =
-{
+i32 g_TitleCharacterSpriteIndices[SHOT_ALL][4] = {
     /* Team character sprites */
-    { 0x77, 0x6f, 0x70, -1, },
-    { 0x78, 0x72, 0x71, -1, },
-    { 0x79, 0x73, 0x74, -1, },
-    { 0x7a, 0x76, 0x75, -1, },
+    {
+        0x77,
+        0x6f,
+        0x70,
+        -1,
+    },
+    {
+        0x78,
+        0x72,
+        0x71,
+        -1,
+    },
+    {
+        0x79,
+        0x73,
+        0x74,
+        -1,
+    },
+    {
+        0x7a,
+        0x76,
+        0x75,
+        -1,
+    },
 
     /* Solo character sprites */
-    { 0x7b, 0x6f, -1, 0x70 },
-    { 0x7c, 0x70, -1, 0x6f },
-    { 0x7d, 0x72, -1, 0x71 },
-    { 0x7e, 0x71, -1, 0x72 },
-    { 0x7f, 0x73, -1, 0x74 },
-    { 0x80, 0x74, -1, 0x73 },
-    { 0x81, 0x76, -1, 0x75 },
-    { 0x82, 0x75, -1, 0x76 },
+    {0x7b, 0x6f, -1, 0x70},
+    {0x7c, 0x70, -1, 0x6f},
+    {0x7d, 0x72, -1, 0x71},
+    {0x7e, 0x71, -1, 0x72},
+    {0x7f, 0x73, -1, 0x74},
+    {0x80, 0x74, -1, 0x73},
+    {0x81, 0x76, -1, 0x75},
+    {0x82, 0x75, -1, 0x76},
 };
 
-DIFFABLE_STATIC_ASSIGN(const char *, g_DemoReplayFiles[]) =
-{
+DIFFABLE_STATIC_ASSIGN(const char *, g_DemoReplayFiles[]) = {
     "demo/demorpy0.rpy",
     "demo/demorpy1.rpy",
     "demo/demorpy2.rpy",
     "demo/demorpy3.rpy",
 };
 
-DIFFABLE_STATIC_ASSIGN(const char *, g_StartMenuHelpText[]) =
-{
-    TH_TITLE_STARTMENU_HELPTEXT0,
-    TH_TITLE_STARTMENU_HELPTEXT1,
-    TH_TITLE_STARTMENU_HELPTEXT2,
-    TH_TITLE_STARTMENU_HELPTEXT3,
-    TH_TITLE_STARTMENU_HELPTEXT4,
-    TH_TITLE_STARTMENU_HELPTEXT5,
-    TH_TITLE_STARTMENU_HELPTEXT6,
-    TH_TITLE_STARTMENU_HELPTEXT7,
-    TH_TITLE_STARTMENU_HELPTEXT8,
+DIFFABLE_STATIC_ASSIGN(const char *, g_StartMenuHelpText[]) = {
+    TH_TITLE_STARTMENU_HELPTEXT0, TH_TITLE_STARTMENU_HELPTEXT1, TH_TITLE_STARTMENU_HELPTEXT2,
+    TH_TITLE_STARTMENU_HELPTEXT3, TH_TITLE_STARTMENU_HELPTEXT4, TH_TITLE_STARTMENU_HELPTEXT5,
+    TH_TITLE_STARTMENU_HELPTEXT6, TH_TITLE_STARTMENU_HELPTEXT7, TH_TITLE_STARTMENU_HELPTEXT8,
 };
 
-DIFFABLE_STATIC_ASSIGN(const char *, g_OptionsHelpText[]) =
-{
-    TH_TITLE_OPTIONS_HELPTEXT0,
-    TH_TITLE_OPTIONS_HELPTEXT1,
-    TH_TITLE_OPTIONS_HELPTEXT2,
-    TH_TITLE_OPTIONS_HELPTEXT3,
-    TH_TITLE_OPTIONS_HELPTEXT4,
-    TH_TITLE_OPTIONS_HELPTEXT5,
-    TH_TITLE_OPTIONS_HELPTEXT6,
-    TH_TITLE_OPTIONS_HELPTEXT7,
-    TH_TITLE_OPTIONS_HELPTEXT8,
-    TH_TITLE_OPTIONS_HELPTEXT9,
+DIFFABLE_STATIC_ASSIGN(const char *, g_OptionsHelpText[]) = {
+    TH_TITLE_OPTIONS_HELPTEXT0, TH_TITLE_OPTIONS_HELPTEXT1, TH_TITLE_OPTIONS_HELPTEXT2, TH_TITLE_OPTIONS_HELPTEXT3,
+    TH_TITLE_OPTIONS_HELPTEXT4, TH_TITLE_OPTIONS_HELPTEXT5, TH_TITLE_OPTIONS_HELPTEXT6, TH_TITLE_OPTIONS_HELPTEXT7,
+    TH_TITLE_OPTIONS_HELPTEXT8, TH_TITLE_OPTIONS_HELPTEXT9,
 };
 
 DIFFABLE_STATIC_ASSIGN(i16, g_LastKeyChanged) = 32;
 
-DIFFABLE_STATIC_ASSIGN(const char *, g_KeyConfigHelpText[]) =
-{
-    TH_TITLE_KEYCONFIG_HELPTEXT0,
-    TH_TITLE_KEYCONFIG_HELPTEXT1,
-    TH_TITLE_KEYCONFIG_HELPTEXT2,
-    TH_TITLE_KEYCONFIG_HELPTEXT3,
-    TH_TITLE_KEYCONFIG_HELPTEXT4,
-    TH_TITLE_KEYCONFIG_HELPTEXT5,
-    TH_TITLE_KEYCONFIG_HELPTEXT6,
-    TH_TITLE_KEYCONFIG_HELPTEXT7,
-    TH_TITLE_KEYCONFIG_HELPTEXT8,
-    TH_TITLE_KEYCONFIG_HELPTEXT9,
-    TH_TITLE_KEYCONFIG_HELPTEXT10,
-    TH_TITLE_KEYCONFIG_HELPTEXT11,
+DIFFABLE_STATIC_ASSIGN(const char *, g_KeyConfigHelpText[]) = {
+    TH_TITLE_KEYCONFIG_HELPTEXT0, TH_TITLE_KEYCONFIG_HELPTEXT1,  TH_TITLE_KEYCONFIG_HELPTEXT2,
+    TH_TITLE_KEYCONFIG_HELPTEXT3, TH_TITLE_KEYCONFIG_HELPTEXT4,  TH_TITLE_KEYCONFIG_HELPTEXT5,
+    TH_TITLE_KEYCONFIG_HELPTEXT6, TH_TITLE_KEYCONFIG_HELPTEXT7,  TH_TITLE_KEYCONFIG_HELPTEXT8,
+    TH_TITLE_KEYCONFIG_HELPTEXT9, TH_TITLE_KEYCONFIG_HELPTEXT10, TH_TITLE_KEYCONFIG_HELPTEXT11,
 };
 
-DIFFABLE_STATIC_ASSIGN(const char *, g_StageNames[]) =
-{
-    "Stage1 ",
-    "Stage2 ",
-    "Stage3 ",
-    "Stage4A",
-    "Stage4B",
-    "Stage5 ",
-    "Stage6A",
-    "Stage6B",
-    "StageEX",
+DIFFABLE_STATIC_ASSIGN(const char *, g_StageNames[]) = {
+    "Stage1 ", "Stage2 ", "Stage3 ", "Stage4A", "Stage4B", "Stage5 ", "Stage6A", "Stage6B", "StageEX",
 };
 
-DIFFABLE_STATIC_ASSIGN(const char *, g_StageNamesSpellPractice[]) =
-{
-    "Stage1   ",
-    "Stage2   ",
-    "Stage3   ",
-    "Stage4A  ",
-    "Stage4B  ",
-    "Stage5   ",
-    "Stage6A  ",
-    "Stage6B  ",
-    "Extra    ",
-    "Last Word"
-};
+DIFFABLE_STATIC_ASSIGN(const char *, g_StageNamesSpellPractice[]) = {"Stage1   ", "Stage2   ", "Stage3   ", "Stage4A  ",
+                                                                     "Stage4B  ", "Stage5   ", "Stage6A  ", "Stage6B  ",
+                                                                     "Extra    ", "Last Word"};
 
-DIFFABLE_STATIC_ASSIGN(const char *, g_FullWidthDigits[]) =
-{
-    TH_TITLE_FULLWIDTH_DIGIT_0,
-    TH_TITLE_FULLWIDTH_DIGIT_1,
-    TH_TITLE_FULLWIDTH_DIGIT_2,
-    TH_TITLE_FULLWIDTH_DIGIT_3,
-    TH_TITLE_FULLWIDTH_DIGIT_4,
-    TH_TITLE_FULLWIDTH_DIGIT_5,
-    TH_TITLE_FULLWIDTH_DIGIT_6,
-    TH_TITLE_FULLWIDTH_DIGIT_7,
-    TH_TITLE_FULLWIDTH_DIGIT_8,
-    TH_TITLE_FULLWIDTH_DIGIT_9,
+DIFFABLE_STATIC_ASSIGN(const char *, g_FullWidthDigits[]) = {
+    TH_TITLE_FULLWIDTH_DIGIT_0, TH_TITLE_FULLWIDTH_DIGIT_1, TH_TITLE_FULLWIDTH_DIGIT_2, TH_TITLE_FULLWIDTH_DIGIT_3,
+    TH_TITLE_FULLWIDTH_DIGIT_4, TH_TITLE_FULLWIDTH_DIGIT_5, TH_TITLE_FULLWIDTH_DIGIT_6, TH_TITLE_FULLWIDTH_DIGIT_7,
+    TH_TITLE_FULLWIDTH_DIGIT_8, TH_TITLE_FULLWIDTH_DIGIT_9,
 };
 
 void DrawPieChart(D3DXVECTOR3 *position, D3DCOLOR color, float param_3, float param_4);
@@ -276,19 +243,19 @@ ChainCallbackResult TitleScreen::OnUpdateStartMenu()
     case TitleCurrentScreenState_Init:
         if (this->stateTimer2 == 0)
         {
-            if (this->previousScreen == TitleCurrentScreen_StartMenu
-                && g_Supervisor.wantedState2 != SupervisorState_ResultScreen)
+            if (this->previousScreen == TitleCurrentScreen_StartMenu &&
+                g_Supervisor.wantedState2 != SupervisorState_ResultScreen)
             {
                 g_Supervisor.PlayMusic(8, 0);
             }
 
-            if (this->previousScreen == TitleCurrentScreen_StartMenu
-                || this->previousScreen == TitleCurrentScreen_DifficultySelect
-                || this->previousScreen == TitleCurrentScreen_Replay
-                || this->previousScreen == TitleCurrentScreen_DifficultySelectPractice
-                || this->previousScreen == TitleCurrentScreen_DifficultySelectExtra
-                || this->previousScreen == TitleCurrentScreen_CharacterSelectSpell
-                || this->previousScreen == TitleCurrentScreen_SpellStageSelect)
+            if (this->previousScreen == TitleCurrentScreen_StartMenu ||
+                this->previousScreen == TitleCurrentScreen_DifficultySelect ||
+                this->previousScreen == TitleCurrentScreen_Replay ||
+                this->previousScreen == TitleCurrentScreen_DifficultySelectPractice ||
+                this->previousScreen == TitleCurrentScreen_DifficultySelectExtra ||
+                this->previousScreen == TitleCurrentScreen_CharacterSelectSpell ||
+                this->previousScreen == TitleCurrentScreen_SpellStageSelect)
             {
                 if (g_AnmManager->LoadSurface(0, "title/title00.png") != ZUN_SUCCESS)
                 {
@@ -322,7 +289,8 @@ ChainCallbackResult TitleScreen::OnUpdateStartMenu()
                     g_GameManager.flags.isSpellPractice = TRUE;
                 }
 
-                this->ChangeCurrentScreen(g_GameManager.IsSpellPractice() ? TitleCurrentScreen_CharacterSelectSpell : TitleCurrentScreen_CharacterSelectPractice);
+                this->ChangeCurrentScreen(g_GameManager.IsSpellPractice() ? TitleCurrentScreen_CharacterSelectSpell
+                                                                          : TitleCurrentScreen_CharacterSelectPractice);
 
                 g_AnmManager->SetInterruptArray(this->vms, this->vmCount, 5);
                 this->currentHelpTextVm->SetInterrupt(2);
@@ -354,7 +322,8 @@ ChainCallbackResult TitleScreen::OnUpdateStartMenu()
 
         if (this->stateTimer2 < ARRAY_SIZE(g_StartMenuHelpText))
         {
-            g_AnmManager->DrawTextCentered(&this->helpTextVms[this->stateTimer2], 0xfff0e0, 0x300000, g_StartMenuHelpText[this->stateTimer2]);
+            g_AnmManager->DrawTextCentered(&this->helpTextVms[this->stateTimer2], 0xfff0e0, 0x300000,
+                                           g_StartMenuHelpText[this->stateTimer2]);
             this->stateTimer2++;
 
             return CHAIN_CALLBACK_RESULT_CONTINUE;
@@ -370,7 +339,7 @@ ChainCallbackResult TitleScreen::OnUpdateStartMenu()
         if (i != 0)
         {
             /* ... Just why, ZUN */
-back:
+        back:
             if (!g_GameManager.IsSpellPracticeUnlocked())
             {
                 if (this->cursor == TITLE_MENU_ITEM_START_SPELL_PRACTICE)
@@ -421,7 +390,8 @@ back:
         {
             /* TODO: needs ReplayManager work */
 
-            g_GameManager.currentDemoReplay = (g_GameManager.currentDemoReplay + 1) % ARRAY_SIZE_SIGNED(g_DemoReplayFiles);
+            g_GameManager.currentDemoReplay =
+                (g_GameManager.currentDemoReplay + 1) % ARRAY_SIZE_SIGNED(g_DemoReplayFiles);
             strcpy(g_GameManager.replayFilename, g_DemoReplayFiles[g_GameManager.currentDemoReplay]);
 
             ZUN_FREE(this->currentReplay);
@@ -453,7 +423,7 @@ back:
                 g_GameManager.flags.isPracticeMode = FALSE;
                 g_GameManager.flags.isSpellPractice = FALSE;
                 this->cursor = g_Supervisor.cfg.defaultDifficulty;
-                if(this->cursor >= EXTRA)
+                if (this->cursor >= EXTRA)
                 {
                     this->cursor = HARD;
                 }
@@ -601,7 +571,8 @@ ChainCallbackResult TitleScreen::OnUpdateOptions()
 
             for (i = 0; i < TITLE_MENU_ITEM_OPTION_NUM_ITEMS; i++)
             {
-                this->titleAnm->SetSprite(&this->vms[i + TITLE_SPRITE_OPTION_START], this->vms[i + TITLE_SPRITE_OPTION_START].baseSpriteIndex + 1);
+                this->titleAnm->SetSprite(&this->vms[i + TITLE_SPRITE_OPTION_START],
+                                          this->vms[i + TITLE_SPRITE_OPTION_START].baseSpriteIndex + 1);
             }
             this->titleAnm->SetSprite(&this->vms[this->cursor + TITLE_SPRITE_OPTION_START],
                                       this->vms[this->cursor + TITLE_SPRITE_OPTION_START].baseSpriteIndex);
@@ -620,9 +591,11 @@ ChainCallbackResult TitleScreen::OnUpdateOptions()
         {
             for (i = 0; i < TITLE_MENU_ITEM_OPTION_NUM_ITEMS; i++)
             {
-                this->titleAnm->SetSprite(&this->vms[i + TITLE_SPRITE_OPTION_START], this->vms[i + TITLE_SPRITE_OPTION_START].baseSpriteIndex + 1);
+                this->titleAnm->SetSprite(&this->vms[i + TITLE_SPRITE_OPTION_START],
+                                          this->vms[i + TITLE_SPRITE_OPTION_START].baseSpriteIndex + 1);
             }
-            this->titleAnm->SetSprite(&this->vms[this->cursor + TITLE_SPRITE_OPTION_START], this->vms[this->cursor + TITLE_SPRITE_OPTION_START].baseSpriteIndex);
+            this->titleAnm->SetSprite(&this->vms[this->cursor + TITLE_SPRITE_OPTION_START],
+                                      this->vms[this->cursor + TITLE_SPRITE_OPTION_START].baseSpriteIndex);
         }
 
         if (this->cursor2 != this->cursor)
@@ -651,8 +624,7 @@ ChainCallbackResult TitleScreen::OnUpdateOptions()
         }
 
         i = TITLE_SPRITE_OPTION_PLAYER_START + g_Supervisor.cfg.lifeCount;
-        this->titleAnm->SetSprite(&this->vms[i],
-                                  this->vms[i].baseSpriteIndex);
+        this->titleAnm->SetSprite(&this->vms[i], this->vms[i].baseSpriteIndex);
 
         /* Graphics mode */
 
@@ -662,8 +634,7 @@ ChainCallbackResult TitleScreen::OnUpdateOptions()
         }
 
         i = TITLE_SPRITE_OPTION_GRAPHICS_MODE_START + g_Supervisor.cfg.colorMode16bit;
-        this->titleAnm->SetSprite(&this->vms[i],
-                                  this->vms[i].baseSpriteIndex);
+        this->titleAnm->SetSprite(&this->vms[i], this->vms[i].baseSpriteIndex);
 
         /* Music mode */
 
@@ -673,8 +644,7 @@ ChainCallbackResult TitleScreen::OnUpdateOptions()
         }
 
         i = TITLE_SPRITE_OPTION_MUSIC_MODE_START + g_Supervisor.cfg.musicMode;
-        this->titleAnm->SetSprite(&this->vms[i],
-                                  this->vms[i].baseSpriteIndex);
+        this->titleAnm->SetSprite(&this->vms[i], this->vms[i].baseSpriteIndex);
 
         /* Music volume */
 
@@ -694,8 +664,8 @@ ChainCallbackResult TitleScreen::OnUpdateOptions()
         if (g_Supervisor.cfg.musicVolume >= 10)
         {
             this->titleAnm->SetSprite(&this->vms[TITLE_SPRITE_OPTION_MUSIC_VOLUME_DIGIT2],
-                                      this->vms[TITLE_SPRITE_OPTION_MUSIC_VOLUME_DIGIT2].baseSpriteIndex
-                                      + ((g_Supervisor.cfg.musicVolume / 10) % 10) * 2);
+                                      this->vms[TITLE_SPRITE_OPTION_MUSIC_VOLUME_DIGIT2].baseSpriteIndex +
+                                          ((g_Supervisor.cfg.musicVolume / 10) % 10) * 2);
             this->vms[TITLE_SPRITE_OPTION_MUSIC_VOLUME_DIGIT2].prefix.color1.a = 255;
         }
         else
@@ -703,7 +673,9 @@ ChainCallbackResult TitleScreen::OnUpdateOptions()
             this->vms[TITLE_SPRITE_OPTION_MUSIC_VOLUME_DIGIT2].prefix.color1.a = 0;
         }
 
-        this->titleAnm->SetSprite(&this->vms[TITLE_SPRITE_OPTION_MUSIC_VOLUME_DIGIT1], this->vms[TITLE_SPRITE_OPTION_MUSIC_VOLUME_DIGIT1].baseSpriteIndex + ((g_Supervisor.cfg.musicVolume) % 10) * 2);
+        this->titleAnm->SetSprite(&this->vms[TITLE_SPRITE_OPTION_MUSIC_VOLUME_DIGIT1],
+                                  this->vms[TITLE_SPRITE_OPTION_MUSIC_VOLUME_DIGIT1].baseSpriteIndex +
+                                      ((g_Supervisor.cfg.musicVolume) % 10) * 2);
 
         this->titleAnm->SetSprite(&this->vms[35], this->vms[35].baseSpriteIndex);
 
@@ -725,8 +697,8 @@ ChainCallbackResult TitleScreen::OnUpdateOptions()
         if (g_Supervisor.cfg.sfxVolume >= 10)
         {
             this->titleAnm->SetSprite(&this->vms[TITLE_SPRITE_OPTION_SFX_VOLUME_DIGIT2],
-                                      this->vms[TITLE_SPRITE_OPTION_SFX_VOLUME_DIGIT2].baseSpriteIndex
-                                      + ((g_Supervisor.cfg.sfxVolume / 10) % 10) * 2);
+                                      this->vms[TITLE_SPRITE_OPTION_SFX_VOLUME_DIGIT2].baseSpriteIndex +
+                                          ((g_Supervisor.cfg.sfxVolume / 10) % 10) * 2);
             this->vms[TITLE_SPRITE_OPTION_SFX_VOLUME_DIGIT2].prefix.color1.a = 255;
         }
         else
@@ -735,7 +707,8 @@ ChainCallbackResult TitleScreen::OnUpdateOptions()
         }
 
         this->titleAnm->SetSprite(&this->vms[TITLE_SPRITE_OPTION_SFX_VOLUME_DIGIT1],
-                                  this->vms[TITLE_SPRITE_OPTION_SFX_VOLUME_DIGIT1].baseSpriteIndex + ((g_Supervisor.cfg.sfxVolume % 10) * 2));
+                                  this->vms[TITLE_SPRITE_OPTION_SFX_VOLUME_DIGIT1].baseSpriteIndex +
+                                      ((g_Supervisor.cfg.sfxVolume % 10) * 2));
 
         /* Display mode */
 
@@ -746,8 +719,7 @@ ChainCallbackResult TitleScreen::OnUpdateOptions()
         }
 
         i = TITLE_SPRITE_OPTION_WINDOWED_START + g_Supervisor.cfg.windowed;
-        this->titleAnm->SetSprite(&this->vms[i],
-                                  this->vms[i].baseSpriteIndex);
+        this->titleAnm->SetSprite(&this->vms[i], this->vms[i].baseSpriteIndex);
 
         /* Slow mode */
 
@@ -757,8 +729,7 @@ ChainCallbackResult TitleScreen::OnUpdateOptions()
         }
 
         i = TITLE_SPRITE_OPTION_SLOWMODE_START + g_Supervisor.cfg.slowMode;
-        this->titleAnm->SetSprite(&this->vms[i],
-                                  this->vms[i].baseSpriteIndex);
+        this->titleAnm->SetSprite(&this->vms[i], this->vms[i].baseSpriteIndex);
 
         if (this->stateTimer2 < 4)
         {
@@ -769,7 +740,7 @@ ChainCallbackResult TitleScreen::OnUpdateOptions()
         {
             switch (this->cursor)
             {
-            case TITLE_MENU_ITEM_OPTION_PLAYER:         /* Player */
+            case TITLE_MENU_ITEM_OPTION_PLAYER: /* Player */
                 i = 7;
                 if (g_GameManager.plst.playDataTotals.attemptsTotal < 30)
                 {
@@ -842,7 +813,7 @@ ChainCallbackResult TitleScreen::OnUpdateOptions()
             g_SoundPlayer.PlaySoundByIdx(SOUND_MOVE_MENU, 0);
             g_SoundPlayer.ProcessQueues();
         }
-left_button_check:
+    left_button_check:
 
         if (WAS_PRESSED(TH_BUTTON_LEFT))
         {
@@ -891,8 +862,7 @@ left_button_check:
         }
 
         /* If you press left for more than 30 frames, counter goes brrr */
-        if (WAS_PRESSED(TH_BUTTON_LEFT)
-            || g_NumOfFramesInputsWereHeld >= 30 && (g_CurFrameInput & TH_BUTTON_LEFT))
+        if (WAS_PRESSED(TH_BUTTON_LEFT) || g_NumOfFramesInputsWereHeld >= 30 && (g_CurFrameInput & TH_BUTTON_LEFT))
         {
             switch (this->cursor)
             {
@@ -913,8 +883,7 @@ left_button_check:
             }
         }
 
-        if (WAS_PRESSED(TH_BUTTON_RIGHT)
-            || g_NumOfFramesInputsWereHeld >= 30 && (g_CurFrameInput & TH_BUTTON_RIGHT))
+        if (WAS_PRESSED(TH_BUTTON_RIGHT) || g_NumOfFramesInputsWereHeld >= 30 && (g_CurFrameInput & TH_BUTTON_RIGHT))
         {
             switch (this->cursor)
             {
@@ -1012,7 +981,7 @@ left_button_check:
             g_SoundPlayer.ProcessQueues();
         }
 
-sfx_play:
+    sfx_play:
         switch (this->cursor)
         {
         case TITLE_MENU_ITEM_OPTION_VOL:
@@ -1057,14 +1026,14 @@ sfx_play:
                 g_SoundPlayer.ProcessQueues();
                 return CHAIN_CALLBACK_RESULT_CONTINUE;
             case TITLE_MENU_ITEM_OPTION_EXIT:
-exit_options:
+            exit_options:
                 this->cursor = TITLE_MENU_ITEM_START_OPTION;
                 this->ChangeCurrentScreen(TitleCurrentScreen_StartMenu);
                 g_SoundPlayer.PlaySoundByIdx(SOUND_BACK, 0);
                 g_SoundPlayer.ProcessQueues();
 
-                if (this->currentGameConfig.colorMode16bit != g_Supervisor.cfg.colorMode16bit
-                    || this->currentGameConfig.windowed != g_Supervisor.cfg.windowed)
+                if (this->currentGameConfig.colorMode16bit != g_Supervisor.cfg.colorMode16bit ||
+                    this->currentGameConfig.windowed != g_Supervisor.cfg.windowed)
                 {
                     return CHAIN_CALLBACK_RESULT_EXIT_GAME_ERROR;
                 }
@@ -1082,9 +1051,11 @@ exit_options:
                 goto exit_options;
             }
 
-            this->titleAnm->SetSprite(&this->vms[this->cursor + TITLE_SPRITE_OPTION_START], this->vms[this->cursor + TITLE_SPRITE_OPTION_START].baseSpriteIndex + 1);
+            this->titleAnm->SetSprite(&this->vms[this->cursor + TITLE_SPRITE_OPTION_START],
+                                      this->vms[this->cursor + TITLE_SPRITE_OPTION_START].baseSpriteIndex + 1);
             this->cursor = TITLE_MENU_ITEM_OPTION_EXIT;
-            this->titleAnm->SetSprite(&this->vms[this->cursor + TITLE_SPRITE_OPTION_START], this->vms[this->cursor + TITLE_SPRITE_OPTION_START].baseSpriteIndex);
+            this->titleAnm->SetSprite(&this->vms[this->cursor + TITLE_SPRITE_OPTION_START],
+                                      this->vms[this->cursor + TITLE_SPRITE_OPTION_START].baseSpriteIndex);
 
             g_SoundPlayer.PlaySoundByIdx(SOUND_BACK, 0);
             g_SoundPlayer.ProcessQueues();
@@ -1259,7 +1230,7 @@ ChainCallbackResult TitleScreen::OnUpdateKeyConfig()
             g_SoundPlayer.ProcessQueues();
         }
 
-out:
+    out:
 
         g_LastKeyChanged = keyToChange;
 
@@ -1305,7 +1276,7 @@ out:
                 g_Supervisor.cfg.shotSlow = TRUE;
                 break;
             case TITLE_MENU_ITEM_KEYCONFIG_QUIT:
-exit_keyconfig:
+            exit_keyconfig:
                 g_SoundPlayer.PlaySoundByIdx(SOUND_BACK, 0);
                 g_SoundPlayer.ProcessQueues();
 
@@ -1339,9 +1310,9 @@ ChainCallbackResult TitleScreen::OnUpdateDifficultySelect()
     case TitleCurrentScreenState_Init:
         if (this->stateTimer2 == 0)
         {
-            if (this->previousScreen != TitleCurrentScreen_CharacterSelect
-                && this->previousScreen != TitleCurrentScreen_CharacterSelectPractice
-                && this->previousScreen != TitleCurrentScreen_CharacterSelectExtra)
+            if (this->previousScreen != TitleCurrentScreen_CharacterSelect &&
+                this->previousScreen != TitleCurrentScreen_CharacterSelectPractice &&
+                this->previousScreen != TitleCurrentScreen_CharacterSelectExtra)
             {
                 if (g_AnmManager->LoadSurface(0, "title/select00.png") != ZUN_SUCCESS)
                 {
@@ -1415,8 +1386,8 @@ ChainCallbackResult TitleScreen::OnUpdateDifficultySelect()
     case TitleCurrentScreenState_Ready:
         menuLength = (this->currentScreen != TitleCurrentScreen_DifficultySelectExtra) ? 4 : 1;
 
-        if (this->MoveCursorVertical(menuLength) != 0
-            && this->currentScreen != TitleCurrentScreen_DifficultySelectExtra)
+        if (this->MoveCursorVertical(menuLength) != 0 &&
+            this->currentScreen != TitleCurrentScreen_DifficultySelectExtra)
         {
             for (i = 0; i < 4; i++)
             {
@@ -1460,7 +1431,7 @@ ChainCallbackResult TitleScreen::OnUpdateDifficultySelect()
                 this->ChangeCurrentScreen(TitleCurrentScreen_CharacterSelectExtra);
             }
 
-            this-> cursor = 0;
+            this->cursor = 0;
 
             return CHAIN_CALLBACK_RESULT_CONTINUE;
         }
@@ -1596,7 +1567,7 @@ ChainCallbackResult TitleScreen::OnUpdateCharacterSelect()
             this->currentScreenState = TitleCurrentScreenState_Init;
             this->stateTimer = 0;
         }
-        
+
         if (this->practiceState != 0)
         {
             if (this->currentScreen != TitleCurrentScreen_CharacterSelectSpell)
@@ -1821,7 +1792,8 @@ ChainCallbackResult TitleScreen::OnUpdatePracticeStageSelect()
         }
         break;
     case TitleCurrentScreenState_Ready:
-        clearInfo = g_GameManager.clrdData[g_GameManager.shotType].difficultiesClearedWithRetries[g_Supervisor.cfg.defaultDifficulty];
+        clearInfo = g_GameManager.clrdData[g_GameManager.shotType]
+                        .difficultiesClearedWithRetries[g_Supervisor.cfg.defaultDifficulty];
 
         /* Make Stage 1 selectable in practice */
         if (clearInfo == 0)
@@ -2156,12 +2128,15 @@ ChainCallbackResult TitleScreen::OnUpdateSpellCardSelect()
 
             for (i = 0; i < TITLE_SPELL_CARD_SPELLCARDS_PER_PAGE; i++)
             {
-                if ((i + this->currentPageSpellCardSelect * TITLE_SPELL_CARD_SPELLCARDS_PER_PAGE) >= this->currentNumberOfSpellCards)
-                { 
+                if ((i + this->currentPageSpellCardSelect * TITLE_SPELL_CARD_SPELLCARDS_PER_PAGE) >=
+                    this->currentNumberOfSpellCards)
+                {
                     break;
                 }
 
-                spellCardNumber = g_SpellcardNumbersPerStage[g_GameManager.currentStage][i + this->currentPageSpellCardSelect * TITLE_SPELL_CARD_SPELLCARDS_PER_PAGE];
+                spellCardNumber = g_SpellcardNumbersPerStage[g_GameManager.currentStage]
+                                                            [i + this->currentPageSpellCardSelect *
+                                                                     TITLE_SPELL_CARD_SPELLCARDS_PER_PAGE];
 
                 this->resultTextAnm->InitializeAndSetSprite(&this->spellCardNameVms[i], i + 2);
                 this->spellCardNameVms[i].pos = D3DXVECTOR3(0, 0, 0);
@@ -2170,30 +2145,24 @@ ChainCallbackResult TitleScreen::OnUpdateSpellCardSelect()
                 this->spellCardNameVms[0].fontWidth = 15;
                 this->spellCardNameVms[i].fontHeight = 15;
 
-                if (g_GameManager.catkData[spellCardNumber].inGameHistory.attempts[SHOT_ALL] == 0
-                    && g_GameManager.catkData[spellCardNumber].spellPracticeHistory.attempts[SHOT_ALL] == 0)
+                if (g_GameManager.catkData[spellCardNumber].inGameHistory.attempts[SHOT_ALL] == 0 &&
+                    g_GameManager.catkData[spellCardNumber].spellPracticeHistory.attempts[SHOT_ALL] == 0)
                 {
-                    if (Spellcard::GetDifficultyFromSpellCard(spellCardNumber) <= EXTRA
-                        || !g_GameManager.IsLastWordSpellCardAttempted(spellCardNumber))
+                    if (Spellcard::GetDifficultyFromSpellCard(spellCardNumber) <= EXTRA ||
+                        !g_GameManager.IsLastWordSpellCardAttempted(spellCardNumber))
                     {
-                        g_AnmManager->DrawTextLeft(&this->spellCardNameVms[i],
-                                                   0xffffff,
-                                                   0,
+                        g_AnmManager->DrawTextLeft(&this->spellCardNameVms[i], 0xffffff, 0,
                                                    TH_TITLE_SPELLCARD_NOT_UNLOCKED);
                     }
                     else
                     {
-                        g_AnmManager->DrawTextLeft(&this->spellCardNameVms[i],
-                                                   0xffffff,
-                                                   0,
+                        g_AnmManager->DrawTextLeft(&this->spellCardNameVms[i], 0xffffff, 0,
                                                    TH_TITLE_SPELLCARD_AVAILABLE);
                     }
                 }
                 else
                 {
-                    g_AnmManager->DrawTextLeft(&this->spellCardNameVms[i],
-                                               0xffffff,
-                                               0,
+                    g_AnmManager->DrawTextLeft(&this->spellCardNameVms[i], 0xffffff, 0,
                                                g_GameManager.catkData[spellCardNumber].spellName);
                 }
 
@@ -2210,10 +2179,7 @@ ChainCallbackResult TitleScreen::OnUpdateSpellCardSelect()
             this->spellCardNameVms[i].fontWidth = 15;
             this->spellCardNameVms[i].fontHeight = 15;
 
-            g_AnmManager->DrawTextLeft(&this->spellCardNameVms[i],
-                                               0xffffff,
-                                               0,
-                                               TH_TITLE_SPELL_CARD_INFO);
+            g_AnmManager->DrawTextLeft(&this->spellCardNameVms[i], 0xffffff, 0, TH_TITLE_SPELL_CARD_INFO);
 
             this->spellCardNameVms[i].prefix.color1.a = 255;
             this->spellCardNameVms[i].prefix.color1.r = 255;
@@ -2279,7 +2245,8 @@ ChainCallbackResult TitleScreen::OnUpdateSpellCardSelect()
             {
                 g_SoundPlayer.PlaySoundByIdx(SOUND_MOVE_MENU, 0);
 
-                if (this->currentNumberOfSpellCards - this->cursor <= this->currentNumberOfSpellCards % TITLE_SPELL_CARD_SPELLCARDS_PER_PAGE)
+                if (this->currentNumberOfSpellCards - this->cursor <=
+                    this->currentNumberOfSpellCards % TITLE_SPELL_CARD_SPELLCARDS_PER_PAGE)
                 {
                     this->cursor %= TITLE_SPELL_CARD_SPELLCARDS_PER_PAGE;
                 }
@@ -2305,8 +2272,9 @@ ChainCallbackResult TitleScreen::OnUpdateSpellCardSelect()
         {
             for (i2 = 0; i2 < TITLE_SPELL_CARD_SPELLCARDS_PER_PAGE; i2++)
             {
-                if ((i2 + this->currentPageSpellCardSelect * TITLE_SPELL_CARD_SPELLCARDS_PER_PAGE) >= this->currentNumberOfSpellCards)
-                { 
+                if ((i2 + this->currentPageSpellCardSelect * TITLE_SPELL_CARD_SPELLCARDS_PER_PAGE) >=
+                    this->currentNumberOfSpellCards)
+                {
                     break;
                 }
 
@@ -2317,31 +2285,27 @@ ChainCallbackResult TitleScreen::OnUpdateSpellCardSelect()
                 this->spellCardInfoVms[0].fontWidth = 15;
                 this->spellCardNameVms[i2].fontHeight = 15;
 
-                spellCardNumber2 = g_SpellcardNumbersPerStage[g_GameManager.currentStage][i2 + this->currentPageSpellCardSelect * TITLE_SPELL_CARD_SPELLCARDS_PER_PAGE];
+                spellCardNumber2 = g_SpellcardNumbersPerStage[g_GameManager.currentStage]
+                                                             [i2 + this->currentPageSpellCardSelect *
+                                                                       TITLE_SPELL_CARD_SPELLCARDS_PER_PAGE];
 
                 /* Why does ZUN use this helper method here, and in the initialization , use direct access? */
                 if (g_GameManager.HasSpellCardBeenEncountered(spellCardNumber2, SHOT_ALL))
                 {
-                    g_AnmManager->DrawTextLeft(&this->spellCardNameVms[i2],
-                                               0xffffff,
-                                               0,
+                    g_AnmManager->DrawTextLeft(&this->spellCardNameVms[i2], 0xffffff, 0,
                                                g_GameManager.catkData[spellCardNumber2].spellName);
                 }
                 else
                 {
-                    if (Spellcard::GetDifficultyFromSpellCard(spellCardNumber2) <= EXTRA
-                        || !g_GameManager.IsLastWordSpellCardAttempted(spellCardNumber2))
+                    if (Spellcard::GetDifficultyFromSpellCard(spellCardNumber2) <= EXTRA ||
+                        !g_GameManager.IsLastWordSpellCardAttempted(spellCardNumber2))
                     {
-                        g_AnmManager->DrawTextLeft(&this->spellCardNameVms[i2],
-                                                   0xffffff,
-                                                   0,
+                        g_AnmManager->DrawTextLeft(&this->spellCardNameVms[i2], 0xffffff, 0,
                                                    TH_TITLE_SPELLCARD_NOT_UNLOCKED);
                     }
                     else
                     {
-                        g_AnmManager->DrawTextLeft(&this->spellCardNameVms[i2],
-                                                   0xffffff,
-                                                   0,
+                        g_AnmManager->DrawTextLeft(&this->spellCardNameVms[i2], 0xffffff, 0,
                                                    TH_TITLE_SPELLCARD_AVAILABLE);
                     }
                 }
@@ -2380,15 +2344,16 @@ ChainCallbackResult TitleScreen::OnUpdateSpellCardSelect()
         if (WAS_PRESSED(TH_BUTTON_SHOOT | TH_BUTTON_ENTER))
         {
             spellCardNumber3 = g_SpellcardNumbersPerStage[g_GameManager.currentStage][this->cursor];
-            if (g_GameManager.catkData[spellCardNumber3].inGameHistory.attempts[SHOT_ALL] != 0
-                || g_GameManager.catkData[spellCardNumber3].spellPracticeHistory.attempts[SHOT_ALL] != 0
-                || (spellCardNumber3 >= SPELLCARD_LAST_WORD_START
-                    && g_GameManager.IsLastWordSpellCardAttempted(spellCardNumber3)))
+            if (g_GameManager.catkData[spellCardNumber3].inGameHistory.attempts[SHOT_ALL] != 0 ||
+                g_GameManager.catkData[spellCardNumber3].spellPracticeHistory.attempts[SHOT_ALL] != 0 ||
+                (spellCardNumber3 >= SPELLCARD_LAST_WORD_START &&
+                 g_GameManager.IsLastWordSpellCardAttempted(spellCardNumber3)))
             {
                 g_SoundPlayer.PlaySoundByIdx(SOUND_SELECT, 0);
 
                 g_GameManager.flags.isSpellPractice = TRUE;
-                g_GameManager.currentSpellCardNumber = g_SpellcardNumbersPerStage[g_GameManager.currentStage][this->cursor];
+                g_GameManager.currentSpellCardNumber =
+                    g_SpellcardNumbersPerStage[g_GameManager.currentStage][this->cursor];
 
                 g_GameManager.difficulty = Spellcard::GetDifficultyFromSpellCard(g_GameManager.currentSpellCardNumber);
 
@@ -2398,40 +2363,40 @@ ChainCallbackResult TitleScreen::OnUpdateSpellCardSelect()
                     switch (g_GameManager.currentSpellCardNumber)
                     {
                     /* TODO: do not hardcode these values */
-                    case 205:   /* Wriggle Nightbug */
+                    case 205: /* Wriggle Nightbug */
                         g_GameManager.currentStage = STAGE1;
                         break;
-                    case 206:   /* Mystia Lorelei */
+                    case 206: /* Mystia Lorelei */
                         g_GameManager.currentStage = STAGE2;
                         break;
-                    case 207:   /* Keine Kamishirasawa */
+                    case 207: /* Keine Kamishirasawa */
                         g_GameManager.currentStage = STAGE3;
                         break;
-                    case 208:   /* Reisen U. Inaba */
+                    case 208: /* Reisen U. Inaba */
                         g_GameManager.currentStage = STAGE5;
                         break;
-                    case 209:   /* Eirin Yagokoro */
+                    case 209: /* Eirin Yagokoro */
                         g_GameManager.currentStage = STAGE6A;
                         break;
-                    case 210:   /* Kaguya Houraisan */
+                    case 210: /* Kaguya Houraisan */
                         g_GameManager.currentStage = STAGE6B;
                         break;
-                    case 211:   /* Fujiwara no Mokou */
+                    case 211: /* Fujiwara no Mokou */
                         g_GameManager.currentStage = EXTRASTAGE;
                         break;
-                    case 212:   /* Tewi Inaba */
+                    case 212: /* Tewi Inaba */
                         g_GameManager.currentStage = STAGE5;
                         break;
-                    case 213:   /* Keine Kamishirasawa */
+                    case 213: /* Keine Kamishirasawa */
                         g_GameManager.currentStage = EXTRASTAGE;
                         break;
-                    case 214:   /* Reimu Hakurei */
+                    case 214: /* Reimu Hakurei */
                         g_GameManager.currentStage = STAGE4A;
                         break;
-                    case 215:   /* Marisa Kirisame */
+                    case 215: /* Marisa Kirisame */
                         g_GameManager.currentStage = STAGE4B;
                         break;
-                    default:    /* ... everyone else */
+                    default: /* ... everyone else */
                         g_GameManager.currentStage = STAGE4A;
                         break;
                     }
@@ -2505,7 +2470,8 @@ ChainCallbackResult TitleScreen::DrawPracticeStageSelect()
 
     position.y += 16.0f;
 
-    clearInfo = g_GameManager.clrdData[g_GameManager.shotType].difficultiesClearedWithRetries[g_Supervisor.cfg.defaultDifficulty];
+    clearInfo = g_GameManager.clrdData[g_GameManager.shotType]
+                    .difficultiesClearedWithRetries[g_Supervisor.cfg.defaultDifficulty];
     if (clearInfo == 0)
     {
         clearInfo = 1;
@@ -2533,9 +2499,10 @@ ChainCallbackResult TitleScreen::DrawPracticeStageSelect()
             g_AsciiManager.SetColor(0xff404040);
         }
 
-        g_AsciiManager.AddFormatText(&position, "%s %9d0 (%3d)", g_StageNames[i],
-                                     g_GameManager.pscrData[g_GameManager.shotType].highScores[i][g_Supervisor.cfg.defaultDifficulty],
-                                     g_GameManager.pscrData[g_GameManager.shotType].attempts[i][g_Supervisor.cfg.defaultDifficulty]);
+        g_AsciiManager.AddFormatText(
+            &position, "%s %9d0 (%3d)", g_StageNames[i],
+            g_GameManager.pscrData[g_GameManager.shotType].highScores[i][g_Supervisor.cfg.defaultDifficulty],
+            g_GameManager.pscrData[g_GameManager.shotType].attempts[i][g_Supervisor.cfg.defaultDifficulty]);
         position.y += 16.0f;
     }
 
@@ -2545,11 +2512,11 @@ ChainCallbackResult TitleScreen::DrawPracticeStageSelect()
     return CHAIN_CALLBACK_RESULT_CONTINUE;
 }
 
-#pragma var_order(capturesPerStageSpellPractice, vm, spellCardNumber, i, attemptedLastWordPerShot, totalAttemptedLastWordPerShot, \
-                  totalCapturesSpellPracticePerShot, capturesPerStageSpellPracticePerShot, \
-                  capturesPerStageInGamePerShot, totalCapturesInGamePerShot, totalAttemptedLastWord, \
-                  totalAttemptedLastWord, totalCapturesSpellPractice, attemptedLastWord, spellCardIdx, \
-                  totalCapturesInGame, position, capturesPerStageInGame, percentageCapturedInGame, \
+#pragma var_order(capturesPerStageSpellPractice, vm, spellCardNumber, i, attemptedLastWordPerShot,                     \
+                  totalAttemptedLastWordPerShot, totalCapturesSpellPracticePerShot,                                    \
+                  capturesPerStageSpellPracticePerShot, capturesPerStageInGamePerShot, totalCapturesInGamePerShot,     \
+                  totalAttemptedLastWord, totalAttemptedLastWord, totalCapturesSpellPractice, attemptedLastWord,       \
+                  spellCardIdx, totalCapturesInGame, position, capturesPerStageInGame, percentageCapturedInGame,       \
                   percentageCapturedSpellPractice, pieChartPosition)
 ChainCallbackResult TitleScreen::DrawSpellStageSelect()
 {
@@ -2625,9 +2592,10 @@ ChainCallbackResult TitleScreen::DrawSpellStageSelect()
             {
                 capturesPerStageInGamePerShot++;
             }
-            if ((g_GameManager.catkData[spellCardNumber].inGameHistory.attempts[g_GameManager.shotType] > 0
-                || g_GameManager.catkData[spellCardNumber].spellPracticeHistory.attempts[g_GameManager.shotType] > 0)
-                || (i >= ARRAY_SIZE(g_SpellcardCountPerStage) - 1 && g_GameManager.IsLastWordSpellCardAttempted(spellCardNumber)))
+            if ((g_GameManager.catkData[spellCardNumber].inGameHistory.attempts[g_GameManager.shotType] > 0 ||
+                 g_GameManager.catkData[spellCardNumber].spellPracticeHistory.attempts[g_GameManager.shotType] > 0) ||
+                (i >= ARRAY_SIZE(g_SpellcardCountPerStage) - 1 &&
+                 g_GameManager.IsLastWordSpellCardAttempted(spellCardNumber)))
             {
                 attemptedLastWordPerShot++;
             }
@@ -2640,9 +2608,10 @@ ChainCallbackResult TitleScreen::DrawSpellStageSelect()
             {
                 capturesPerStageInGame++;
             }
-            if ((g_GameManager.catkData[spellCardNumber].inGameHistory.attempts[SHOT_ALL] > 0
-                || g_GameManager.catkData[spellCardNumber].spellPracticeHistory.attempts[SHOT_ALL] > 0)
-                || (i >= ARRAY_SIZE(g_SpellcardCountPerStage) - 1 && g_GameManager.IsLastWordSpellCardAttempted(spellCardNumber)))
+            if ((g_GameManager.catkData[spellCardNumber].inGameHistory.attempts[SHOT_ALL] > 0 ||
+                 g_GameManager.catkData[spellCardNumber].spellPracticeHistory.attempts[SHOT_ALL] > 0) ||
+                (i >= ARRAY_SIZE(g_SpellcardCountPerStage) - 1 &&
+                 g_GameManager.IsLastWordSpellCardAttempted(spellCardNumber)))
             {
                 attemptedLastWord++;
             }
@@ -2655,19 +2624,17 @@ ChainCallbackResult TitleScreen::DrawSpellStageSelect()
         totalAttemptedLastWordPerShot += attemptedLastWordPerShot;
         totalAttemptedLastWord += attemptedLastWord;
 
-        g_AsciiManager.AddFormatText(&position, "%s%s", (capturesPerStageSpellPracticePerShot >= g_SpellcardCountPerStage[i]
-                                                        ? "@"
-                                                        : (capturesPerStageSpellPractice >= g_SpellcardCountPerStage[i] ? "*" : " ")), g_StageNamesSpellPractice[i]);
+        g_AsciiManager.AddFormatText(&position, "%s%s",
+                                     (capturesPerStageSpellPracticePerShot >= g_SpellcardCountPerStage[i]
+                                          ? "@"
+                                          : (capturesPerStageSpellPractice >= g_SpellcardCountPerStage[i] ? "*" : " ")),
+                                     g_StageNamesSpellPractice[i]);
         position.x += 182.0f;
 
         g_AsciiManager.SetScale(0.75f, 1.0f);
 
-        g_AsciiManager.AddFormatText(&position,
-                                     "%3d(%3d)/%3d/%3d",
-                                     capturesPerStageSpellPracticePerShot,
-                                     capturesPerStageSpellPractice,
-                                     attemptedLastWord,
-                                     g_SpellcardCountPerStage[i]);
+        g_AsciiManager.AddFormatText(&position, "%3d(%3d)/%3d/%3d", capturesPerStageSpellPracticePerShot,
+                                     capturesPerStageSpellPractice, attemptedLastWord, g_SpellcardCountPerStage[i]);
 
         position.x -= 182.0f;
         position.y += 16.0f;
@@ -2680,20 +2647,17 @@ ChainCallbackResult TitleScreen::DrawSpellStageSelect()
     g_AsciiManager.SetIsSelected(FALSE);
     g_AsciiManager.SetColor(0xffd06060);
 
-    g_AsciiManager.AddFormatText(&position, "%sTotal", (totalCapturesSpellPracticePerShot >= SPELLCARD_COUNT_SPELLCARDS
-                                                    ? "@"
-                                                    : (totalCapturesSpellPractice >= SPELLCARD_COUNT_SPELLCARDS ? "*" : " ")));
+    g_AsciiManager.AddFormatText(&position, "%sTotal",
+                                 (totalCapturesSpellPracticePerShot >= SPELLCARD_COUNT_SPELLCARDS
+                                      ? "@"
+                                      : (totalCapturesSpellPractice >= SPELLCARD_COUNT_SPELLCARDS ? "*" : " ")));
 
     position.x += 182.0f;
 
     g_AsciiManager.SetScale(0.75f, 1.0f);
 
-    g_AsciiManager.AddFormatText(&position,
-                                 "%3d(%3d)/%3d/%3d",
-                                 totalCapturesSpellPracticePerShot,
-                                 totalCapturesSpellPractice,
-                                 totalAttemptedLastWord,
-                                 SPELLCARD_COUNT_SPELLCARDS);
+    g_AsciiManager.AddFormatText(&position, "%3d(%3d)/%3d/%3d", totalCapturesSpellPracticePerShot,
+                                 totalCapturesSpellPractice, totalAttemptedLastWord, SPELLCARD_COUNT_SPELLCARDS);
 
     position.x -= 182.0f;
 
@@ -2717,20 +2681,23 @@ ChainCallbackResult TitleScreen::DrawSpellStageSelect()
 
     pieChartPosition.x = 530.0f;
     pieChartPosition.y = 420.0f;
-    percentageCapturedSpellPractice = (float) totalCapturesSpellPracticePerShot / SPELLCARD_COUNT_SPELLCARDS;
-    percentageCapturedInGame = (float) totalCapturesInGamePerShot / SPELLCARD_COUNT_IN_GAME_SPELLCARDS;
+    percentageCapturedSpellPractice = (float)totalCapturesSpellPracticePerShot / SPELLCARD_COUNT_SPELLCARDS;
+    percentageCapturedInGame = (float)totalCapturesInGamePerShot / SPELLCARD_COUNT_IN_GAME_SPELLCARDS;
 
     if (this->stateTimer2 < 50)
     {
         if (this->percentageCapturedSpellPracticePerShot != percentageCapturedSpellPractice)
         {
-            percentageCapturedSpellPractice = ((percentageCapturedSpellPractice - this->percentageCapturedSpellPracticePerShot) * this->stateTimer2) / 50.0f
-                                               + this->percentageCapturedSpellPracticePerShot;
+            percentageCapturedSpellPractice =
+                ((percentageCapturedSpellPractice - this->percentageCapturedSpellPracticePerShot) * this->stateTimer2) /
+                    50.0f +
+                this->percentageCapturedSpellPracticePerShot;
         }
         if (this->percentageCapturedInGamePerShot != percentageCapturedInGame)
         {
-            percentageCapturedInGame = ((percentageCapturedInGame - this->percentageCapturedInGamePerShot) * this->stateTimer2) / 50.0f
-                                               + this->percentageCapturedInGamePerShot;
+            percentageCapturedInGame =
+                ((percentageCapturedInGame - this->percentageCapturedInGamePerShot) * this->stateTimer2) / 50.0f +
+                this->percentageCapturedInGamePerShot;
         }
     }
 
@@ -2758,20 +2725,23 @@ ChainCallbackResult TitleScreen::DrawSpellStageSelect()
     pieChartPosition.x += 32.0f;
     pieChartPosition.y += 18.0f;
 
-    percentageCapturedSpellPractice = (float) totalCapturesSpellPractice / SPELLCARD_COUNT_SPELLCARDS;
-    percentageCapturedInGame = (float) totalCapturesInGame / SPELLCARD_COUNT_IN_GAME_SPELLCARDS;
+    percentageCapturedSpellPractice = (float)totalCapturesSpellPractice / SPELLCARD_COUNT_SPELLCARDS;
+    percentageCapturedInGame = (float)totalCapturesInGame / SPELLCARD_COUNT_IN_GAME_SPELLCARDS;
 
     if (this->stateTimer2 < 50)
     {
         if (this->percentageCapturedSpellPractice != percentageCapturedSpellPractice)
         {
-            percentageCapturedSpellPractice = ((percentageCapturedSpellPractice - this->percentageCapturedSpellPractice) * this->stateTimer2) / 50.0f
-                                               + this->percentageCapturedSpellPractice;
+            percentageCapturedSpellPractice =
+                ((percentageCapturedSpellPractice - this->percentageCapturedSpellPractice) * this->stateTimer2) /
+                    50.0f +
+                this->percentageCapturedSpellPractice;
         }
         if (this->percentageCapturedInGame != percentageCapturedInGame)
         {
-            percentageCapturedInGame = ((percentageCapturedInGame - this->percentageCapturedInGame) * this->stateTimer2) / 50.0f
-                                               + this->percentageCapturedInGame;
+            percentageCapturedInGame =
+                ((percentageCapturedInGame - this->percentageCapturedInGame) * this->stateTimer2) / 50.0f +
+                this->percentageCapturedInGame;
         }
     }
 
@@ -2832,7 +2802,6 @@ void DrawPieChart(D3DXVECTOR3 *position, D3DCOLOR color, float param_3, float pa
     g_AnmManager->DrawTriangleFan(&vm, vertices, ARRAY_SIZE(vertices));
 }
 
-
 #pragma var_order(spellCardNumber, i, clearInfo, position)
 ChainCallbackResult TitleScreen::DrawSpellCardSelect()
 {
@@ -2846,7 +2815,8 @@ ChainCallbackResult TitleScreen::DrawSpellCardSelect()
 
     position = D3DXVECTOR3(16.0f, 78.0f, 0.0f);
 
-    clearInfo = g_GameManager.clrdData[g_GameManager.shotType].difficultiesClearedWithRetries[g_Supervisor.cfg.defaultDifficulty];
+    clearInfo = g_GameManager.clrdData[g_GameManager.shotType]
+                    .difficultiesClearedWithRetries[g_Supervisor.cfg.defaultDifficulty];
     if (clearInfo == 0)
     {
         clearInfo = 1;
@@ -2860,28 +2830,35 @@ ChainCallbackResult TitleScreen::DrawSpellCardSelect()
 
     for (i = 0; i < TITLE_SPELL_CARD_SPELLCARDS_PER_PAGE; i++)
     {
-        if ((i + this->currentPageSpellCardSelect * TITLE_SPELL_CARD_SPELLCARDS_PER_PAGE) >= this->currentNumberOfSpellCards)
-        { 
+        if ((i + this->currentPageSpellCardSelect * TITLE_SPELL_CARD_SPELLCARDS_PER_PAGE) >=
+            this->currentNumberOfSpellCards)
+        {
             break;
         }
 
         g_AsciiManager.SetColor(this->spellCardNameVms[i].prefix.color1.d3dColor);
 
-        spellCardNumber = g_SpellcardNumbersPerStage[g_GameManager.currentStage][i + this->currentPageSpellCardSelect * TITLE_SPELL_CARD_SPELLCARDS_PER_PAGE];
+        spellCardNumber =
+            g_SpellcardNumbersPerStage[g_GameManager.currentStage]
+                                      [i + this->currentPageSpellCardSelect * TITLE_SPELL_CARD_SPELLCARDS_PER_PAGE];
 
-        g_AsciiManager.AddFormatText(&position, "%sNo.%.3d",
-                                                g_GameManager.catkData[spellCardNumber].spellPracticeHistory.captures[g_GameManager.shotType] > 0
-                                                ? "@"
-                                                : (g_GameManager.catkData[spellCardNumber].spellPracticeHistory.captures[SHOT_ALL] > 0 ? "*" : " "), spellCardNumber + 1);
+        g_AsciiManager.AddFormatText(
+            &position, "%sNo.%.3d",
+            g_GameManager.catkData[spellCardNumber].spellPracticeHistory.captures[g_GameManager.shotType] > 0
+                ? "@"
+                : (g_GameManager.catkData[spellCardNumber].spellPracticeHistory.captures[SHOT_ALL] > 0 ? "*" : " "),
+            spellCardNumber + 1);
 
         position.x += 414.0f;
 
         g_AsciiManager.SetScale(0.8, 1.0f);
 
-        g_AsciiManager.AddFormatText(&position, "%3d/%3d(%3d/%3d)", g_GameManager.catkData[spellCardNumber].spellPracticeHistory.captures[g_GameManager.shotType],
-                                                                    g_GameManager.catkData[spellCardNumber].spellPracticeHistory.attempts[g_GameManager.shotType],
-                                                                    g_GameManager.catkData[spellCardNumber].inGameHistory.captures[g_GameManager.shotType],
-                                                                    g_GameManager.catkData[spellCardNumber].inGameHistory.attempts[g_GameManager.shotType]);
+        g_AsciiManager.AddFormatText(
+            &position, "%3d/%3d(%3d/%3d)",
+            g_GameManager.catkData[spellCardNumber].spellPracticeHistory.captures[g_GameManager.shotType],
+            g_GameManager.catkData[spellCardNumber].spellPracticeHistory.attempts[g_GameManager.shotType],
+            g_GameManager.catkData[spellCardNumber].inGameHistory.captures[g_GameManager.shotType],
+            g_GameManager.catkData[spellCardNumber].inGameHistory.attempts[g_GameManager.shotType]);
 
         g_AsciiManager.SetScale(1.0, 1.0f);
 
@@ -2930,7 +2907,7 @@ i32 TitleScreen::MoveCursorVertical(i32 menuLength)
 
         return -1;
     }
-    
+
     if (WAS_PRESSED_SCROLLING(TH_BUTTON_DOWN))
     {
         this->cursor++;
@@ -2995,7 +2972,7 @@ void TitleScreen::FormatSpellCardInfo()
 // STUB: th08 0x46e136
 ChainCallbackResult TitleScreen::OnUpdateReplayMenu()
 {
-     return CHAIN_CALLBACK_RESULT_CONTINUE;
+    return CHAIN_CALLBACK_RESULT_CONTINUE;
 }
 
 /* This is matching functionally but there is some unexplained stack nonsense
@@ -3007,8 +2984,8 @@ ChainCallbackResult TitleScreen::DrawCompletionStatusText()
 
     if (this->stateTimer2 > 8)
     {
-        if (g_GameManager.IsStageClearedWithoutRetries(STAGE6B, this->cursor, g_Supervisor.cfg.defaultDifficulty)
-            && g_GameManager.IsStageClearedWithRetries(STAGE6A, this->cursor, g_Supervisor.cfg.defaultDifficulty))
+        if (g_GameManager.IsStageClearedWithoutRetries(STAGE6B, this->cursor, g_Supervisor.cfg.defaultDifficulty) &&
+            g_GameManager.IsStageClearedWithRetries(STAGE6A, this->cursor, g_Supervisor.cfg.defaultDifficulty))
         {
             showVm = TRUE;
             this->titleAnm->InitializeAndSetSprite(&this->spellCardNameVms[0], 146);
@@ -3018,19 +2995,18 @@ ChainCallbackResult TitleScreen::DrawCompletionStatusText()
             showVm = TRUE;
             this->titleAnm->InitializeAndSetSprite(&this->spellCardNameVms[0], 148);
         }
-        else if (g_GameManager.IsStageClearedWithoutRetries(STAGE6B, this->cursor, EASY)
-                || g_GameManager.IsStageClearedWithoutRetries(STAGE6B, this->cursor, NORMAL)
-                || g_GameManager.IsStageClearedWithoutRetries(STAGE6B, this->cursor, HARD)
-                || g_GameManager.IsStageClearedWithoutRetries(STAGE6B, this->cursor, LUNATIC)
-                && this->cursor > 3)
+        else if (g_GameManager.IsStageClearedWithoutRetries(STAGE6B, this->cursor, EASY) ||
+                 g_GameManager.IsStageClearedWithoutRetries(STAGE6B, this->cursor, NORMAL) ||
+                 g_GameManager.IsStageClearedWithoutRetries(STAGE6B, this->cursor, HARD) ||
+                 g_GameManager.IsStageClearedWithoutRetries(STAGE6B, this->cursor, LUNATIC) && this->cursor > 3)
         {
             showVm = TRUE;
             this->titleAnm->InitializeAndSetSprite(&this->spellCardNameVms[0], 147);
         }
-        else if (g_GameManager.IsStageClearedWithRetries(STAGE6A, this->cursor, EASY)
-                || g_GameManager.IsStageClearedWithRetries(STAGE6A, this->cursor, NORMAL)
-                || g_GameManager.IsStageClearedWithRetries(STAGE6A, this->cursor, HARD)
-                || g_GameManager.IsStageClearedWithRetries(STAGE6A, this->cursor, LUNATIC))
+        else if (g_GameManager.IsStageClearedWithRetries(STAGE6A, this->cursor, EASY) ||
+                 g_GameManager.IsStageClearedWithRetries(STAGE6A, this->cursor, NORMAL) ||
+                 g_GameManager.IsStageClearedWithRetries(STAGE6A, this->cursor, HARD) ||
+                 g_GameManager.IsStageClearedWithRetries(STAGE6A, this->cursor, LUNATIC))
         {
             showVm = TRUE;
             this->titleAnm->InitializeAndSetSprite(&this->spellCardNameVms[0], 145);
@@ -3230,7 +3206,7 @@ ZunResult TitleScreen::ActualAddedCallback()
     g_GameManager.unk3DBB8 = 0;
 
     this->state = TitleScreenState_Loading;
-    g_Supervisor.ThreadStart((LPTHREAD_START_ROUTINE) TitleScreen::TitleSetupThread, NULL);
+    g_Supervisor.ThreadStart((LPTHREAD_START_ROUTINE)TitleScreen::TitleSetupThread, NULL);
 
     return ZUN_SUCCESS;
 }
@@ -3266,7 +3242,8 @@ void TitleScreen::TitleSetupThread(TitleScreen *titleScreen)
     for (i = 0; i < ARRAY_SIZE_SIGNED(g_TitleScreen->helpTextVms); i++)
     {
         g_Supervisor.textAnm->SetAndExecuteScriptIdx(&g_TitleScreen->helpTextVms[i], 9);
-        g_Supervisor.textAnm->SetSprite(&g_TitleScreen->helpTextVms[i], g_TitleScreen->helpTextVms[i].activeSpriteIndex + i);
+        g_Supervisor.textAnm->SetSprite(&g_TitleScreen->helpTextVms[i],
+                                        g_TitleScreen->helpTextVms[i].activeSpriteIndex + i);
         g_Supervisor.textAnm->SetSprite(&g_TitleScreen->spellCardInfoVms[i], i + 21);
 
         if (i <= 4)
@@ -3319,8 +3296,8 @@ void TitleScreen::TitleSetupThread(TitleScreen *titleScreen)
     g_Supervisor.unk290 = 0;
 }
 
-#define TITLE_IMAGE_INFO_MAX_FRAMES     6000
-#define TITLE_IMAGE_FADE_IN_TIME        20
+#define TITLE_IMAGE_INFO_MAX_FRAMES 6000
+#define TITLE_IMAGE_FADE_IN_TIME 20
 
 #pragma var_order(i, rect1, color1, color2, rect2)
 void TitleScreen::DisplayInfoImage(const char *path)
@@ -3347,8 +3324,7 @@ void TitleScreen::DisplayInfoImage(const char *path)
 
         g_Supervisor.d3dDevice->BeginScene();
         g_AnmManager->CopySurfaceToBackbuffer(0, 0, 0, 0, 0);
-        
-        
+
         if (i < TITLE_IMAGE_FADE_IN_TIME)
         {
             rect1.left = 0.0f;
@@ -3368,7 +3344,8 @@ void TitleScreen::DisplayInfoImage(const char *path)
             rect2.right = 640.0f - 1.0f;
             rect2.bottom = 480.0f - 1.0f;
 
-            color2.a = (((i - (TITLE_IMAGE_INFO_MAX_FRAMES - TITLE_IMAGE_FADE_IN_TIME)) * 255) / TITLE_IMAGE_FADE_IN_TIME);
+            color2.a =
+                (((i - (TITLE_IMAGE_INFO_MAX_FRAMES - TITLE_IMAGE_FADE_IN_TIME)) * 255) / TITLE_IMAGE_FADE_IN_TIME);
             color2.r = color2.g = color2.b = 0;
 
             ScreenEffect::DrawSquare(&rect2, color2.d3dColor);
@@ -3382,9 +3359,8 @@ void TitleScreen::DisplayInfoImage(const char *path)
             g_Supervisor.d3dDevice->Reset(&g_Supervisor.presentParameters);
         }
 
-        if (i >= 180
-            && i < TITLE_IMAGE_INFO_MAX_FRAMES - TITLE_IMAGE_FADE_IN_TIME
-            && WAS_PRESSED(TH_BUTTON_SHOOT | TH_BUTTON_BOMB | TH_BUTTON_ENTER))
+        if (i >= 180 && i < TITLE_IMAGE_INFO_MAX_FRAMES - TITLE_IMAGE_FADE_IN_TIME &&
+            WAS_PRESSED(TH_BUTTON_SHOOT | TH_BUTTON_BOMB | TH_BUTTON_ENTER))
         {
             i = TITLE_IMAGE_INFO_MAX_FRAMES - TITLE_IMAGE_FADE_IN_TIME;
             g_SoundPlayer.PlaySoundByIdx(SOUND_SELECT, 0);
@@ -3405,7 +3381,7 @@ ZunResult TitleScreen::Release()
         g_ZunMemory.Free(this->currentReplay);
         this->currentReplay = NULL;
     }
-    
+
     if (this->vms != NULL)
     {
         ZUN_DELETE2(this->vms);
@@ -3424,17 +3400,17 @@ ZunResult TitleScreen::RegisterChain(int param)
     memset(titleScreen, 0, sizeof(TitleScreen));
     g_GameManager.isInGameMenu = FALSE;
 
-    titleScreen->calcChain = g_Chain.CreateElem((ChainCallback) TitleScreen::OnUpdate);
+    titleScreen->calcChain = g_Chain.CreateElem((ChainCallback)TitleScreen::OnUpdate);
     titleScreen->calcChain->arg = titleScreen;
-    titleScreen->calcChain->addedCallback = (ChainLifetimeCallback) TitleScreen::AddedCallback;
-    titleScreen->calcChain->deletedCallback = (ChainLifetimeCallback) TitleScreen::DeletedCallback;
+    titleScreen->calcChain->addedCallback = (ChainLifetimeCallback)TitleScreen::AddedCallback;
+    titleScreen->calcChain->deletedCallback = (ChainLifetimeCallback)TitleScreen::DeletedCallback;
 
     if (g_Chain.AddToCalcChain(titleScreen->calcChain, 4) != ZUN_SUCCESS)
     {
         return ZUN_ERROR;
     }
 
-    titleScreen->drawChain = g_Chain.CreateElem((ChainCallback) TitleScreen::OnDraw);
+    titleScreen->drawChain = g_Chain.CreateElem((ChainCallback)TitleScreen::OnDraw);
     titleScreen->drawChain->arg = titleScreen;
     g_Chain.AddToDrawChain(titleScreen->drawChain, 3);
 

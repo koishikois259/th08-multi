@@ -1,17 +1,16 @@
 #pragma once
 
-#include "inttypes.hpp"
 #include "ZunBool.hpp"
 #include "diffbuild.hpp"
-
+#include "inttypes.hpp"
 
 /* TODO: this should be an enum with all the spell cards... */
 
-#define SPELLCARD_LAST_WORD_START                  205
+#define SPELLCARD_LAST_WORD_START 205
 
-#define SPELLCARD_COUNT_IN_GAME_SPELLCARDS         205
-#define SPELLCARD_COUNT_SPELLCARDS                 222
-#define SPELLCARD_COUNT_LAST_WORD_SPELLCARDS      (SPELLCARD_COUNT_SPELLCARDS - SPELLCARD_COUNT_IN_GAME_SPELLCARDS)
+#define SPELLCARD_COUNT_IN_GAME_SPELLCARDS 205
+#define SPELLCARD_COUNT_SPELLCARDS 222
+#define SPELLCARD_COUNT_LAST_WORD_SPELLCARDS (SPELLCARD_COUNT_SPELLCARDS - SPELLCARD_COUNT_IN_GAME_SPELLCARDS)
 
 namespace th08
 {
