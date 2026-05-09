@@ -2362,38 +2362,37 @@ ChainCallbackResult TitleScreen::OnUpdateSpellCardSelect()
                     /* Set the correct difficulty for each Last Word spell card. */
                     switch (g_GameManager.currentSpellCardNumber)
                     {
-                    /* TODO: do not hardcode these values */
-                    case 205: /* Wriggle Nightbug */
+                    case SPELLCARD_LW_WRIGGLE:
                         g_GameManager.currentStage = STAGE1;
                         break;
-                    case 206: /* Mystia Lorelei */
+                    case SPELLCARD_LW_MYSTIA:
                         g_GameManager.currentStage = STAGE2;
                         break;
-                    case 207: /* Keine Kamishirasawa */
+                    case SPELLCARD_LW_KEINE:
                         g_GameManager.currentStage = STAGE3;
                         break;
-                    case 208: /* Reisen U. Inaba */
+                    case SPELLCARD_LW_REISEN:
                         g_GameManager.currentStage = STAGE5;
                         break;
-                    case 209: /* Eirin Yagokoro */
+                    case SPELLCARD_LW_EIRIN:
                         g_GameManager.currentStage = STAGE6A;
                         break;
-                    case 210: /* Kaguya Houraisan */
+                    case SPELLCARD_LW_KAGUYA:
                         g_GameManager.currentStage = STAGE6B;
                         break;
-                    case 211: /* Fujiwara no Mokou */
+                    case SPELLCARD_LW_MOKOU:
                         g_GameManager.currentStage = EXTRASTAGE;
                         break;
-                    case 212: /* Tewi Inaba */
+                    case SPELLCARD_LW_TEWI:
                         g_GameManager.currentStage = STAGE5;
                         break;
-                    case 213: /* Keine Kamishirasawa */
+                    case SPELLCARD_LW_KEINEEX:
                         g_GameManager.currentStage = EXTRASTAGE;
                         break;
-                    case 214: /* Reimu Hakurei */
+                    case SPELLCARD_LW_REIMU:
                         g_GameManager.currentStage = STAGE4A;
                         break;
-                    case 215: /* Marisa Kirisame */
+                    case SPELLCARD_LW_MARISA:
                         g_GameManager.currentStage = STAGE4B;
                         break;
                     default: /* ... everyone else */
