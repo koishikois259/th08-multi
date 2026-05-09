@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ScoreDat.hpp"
 #include "Spellcard.hpp"
 #include "Supervisor.hpp"
 #include "ZunResult.hpp"
@@ -15,176 +16,6 @@
 
 namespace th08
 {
-
-enum Difficulty
-{
-    EASY,
-    NORMAL,
-    HARD,
-    LUNATIC,
-    EXTRA,
-    MAX_DIFFICULTIES
-};
-
-enum ShotType
-{
-    SHOT_REIMU_YUKARI,
-    SHOT_MARISA_ALICE,
-    SHOT_SAKUYA_REMILIA,
-    SHOT_YOUMU_YUYUKO,
-    SHOT_REIMU,
-    SHOT_YUKARI,
-    SHOT_MARISA,
-    SHOT_ALICE,
-    SHOT_SAKUYA,
-    SHOT_REMILIA,
-    SHOT_YOUMU,
-    SHOT_YUYUKO,
-    SHOT_ALL = 12,
-};
-
-enum Stage
-{
-    STAGE1,
-    STAGE2,
-    STAGE3,
-    STAGE4A,
-    STAGE4B,
-    STAGE5,
-    STAGE6A,
-    STAGE6B,
-    EXTRASTAGE,
-    MAX_STAGES,
-    STAGE_LAST_WORD = MAX_STAGES
-};
-
-struct Th8k
-{
-    u32 magic;
-    u16 th8kLen;
-    u16 unkLen;
-    u8 version;
-    unknown_fields(0x9, 0x3);
-};
-C_ASSERT(sizeof(Th8k) == 0xC);
-
-struct PlstPlayCounts
-{
-    u32 attemptsTotal;
-    i32 attemptsPerCharacter[12];
-    unknown_fields(0x34, 0x4);
-    i32 clears;
-    i32 continues;
-    i32 practices;
-};
-C_ASSERT(sizeof(PlstPlayCounts) == 0x44);
-
-struct Plst
-{
-    Th8k base;
-    u32 totalHours;
-    u32 totalMinutes;
-    u32 totalSeconds;
-    u32 totalMilliseconds;
-    u32 gameHours;
-    u32 gameMinutes;
-    u32 gameSeconds;
-    u32 gameMilliseconds;
-    PlstPlayCounts playDataByDifficulty[6];
-    PlstPlayCounts playDataTotals;
-    i8 bgmUnlocked[32];
-};
-
-C_ASSERT(sizeof(Plst) == 0x228);
-
-struct Flsp
-{
-    Th8k base;
-    BYTE unlockedLastWordSpellCards[SPELLCARD_COUNT_LAST_WORD_SPELLCARDS];
-};
-
-C_ASSERT(sizeof(Flsp) == 0x20);
-
-struct CatkHistory
-{
-    i32 maxBonus[SHOT_ALL + 1];
-    u32 attempts[SHOT_ALL + 1];
-    u32 captures[SHOT_ALL + 1];
-};
-
-struct Catk
-{
-    Th8k base;
-    i32 unk0xc;
-
-    char spellName[48];
-    char spellOwnerName[48];
-    char spellCommentLine1[64];
-    char spellCommentLine2[64];
-    CatkHistory inGameHistory;
-    CatkHistory spellPracticeHistory;
-    i32 unk0x228;
-};
-
-C_ASSERT(sizeof(Catk) == 0x22c);
-
-struct Clrd
-{
-    Th8k base;
-    u16 difficultiesClearedWithoutRetries[5];
-    u16 difficultiesClearedWithRetries[5];
-    bool unk_20;
-};
-
-C_ASSERT(sizeof(Clrd) == 0x24);
-
-struct Pscr
-{
-    Th8k base;
-
-    i32 attempts[MAX_STAGES][MAX_DIFFICULTIES];
-    i32 highScores[MAX_STAGES][MAX_DIFFICULTIES];
-    unknown_fields(0x174, 4);
-};
-
-C_ASSERT(sizeof(Pscr) == 0x178);
-
-struct Hscr
-{
-    Th8k base;
-    u32 score;
-    f32 lagPercentage;
-    u8 character;
-    u8 difficulty;
-    u8 stage;
-    char name[9];
-    char date[6];
-    u8 numRetries;
-    u8 unk0x27;
-    GameConfiguration cfg;
-    i32 playtimeFrames;
-    i32 numPointItemsCollected;
-    i32 unk_6c;
-    i32 numDeaths;
-    i32 numBombsUsed;
-    i32 numLastSpells;
-    i32 numPauses;
-    i32 numTimeOrbsCollected;
-    i32 humanityRate;
-    u8 spellCounters[SPELLCARD_COUNT_SPELLCARDS];
-    u8 unk0x166;
-    u8 unk0x167;
-};
-
-C_ASSERT(sizeof(Hscr) == 0x168);
-
-struct Lsnm
-{
-    Th8k base;
-    unknown_fields(0xc, 0xc);
-};
-
-C_ASSERT(sizeof(Lsnm) == 0x18);
 
 struct GameManagerFlags
 {
@@ -395,8 +226,8 @@ struct GameManager
     u32 unk38;
     i32 unk3c;
     Catk catkData[444];
-    Clrd clrdData[13];
-    Pscr pscrData[12];
+    Clrd clrdData[SHOT_ALL + 1];
+    Pscr pscrData[SHOT_ALL];
     Plst plst;
     Hscr hscr;
     i32 unk3D294;
