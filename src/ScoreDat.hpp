@@ -5,31 +5,31 @@
 #include "utils.hpp"
 #include <windows.h>
 
-#define SCORE_DAT_VERSION       1
+#define SCORE_DAT_VERSION 1
 
-#define TH8K_MAGIC              MAKE_FOURCC('T', 'H', '8', 'K')
-#define VRSM_MAGIC              MAKE_FOURCC('V', 'R', 'S', 'M')
+#define TH8K_MAGIC MAKE_FOURCC('T', 'H', '8', 'K')
+#define VRSM_MAGIC MAKE_FOURCC('V', 'R', 'S', 'M')
 
-#define CATK_MAGIC              MAKE_FOURCC('C', 'A', 'T', 'K')
-#define CATK_VERSION            3
+#define CATK_MAGIC MAKE_FOURCC('C', 'A', 'T', 'K')
+#define CATK_VERSION 3
 
-#define CLRD_MAGIC              MAKE_FOURCC('C', 'L', 'R', 'D')
-#define CLRD_VERSION            4
+#define CLRD_MAGIC MAKE_FOURCC('C', 'L', 'R', 'D')
+#define CLRD_VERSION 4
 
-#define PSCR_MAGIC              MAKE_FOURCC('P', 'S', 'C', 'R')
-#define PSCR_VERSION            2
+#define PSCR_MAGIC MAKE_FOURCC('P', 'S', 'C', 'R')
+#define PSCR_VERSION 2
 
-#define PLST_MAGIC              MAKE_FOURCC('P', 'L', 'S', 'T')
-#define PLST_VERSION            2
+#define PLST_MAGIC MAKE_FOURCC('P', 'L', 'S', 'T')
+#define PLST_VERSION 2
 
-#define LSNM_MAGIC              MAKE_FOURCC('L', 'S', 'N', 'M')
-#define LSNM_VERSION            1
+#define LSNM_MAGIC MAKE_FOURCC('L', 'S', 'N', 'M')
+#define LSNM_VERSION 1
 
-#define FLSP_MAGIC              MAKE_FOURCC('F', 'L', 'S', 'P')
-#define FLSP_VERSION            1
+#define FLSP_MAGIC MAKE_FOURCC('F', 'L', 'S', 'P')
+#define FLSP_VERSION 1
 
-#define HSCR_MAGIC              MAKE_FOURCC('H', 'S', 'C', 'R')
-#define HSCR_VERSION            4
+#define HSCR_MAGIC MAKE_FOURCC('H', 'S', 'C', 'R')
+#define HSCR_VERSION 4
 
 namespace th08
 {

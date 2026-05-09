@@ -1,6 +1,6 @@
 #include "ScoreDat.hpp"
-#include "SpellCard.hpp"
 #include "GameManager.hpp"
+#include "SpellCard.hpp"
 #include "pbg/Lzss.hpp"
 
 namespace th08
@@ -27,7 +27,7 @@ i32 ScoreDat::LinkScore(ScoreListNode *node, Hscr *newScore)
     }
 
     next = node->next;
-    node->next = (ScoreListNode *) g_ZunMemory.Alloc(sizeof(ScoreListNode), "result");
+    node->next = (ScoreListNode *)g_ZunMemory.Alloc(sizeof(ScoreListNode), "result");
     node->next->prev = node;
 
     node = node->next;
@@ -50,7 +50,8 @@ void ScoreDat::FreeAllScores(ScoreListNode *scores)
     }
 }
 
-#pragma var_order(scoreDat2, fileSize, scoreDat, scoreDecrypted, bytesShifted, xorValue, checksum, bytes, bytesToShift, chapter, bytesToRead, th8kChapter, hasFoundTH8K, vrsm)
+#pragma var_order(scoreDat2, fileSize, scoreDat, scoreDecrypted, bytesShifted, xorValue, checksum, bytes,              \
+                  bytesToShift, chapter, bytesToRead, th8kChapter, hasFoundTH8K, vrsm)
 ScoreDat *ScoreDat::OpenScore(const char *filename)
 {
     ScoreDat *scoreDat2;
@@ -70,17 +71,17 @@ ScoreDat *ScoreDat::OpenScore(const char *filename)
 
     utils::DebugPrint("info : score load\r\n");
 
-    scoreDat = (ScoreDat *) FileSystem::OpenFile(filename, (i32 *) &fileSize, TRUE);
+    scoreDat = (ScoreDat *)FileSystem::OpenFile(filename, (i32 *)&fileSize, TRUE);
 
     if (scoreDat == NULL)
     {
-recreate_score_file:
+    recreate_score_file:
         utils::DebugPrint("info : score recreate\r\n");
         if (scoreDat != NULL)
         {
             g_ZunMemory.Free(scoreDat);
         }
-        scoreDat = (ScoreDat *) g_ZunMemory.Alloc(sizeof(ScoreDat), "scorefile");
+        scoreDat = (ScoreDat *)g_ZunMemory.Alloc(sizeof(ScoreDat), "scorefile");
         scoreDat->headerSize = sizeof(ScoreDat);
         scoreDat->decompressedFileSize = sizeof(ScoreDat);
         goto out;
@@ -93,7 +94,7 @@ recreate_score_file:
         goto recreate_score_file;
     }
 
-    scoreDecrypted = (ScoreDat *) FileSystem::Decrypt((u8 *) scoreDat, fileSize, 0x59, 121, 0x100, 0xc00);
+    scoreDecrypted = (ScoreDat *)FileSystem::Decrypt((u8 *)scoreDat, fileSize, 0x59, 121, 0x100, 0xc00);
     g_ZunMemory.Free(scoreDat);
     scoreDat = scoreDecrypted;
     bytesToShift = fileSize - 2;
@@ -102,7 +103,7 @@ recreate_score_file:
     xorValue = 0;
     bytesShifted = 0;
 
-    bytes = (u8 *) scoreDat + 1;
+    bytes = (u8 *)scoreDat + 1;
 
     while (bytesToShift > 0)
     {
@@ -138,15 +139,16 @@ recreate_score_file:
         goto recreate_score_file;
     }
 
-    scoreDat2 = (ScoreDat *) g_ZunMemory.Alloc(sizeof(ScoreDat) + 0xa0000, "scorefile2");
+    scoreDat2 = (ScoreDat *)g_ZunMemory.Alloc(sizeof(ScoreDat) + 0xa0000, "scorefile2");
     memcpy(scoreDat2, scoreDat, sizeof(ScoreDat));
-    Lzss::Decode((u8 *) (scoreDat + 1), scoreDat->compressedFileSize, (u8 *) (scoreDat2 + 1), scoreDat->decompressedFileSizeMinusHeader);
+    Lzss::Decode((u8 *)(scoreDat + 1), scoreDat->compressedFileSize, (u8 *)(scoreDat2 + 1),
+                 scoreDat->decompressedFileSizeMinusHeader);
     g_ZunMemory.Free(scoreDat);
     scoreDat = scoreDat2;
 
     bytesToRead = scoreDat->decompressedFileSize;
     hasFoundTH8K = FALSE;
-    chapter = (Th8k *) (((u8 *) scoreDat) + scoreDat->headerSize);
+    chapter = (Th8k *)(((u8 *)scoreDat) + scoreDat->headerSize);
     bytesToRead -= scoreDat->headerSize;
 
     while (bytesToRead > 0)
@@ -158,7 +160,7 @@ recreate_score_file:
         }
         if (chapter->magic == VRSM_MAGIC && chapter->version == 1)
         {
-            vrsm = (Vrsm *) chapter;
+            vrsm = (Vrsm *)chapter;
             if (g_Supervisor.VerifyExeIntegrity(vrsm->version, vrsm->exeSize, vrsm->exeChecksum) != ZUN_SUCCESS)
             {
                 utils::DebugPrint("warning : score.dat exesumcheck error\r\n");
@@ -171,7 +173,7 @@ recreate_score_file:
             goto recreate_score_file;
         }
         bytesToRead -= chapter->th8kLen;
-        chapter = (Th8k *) (((u8 *) chapter ) + chapter->th8kLen);
+        chapter = (Th8k *)(((u8 *)chapter) + chapter->th8kLen);
     }
 
     if (!hasFoundTH8K || th8kChapter->version != 1)
@@ -181,10 +183,10 @@ recreate_score_file:
     }
 
 out:
-    scoreDat->scores = (ScoreListNode *) g_ZunMemory.Alloc(sizeof(ScoreListNode), "result");
-    scoreDat->scores->next =  NULL;
-    scoreDat->scores->data =  NULL;
-    scoreDat->scores->prev =  NULL;
+    scoreDat->scores = (ScoreListNode *)g_ZunMemory.Alloc(sizeof(ScoreListNode), "result");
+    scoreDat->scores->next = NULL;
+    scoreDat->scores->data = NULL;
+    scoreDat->scores->prev = NULL;
 
     return scoreDat;
 }
@@ -205,13 +207,13 @@ u32 ScoreDat::GetHighScore(ScoreDat *scoreDat, ScoreListNode *node, u32 characte
     }
 
     bytesToRead = scoreDat2->decompressedFileSize;
-    hscr = (Hscr *) (((u8 *) scoreDat2) + scoreDat2->headerSize);
+    hscr = (Hscr *)(((u8 *)scoreDat2) + scoreDat2->headerSize);
     bytesToRead -= scoreDat2->headerSize;
 
     while (bytesToRead > 0)
     {
-        if (hscr->base.magic == HSCR_MAGIC && hscr->base.version == HSCR_VERSION
-            && hscr->character == character && hscr->difficulty == difficulty)
+        if (hscr->base.magic == HSCR_MAGIC && hscr->base.version == HSCR_VERSION && hscr->character == character &&
+            hscr->difficulty == difficulty)
         {
             if (node != NULL)
             {
@@ -224,7 +226,7 @@ u32 ScoreDat::GetHighScore(ScoreDat *scoreDat, ScoreListNode *node, u32 characte
         }
 
         bytesToRead -= hscr->base.th8kLen;
-        hscr = (Hscr *) ((u8 *) hscr + hscr->base.th8kLen);
+        hscr = (Hscr *)((u8 *)hscr + hscr->base.th8kLen);
     }
 
     if (continuesUsed != NULL)
@@ -248,7 +250,7 @@ i32 ScoreDat::ParseCATK(ScoreDat *scoreDat, Catk *outCatk)
         return ZUN_ERROR;
     }
 
-    catk = (Catk *) ((u8 *) scoreDat2 + scoreDat2->headerSize);
+    catk = (Catk *)((u8 *)scoreDat2 + scoreDat2->headerSize);
     bytesToRead = scoreDat2->decompressedFileSize - scoreDat2->headerSize;
 
     while (bytesToRead > 0)
@@ -264,7 +266,7 @@ i32 ScoreDat::ParseCATK(ScoreDat *scoreDat, Catk *outCatk)
         }
 
         bytesToRead -= catk->base.th8kLen;
-        catk = (Catk *) ((u8 *) catk + catk->base.th8kLen);
+        catk = (Catk *)((u8 *)catk + catk->base.th8kLen);
     }
 
     return ZUN_SUCCESS;
@@ -277,7 +279,7 @@ i32 ScoreDat::ParseLSNM(ScoreDat *scoreDat, Lsnm *outLsnm)
     i32 bytesToRead;
     ScoreDat *scoreDat2 = scoreDat;
 
-    lsnm = (Lsnm *) ((u8 *) scoreDat2 + scoreDat2->headerSize);
+    lsnm = (Lsnm *)((u8 *)scoreDat2 + scoreDat2->headerSize);
     bytesToRead = scoreDat2->decompressedFileSize - scoreDat2->headerSize;
 
     while (bytesToRead > 0)
@@ -290,7 +292,7 @@ i32 ScoreDat::ParseLSNM(ScoreDat *scoreDat, Lsnm *outLsnm)
         }
 
         bytesToRead -= lsnm->base.th8kLen;
-        lsnm = (Lsnm *) ((u8 *) lsnm + lsnm->base.th8kLen);
+        lsnm = (Lsnm *)((u8 *)lsnm + lsnm->base.th8kLen);
     }
 
     return FALSE;
@@ -302,7 +304,7 @@ i32 ScoreDat::ParseFLSP(ScoreDat *scoreDat, Flsp *outFlsp)
     i32 bytesToRead;
     ScoreDat *scoreDat2 = scoreDat;
 
-    flsp = (Flsp *) ((u8 *) scoreDat2 + scoreDat2->headerSize);
+    flsp = (Flsp *)((u8 *)scoreDat2 + scoreDat2->headerSize);
     bytesToRead = scoreDat2->decompressedFileSize - scoreDat2->headerSize;
 
     while (bytesToRead > 0)
@@ -315,7 +317,7 @@ i32 ScoreDat::ParseFLSP(ScoreDat *scoreDat, Flsp *outFlsp)
         }
 
         bytesToRead -= flsp->base.th8kLen;
-        flsp = (Flsp *) ((u8 *) flsp + flsp->base.th8kLen);
+        flsp = (Flsp *)((u8 *)flsp + flsp->base.th8kLen);
     }
 
     return FALSE;
@@ -353,7 +355,7 @@ i32 ScoreDat::ParseCLRD(ScoreDat *scoreDat, Clrd *outClrd)
         }
     }
 
-    clrd = (Clrd *) ((u8 *) scoreDat2 + scoreDat2->headerSize);
+    clrd = (Clrd *)((u8 *)scoreDat2 + scoreDat2->headerSize);
     bytesToRead = scoreDat2->decompressedFileSize - scoreDat2->headerSize;
 
     while (bytesToRead > 0)
@@ -369,7 +371,7 @@ i32 ScoreDat::ParseCLRD(ScoreDat *scoreDat, Clrd *outClrd)
         }
 
         bytesToRead -= clrd->base.th8kLen;
-        clrd = (Clrd *) ((u8 *) clrd + clrd->base.th8kLen);
+        clrd = (Clrd *)((u8 *)clrd + clrd->base.th8kLen);
     }
 
     return ZUN_SUCCESS;
@@ -403,7 +405,7 @@ i32 ScoreDat::ParsePSCR(ScoreDat *scoreDat, Pscr *outPscr)
         pscr2->unk0x175 = 0;
     }
 
-    pscr = (Pscr *) ((u8 *) scoreDat2 + scoreDat2->headerSize);
+    pscr = (Pscr *)((u8 *)scoreDat2 + scoreDat2->headerSize);
     bytesToRead = scoreDat2->decompressedFileSize - scoreDat2->headerSize;
 
     while (bytesToRead > 0)
@@ -422,7 +424,7 @@ i32 ScoreDat::ParsePSCR(ScoreDat *scoreDat, Pscr *outPscr)
         }
 
         bytesToRead -= pscr->base.th8kLen;
-        pscr = (Pscr *) ((u8 *) pscr + pscr->base.th8kLen);
+        pscr = (Pscr *)((u8 *)pscr + pscr->base.th8kLen);
     }
 
     return ZUN_SUCCESS;
@@ -437,7 +439,7 @@ i32 ScoreDat::ParsePLST(ScoreDat *scoreDat, Plst *outPlst)
 
     /* no NULL check here? */
 
-    plst = (Plst *) ((u8 *) scoreDat2 + scoreDat2->headerSize);
+    plst = (Plst *)((u8 *)scoreDat2 + scoreDat2->headerSize);
     bytesToRead = scoreDat2->decompressedFileSize - scoreDat2->headerSize;
 
     while (bytesToRead > 0)
@@ -448,7 +450,7 @@ i32 ScoreDat::ParsePLST(ScoreDat *scoreDat, Plst *outPlst)
         }
 
         bytesToRead -= plst->base.th8kLen;
-        plst = (Plst *) ((u8 *) plst + plst->base.th8kLen);
+        plst = (Plst *)((u8 *)plst + plst->base.th8kLen);
     }
 
     return 0;
