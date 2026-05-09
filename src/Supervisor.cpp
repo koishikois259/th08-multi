@@ -322,6 +322,7 @@ Supervisor::Supervisor()
     this->flags.unk8 = true;
 }
 
+// STUB: th08 0x445bc0
 ChainCallbackResult Supervisor::DrawFpsCounter(Supervisor *s)
 {
     return CHAIN_CALLBACK_RESULT_CONTINUE;
@@ -380,6 +381,7 @@ ChainCallbackResult Supervisor::DrawLoadingVms(Supervisor *s)
     return CHAIN_CALLBACK_RESULT_CONTINUE;
 }
 
+// STUB: th08 0x445e3d
 BOOL CALLBACK Supervisor::ControllerCallback(LPCDIDEVICEOBJECTINSTANCEA lpddoi, LPVOID pvRef)
 {
     return TRUE;
@@ -702,6 +704,7 @@ ZunResult Supervisor::SetupDInput()
     return ZUN_ERROR;
 }
 
+// STUB: th08 0x446cc7
 BOOL CALLBACK Supervisor::EnumGameControllersCb(LPCDIDEVICEINSTANCE pdidInstance, LPVOID pContext)
 {
     return FALSE;
@@ -766,6 +769,7 @@ ZunResult Supervisor::DeletedCallback(Supervisor *s)
     return ZUN_SUCCESS;
 }
 
+// STUB: th08 0x446f53
 void Supervisor::CalculateFps(ZunBool shouldDraw)
 {
 }
@@ -849,6 +853,7 @@ void Supervisor::TickTimer(int *frames, float *subframes)
     }
 }
 
+// STUB: th08 0x44748f
 ZunBool Supervisor::TakeSnapshot(const char *filePath)
 {
     return FALSE;
@@ -1109,6 +1114,7 @@ ZunResult Supervisor::StopAudio()
     return ZUN_SUCCESS;
 }
 
+// STUB: th08 0x4480f8
 ZunResult Supervisor::FadeOutMusic(float param_1)
 {
     return ZUN_SUCCESS;
@@ -1238,6 +1244,7 @@ void Supervisor::UpdatePlayTime(Supervisor *s)
     s->totalPlayTime = playTime;
 }
 
+// STUB: th08 0x44858d
 ZunResult Supervisor::VerifyExeIntegrity(const char *version, i32 exeSize, i32 checksum)
 {
     return ZUN_ERROR;

@@ -1590,6 +1590,7 @@ AnmLoaded *AnmManager::PreloadAnm(i32 anmIdx, const char *filename)
     return g_Supervisor.subthreadCloseRequestActive ? NULL : anmLoaded;
 }
 
+// STUB: th08 0x465ac0
 i32 AnmManager::LoadExternalTextureData(AnmLoaded *anmLoaded, i32 entryNumber, i32 *sprites, i32 *scripts,
                                         AnmRawEntry *rawEntry)
 {
@@ -2041,6 +2042,7 @@ void AnmManager::CopySurfaceToBackbuffer(i32 surfaceIdx, i32 left, i32 top, i32 
     destSurface->Release();
 }
 
+// STUB: th08 0x466f20
 void AnmManager::CaptureToTexture(i32 captureAnmIdx, i32 srcX, i32 srcY, i32 srcW, i32 srcH, i32 dstX, i32 dstY,
                                   i32 dstW, i32 dstH)
 {

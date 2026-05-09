@@ -577,38 +577,46 @@ void AsciiManager::CreateFamiliarPopup(D3DXVECTOR3 *position, i32 number, i32 pa
     this->nextTimePopupIndex++;
 }
 
+// STUB: th08 0x4037b0
 i32 PauseMenu::OnUpdate()
 {
     return 0;
 }
 
+// STUB: th08 0x404750
 i32 PauseMenu::OnDraw()
 {
     return 0;
 }
 
+// STUB: th08 0x404890
 i32 RetryMenu::OnUpdate()
 {
     return 0;
 }
 
+// STUB: th08 0x4052b0
 i32 RetryMenu::OnDraw()
 {
     return 0;
 }
 
+// STUB: th08 0x405420
 void AsciiManager::OnDrawHighPrioImpl()
 {
 }
 
+// STUB: th08 0x405e10
 void AsciiManager::DrawPercentage(D3DXVECTOR3 *position, i32 percentage, D3DCOLOR color)
 {
 }
 
+// STUB: th08 0x406fd0
 void AsciiManager::UpdateVms()
 {
 }
 
+// STUB: th08 0x4070b0
 void AsciiManager::SetGaugeInterrupt(i32 interrupt)
 {
     this->youkaiGauge.SetInterrupt(interrupt);

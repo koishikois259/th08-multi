@@ -353,7 +353,7 @@ struct GameManager
         return this->globals->playerPower;
     }
 
-    i32 GetClockIncrement();
+    i32 GetClockTimeIncrement();
     void AdvanceToNextStage();
 
     void AddLives(int lives)
