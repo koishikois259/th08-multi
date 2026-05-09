@@ -1247,7 +1247,7 @@ void Supervisor::UpdatePlayTime(Supervisor *s)
 // STUB: th08 0x44858d
 ZunResult Supervisor::VerifyExeIntegrity(const char *version, i32 exeSize, i32 checksum)
 {
-    return ZUN_ERROR;
+    return ZUN_SUCCESS;
 }
 
 ZunResult Supervisor::ThreadStart(LPTHREAD_START_ROUTINE startFunction, void *startParam)
