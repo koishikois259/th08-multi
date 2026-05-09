@@ -433,8 +433,8 @@ int Supervisor::AddedCallback(Supervisor *s)
 
     memset(&g_GameManager.plst, 0, sizeof(g_GameManager.plst));
     g_GameManager.plst.base.unkLen = g_GameManager.plst.base.th8kLen = sizeof(Plst);
-    g_GameManager.plst.base.magic = 'TSLP';
-    g_GameManager.plst.base.version = 2;
+    g_GameManager.plst.base.magic = PLST_MAGIC;
+    g_GameManager.plst.base.version = PLST_VERSION;
 
     ScoreDat::ParsePLST(score, &g_GameManager.plst);
     ScoreDat::ParseCLRD(score, g_GameManager.clrdData);

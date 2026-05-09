@@ -13,6 +13,30 @@
 
 #define IS_STAGE_CLEARED(difficulty, stage) (difficulty & ZUN_BIT(stage))
 
+#define TH8K_MAGIC      MAKE_FOURCC('T', 'H', '8', 'K')
+#define VRSM_MAGIC      MAKE_FOURCC('V', 'R', 'S', 'M')
+
+#define CATK_MAGIC      MAKE_FOURCC('C', 'A', 'T', 'K')
+#define CATK_VERSION    3
+
+#define CLRD_MAGIC      MAKE_FOURCC('C', 'L', 'R', 'D')
+#define CLRD_VERSION    4
+
+#define PSCR_MAGIC      MAKE_FOURCC('P', 'S', 'C', 'R')
+#define PSCR_VERSION    2
+
+#define PLST_MAGIC      MAKE_FOURCC('P', 'L', 'S', 'T')
+#define PLST_VERSION    2
+
+#define LSNM_MAGIC      MAKE_FOURCC('L', 'S', 'N', 'M')
+#define LSNM_VERSION    1
+
+#define FLSP_MAGIC      MAKE_FOURCC('F', 'L', 'S', 'P')
+#define FLSP_VERSION    1
+
+#define HSCR_MAGIC      MAKE_FOURCC('H', 'S', 'C', 'R')
+#define HSCR_VERSION    4
+
 namespace th08
 {
 
@@ -115,7 +139,8 @@ struct CatkHistory
 struct Catk
 {
     Th8k base;
-    i32 unk0xc;
+    u16 spellcardNumber;
+    u16 unk0xe;
 
     char spellName[48];
     char spellOwnerName[48];
@@ -134,6 +159,7 @@ struct Clrd
     u16 difficultiesClearedWithoutRetries[5];
     u16 difficultiesClearedWithRetries[5];
     bool unk_20;
+    u8 shotNumber;
 };
 
 C_ASSERT(sizeof(Clrd) == 0x24);
@@ -144,7 +170,8 @@ struct Pscr
 
     i32 attempts[MAX_STAGES][MAX_DIFFICULTIES];
     i32 highScores[MAX_STAGES][MAX_DIFFICULTIES];
-    unknown_fields(0x174, 4);
+    u8 shotNumber;
+    u8 unk0x175;
 };
 
 C_ASSERT(sizeof(Pscr) == 0x178);
@@ -159,7 +186,7 @@ struct Hscr
     u8 stage;
     char name[9];
     char date[6];
-    u8 numRetries;
+    i8 numRetries;
     u8 unk0x27;
     GameConfiguration cfg;
     i32 playtimeFrames;
@@ -185,6 +212,14 @@ struct Lsnm
 };
 
 C_ASSERT(sizeof(Lsnm) == 0x18);
+
+struct Vrsm
+{
+    Th8k base;
+    char version[8];
+    u32 exeSize;
+    u32 exeChecksum;
+};
 
 struct GameManagerFlags
 {
@@ -395,8 +430,8 @@ struct GameManager
     u32 unk38;
     i32 unk3c;
     Catk catkData[444];
-    Clrd clrdData[13];
-    Pscr pscrData[12];
+    Clrd clrdData[SHOT_ALL + 1];
+    Pscr pscrData[SHOT_ALL];
     Plst plst;
     Hscr hscr;
     i32 unk3D294;
