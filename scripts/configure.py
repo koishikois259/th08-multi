@@ -15,7 +15,7 @@ class BuildType(Enum):
     OBJDIFFBUILD = 5
 
 
-debug_codegen = "/Od /RTCu"
+debug_codegen = "/Od"
 small_codegen = "/Os"
 
 

@@ -2278,7 +2278,7 @@ ChainCallbackResult TitleScreen::OnUpdateSpellCardSelect()
                     break;
                 }
 
-                this->resultTextAnm->InitializeAndSetSprite(&this->spellCardNameVms[i2], i + 2);
+                this->resultTextAnm->InitializeAndSetSprite(&this->spellCardNameVms[i2], i2 + 2);
                 this->spellCardNameVms[i2].pos = D3DXVECTOR3(0, 0, 0);
                 this->spellCardNameVms[i2].prefix.anchor = 3;
                 /* Similar copy paste mistake as before? */
