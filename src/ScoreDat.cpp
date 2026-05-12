@@ -161,7 +161,7 @@ ScoreDat *ScoreDat::OpenScore(const char *filename)
         if (chapter->magic == VRSM_MAGIC && chapter->version == 1)
         {
             vrsm = (Vrsm *)chapter;
-            if (g_Supervisor.VerifyExeIntegrity(vrsm->version, vrsm->exeSize, vrsm->exeChecksum) != ZUN_SUCCESS)
+            if (g_Supervisor.CheckVersion(vrsm->version, vrsm->exeSize, vrsm->exeChecksum) != ZUN_SUCCESS)
             {
                 utils::DebugPrint("warning : score.dat exesumcheck error\r\n");
                 goto recreate_score_file;

@@ -133,7 +133,7 @@ struct Supervisor
     static ChainCallbackResult OnDraw2(Supervisor *s);
     static ChainCallbackResult DrawLoadingVms(Supervisor *s);
     static void CalculateFps(ZunBool shouldDraw);
-    ZunResult VerifyExeIntegrity(const char *version, i32 exeSize, i32 exeChecksum);
+    ZunResult CheckVersion(const char *version, i32 exeSize, i32 exeChecksum);
 
     ZunResult LoadConfig(char *configFile);
     ZunBool LoadMusic(int param_1, char *param_2);
@@ -318,7 +318,7 @@ struct Supervisor
     u32 exeSize;
 
     i32 versionDataSize;
-    void *versionData;
+    char *versionData;
 };
 C_ASSERT(sizeof(Supervisor) == 0x364);
 DIFFABLE_EXTERN(Supervisor, g_Supervisor);
