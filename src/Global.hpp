@@ -379,9 +379,9 @@ struct Float3
             fld angle
             fsincos
             fmul [magnitude]
-            fstp [eax]          /* this->x */
+            fstp [eax] /* this->x */
             fmul [magnitude]
-            fstp [eax + 4]      /* this->y */
+            fstp [eax + 4] /* this->y */
         }
     }
 
@@ -393,13 +393,13 @@ struct Float3
             fld angle
             fsincos
             fmul [vecX]
-            fstp [eax]          /* this->x */
+            fstp [eax] /* this->x */
             fmul [vecY]
-            fstp [eax + 4]      /* this->y */
+            fstp [eax + 4] /* this->y */
         }
     }
 
-    Float3 *operator += (const Float3 &other)
+    Float3 *operator+=(const Float3 &other)
     {
         this->x += other.x;
         this->y += other.y;
@@ -408,7 +408,7 @@ struct Float3
         return this;
     }
 
-    Float3 *operator -= (const Float3 &other)
+    Float3 *operator-=(const Float3 &other)
     {
         this->x -= other.x;
         this->y -= other.y;
@@ -416,7 +416,6 @@ struct Float3
 
         return this;
     }
-
 
     float x;
     float y;
