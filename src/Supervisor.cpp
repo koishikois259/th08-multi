@@ -1,6 +1,7 @@
 #include "Supervisor.hpp"
 #include "AnmManager.hpp"
 #include "AsciiManager.hpp"
+#include "Config.hpp"
 #include "Ending.hpp"
 #include "GameManager.hpp"
 #include "Global.hpp"
@@ -301,7 +302,7 @@ ChainCallbackResult Supervisor::OnUpdate(Supervisor *s)
     s->calcCount++;
 
     if ((s->calcCount % 4000) == 3999 &&
-        g_Supervisor.VerifyExeIntegrity("0100d", g_Supervisor.exeSize, g_Supervisor.exeChecksum) != ZUN_SUCCESS)
+        g_Supervisor.CheckVersion(CONFIG_VERSION_STRING, g_Supervisor.exeSize, g_Supervisor.exeChecksum) != ZUN_SUCCESS)
     {
         return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
     }
@@ -492,7 +493,7 @@ ZunResult Supervisor::LoadDat()
 
         sprintf(versionFileName, "th08_%.4x%c.ver", 0x100, 'd');
 
-        g_Supervisor.versionData = FileSystem::OpenFile(versionFileName, &fileSize, 0);
+        g_Supervisor.versionData = (char *) FileSystem::OpenFile(versionFileName, &fileSize, 0);
         g_Supervisor.versionDataSize = fileSize;
         if (g_Supervisor.versionData == NULL)
         {
@@ -1244,10 +1245,64 @@ void Supervisor::UpdatePlayTime(Supervisor *s)
     s->totalPlayTime = playTime;
 }
 
-// STUB: th08 0x44858d
-ZunResult Supervisor::VerifyExeIntegrity(const char *version, i32 exeSize, i32 checksum)
+#pragma var_order(versionData, versionDataExeChecksum, versionDataSize, oldPos, versionDataExeSize)
+ZunResult Supervisor::CheckVersion(const char *version, i32 exeSize, i32 exeChecksum)
 {
-    return ZUN_SUCCESS;
+    const char *versionData;
+    const char *oldPos;
+    u32 versionDataSize;
+    i32 versionDataExeSize;
+    i32 versionDataExeChecksum;
+
+    if (this->versionData == NULL)
+    {
+        return ZUN_SUCCESS;
+    }
+
+    versionData = this->versionData;
+    versionDataSize = this->versionDataSize;
+
+    if (strncmp(version, CONFIG_DEBUG_VERSION_STRING, CONFIG_VERSION_STRING_LENGTH) == 0)
+    {
+        return ZUN_SUCCESS;
+    }
+
+    if (strcmp(CONFIG_VERSION_STRING, CONFIG_DEBUG_VERSION_STRING) == 0)
+    {
+        return ZUN_SUCCESS;
+    }
+
+    /* The version data file contains a list of all the accepted versions
+     * for the game.
+     * Each line in that file is in the following format:
+     * 
+     * VERSION  EXE_SIZE EXE_CHECKSUM
+     *
+     * For example:
+     *
+     * 0100d 840704 2724749753
+     */
+    while (versionDataSize > 0)
+    {
+        if (strncmp(version, versionData, CONFIG_VERSION_STRING_LENGTH) == 0)
+        {
+            /* ZUN bloat: the format string could have been "%*s %d %d", with
+             * the %*s meaning ignore the first string.
+             */
+            versionData += CONFIG_VERSION_STRING_LENGTH + 1;
+            sscanf(versionData, "%d %d", &versionDataExeSize, &versionDataExeChecksum);
+            if (versionDataExeSize == exeSize && versionDataExeChecksum == exeChecksum)
+            {
+                return ZUN_SUCCESS;
+            }
+        }
+
+        oldPos = versionData;
+        versionData = strchr(versionData, '\n') + 1;
+        versionDataSize -= versionData - oldPos;
+    }
+
+    return ZUN_ERROR;
 }
 
 ZunResult Supervisor::ThreadStart(LPTHREAD_START_ROUTINE startFunction, void *startParam)
