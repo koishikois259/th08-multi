@@ -321,11 +321,11 @@ ZunBool AnmManager::ExecuteScript(AnmVm *vm)
         case AnmOpcode_Pos:
             if (!vm->prefix.usePosOffset)
             {
-                vm->pos = D3DXVECTOR3(GET_FLOAT_VAR(0), GET_FLOAT_VAR(1), GET_FLOAT_VAR(2));
+                vm->pos = Float3(GET_FLOAT_VAR(0), GET_FLOAT_VAR(1), GET_FLOAT_VAR(2));
             }
             else
             {
-                vm->pos2 = D3DXVECTOR3(GET_FLOAT_VAR(0), GET_FLOAT_VAR(1), GET_FLOAT_VAR(2));
+                vm->pos2 = Float3(GET_FLOAT_VAR(0), GET_FLOAT_VAR(1), GET_FLOAT_VAR(2));
             }
             break;
         case AnmOpcode_PosTimeDecel2:
@@ -346,7 +346,7 @@ ZunBool AnmManager::ExecuteScript(AnmVm *vm)
                 vm->posInitial = vm->pos2;
             }
 
-            vm->posFinal = D3DXVECTOR3(GET_FLOAT_VAR(0), GET_FLOAT_VAR(1), GET_FLOAT_VAR(2));
+            vm->posFinal = Float3(GET_FLOAT_VAR(0), GET_FLOAT_VAR(1), GET_FLOAT_VAR(2));
 
             vm->prefix.interpEndTimers[AnmInterp_Pos] = GET_INT_VAR(3);
             vm->prefix.interpCurrentTimers[AnmInterp_Pos] = 0;

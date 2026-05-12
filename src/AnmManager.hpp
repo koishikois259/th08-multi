@@ -8,7 +8,6 @@
 #include "inttypes.hpp"
 #include "utils.hpp"
 #include <d3d8.h>
-#include <d3dx8math.h>
 
 #define GAME_WINDOW_WIDTH 640
 #define GAME_WINDOW_HEIGHT 480
@@ -17,16 +16,17 @@ namespace th08
 {
 struct VertexDiffuseXyzrhw
 {
-    D3DXVECTOR3 pos;
+    Float3 pos;
     f32 w;
     D3DCOLOR diffuse;
 };
 
 struct VertexTex1DiffuseXyzrhw
 {
-    D3DXVECTOR4 pos;
+    Float3 pos;
+    float w;
     D3DCOLOR diffuse;
-    D3DXVECTOR2 textureUV;
+    Float2 textureUV;
 };
 
 // Touhou 8 uses DirectX 8.1, but evidently Zun used some mismatched DirectX 8 headers as well
@@ -249,15 +249,15 @@ struct AnmLoadedSprite
 {
     i32 anmIdx;
     IDirect3DTexture8 *texture;
-    ZunVec2 startPixelInclusive;
-    ZunVec2 endPixelInclusive;
+    Float2 startPixelInclusive;
+    Float2 endPixelInclusive;
     float height;
     float width;
-    ZunVec2 uvStart;
-    ZunVec2 uvEnd;
+    Float2 uvStart;
+    Float2 uvEnd;
     float heightPx;
     float widthPx;
-    ZunVec2 scaleFactor;
+    Float2 scaleFactor;
     u32 unk0x40;
 };
 
@@ -280,12 +280,12 @@ struct AnmRawInstr
 
 struct AnmPrefix
 {
-    D3DXVECTOR3 rotation;
-    D3DXVECTOR3 angleVel;
-    D3DXVECTOR2 scale;
-    D3DXVECTOR2 scaleGrowth;
-    D3DXVECTOR2 spriteSize;
-    D3DXVECTOR2 uvScrollPos;
+    Float3 rotation;
+    Float3 angleVel;
+    Float2 scale;
+    Float2 scaleGrowth;
+    Float2 spriteSize;
+    Float2 uvScrollPos;
     ZunTimer currentTimeInScript;
     ZunTimer waitTimer;
     ZunTimer interpCurrentTimers[AnmInterp_Last];
@@ -301,7 +301,7 @@ struct AnmPrefix
     f32 floatVar3;
     i32 counterVar0;
     i32 counterVar1;
-    D3DXVECTOR2 uvScrollVel;
+    Float2 uvScrollVel;
     D3DXMATRIX matrix1;
     D3DXMATRIX matrix2;
     D3DXMATRIX matrix3;
@@ -342,7 +342,7 @@ C_ASSERT(sizeof(AnmPrefix) == 0x208);
 struct AnmVm
 {
     AnmPrefix prefix;
-    D3DXVECTOR3 pos;
+    Float3 pos;
     i16 activeSpriteIndex;
     i16 anmFileIndex;
     i16 baseSpriteIndex;
@@ -353,18 +353,18 @@ struct AnmVm
     ZunTimer interruptReturnTime;
     AnmRawInstr *interruptReturnInstruction;
 
-    D3DXVECTOR3 posInitial;
-    D3DXVECTOR3 posFinal;
-    D3DXVECTOR3 rotateInitial;
-    D3DXVECTOR3 rotateFinal;
-    D3DXVECTOR2 scaleInitial;
-    D3DXVECTOR2 scaleFinal;
+    Float3 posInitial;
+    Float3 posFinal;
+    Float3 rotateInitial;
+    Float3 rotateFinal;
+    Float2 scaleInitial;
+    Float2 scaleFinal;
     ZunColor color1Initial;
     ZunColor color1Final;
     ZunColor color2Initial;
     ZunColor color2Final;
 
-    D3DXVECTOR3 pos2;
+    Float3 pos2;
     i32 timeOfLastSpriteSet;
     u8 fontWidth;
     u8 fontHeight;
@@ -422,8 +422,8 @@ struct AnmLoaded
     {
         vm->scriptIndex = scriptIdx;
 
-        vm->pos = D3DXVECTOR3(0, 0, 0);
-        vm->pos2 = D3DXVECTOR3(0, 0, 0);
+        vm->pos = Float3(0, 0, 0);
+        vm->pos2 = Float3(0, 0, 0);
 
         vm->fontHeight = 15;
         vm->fontWidth = 15;
@@ -660,9 +660,9 @@ struct AnmManager
     u32 scriptsExecutedThisFrame;
     u32 renderStateChangesThisFrame;
     u32 flushesThisFrame;
-    D3DXVECTOR2 screenShakeOffset;
+    Float2 screenShakeOffset;
     AnmLoaded anmFiles[256];
-    D3DXVECTOR3 unk0x1c24;
+    Float3 unk0x1c24;
     unknown_fields(0x1c30, 0x34);
     AnmVm unk0x1c64;
     unknown_fields(0x1f08, 0x130);

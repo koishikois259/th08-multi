@@ -473,7 +473,7 @@ int Supervisor::AddedCallback(Supervisor *s)
     g_AnmManager->SetupVertexBuffer();
     TextHelper::CreateTextBuffer();
 
-    D3DXVECTOR3 position(500.0, 440.0f, 0.0f);
+    Float3 position(500.0, 440.0f, 0.0f);
 
     g_Supervisor.SetupLoadingVms(&position);
 
@@ -1334,7 +1334,7 @@ void Supervisor::ThreadClose()
     }
 }
 
-void Supervisor::SetupLoadingVms(D3DXVECTOR3 *position)
+void Supervisor::SetupLoadingVms(Float3 *position)
 {
     if (this->loadingVmsHaveBeenSetup == 0)
     {
@@ -1361,7 +1361,7 @@ void Supervisor::HideLoadingVms(void)
     }
 }
 
-void Supervisor::SetupLoadingVmsAndInitCapture(D3DXVECTOR3 *position)
+void Supervisor::SetupLoadingVmsAndInitCapture(Float3 *position)
 {
     if (this->loadingVmsHaveBeenSetup == 0)
     {
