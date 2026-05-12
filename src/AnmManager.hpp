@@ -476,6 +476,8 @@ struct AnmManager
 {
     AnmManager();
     void SetupVertexBuffer();
+
+    // FUNCTION: th08 0x43ef40 FOLDED
     ~AnmManager()
     {
     }
