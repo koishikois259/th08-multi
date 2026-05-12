@@ -493,7 +493,7 @@ ZunResult Supervisor::LoadDat()
 
         sprintf(versionFileName, "th08_%.4x%c.ver", 0x100, 'd');
 
-        g_Supervisor.versionData = (char *) FileSystem::OpenFile(versionFileName, &fileSize, 0);
+        g_Supervisor.versionData = (char *)FileSystem::OpenFile(versionFileName, &fileSize, 0);
         g_Supervisor.versionDataSize = fileSize;
         if (g_Supervisor.versionData == NULL)
         {
@@ -1275,7 +1275,7 @@ ZunResult Supervisor::CheckVersion(const char *version, i32 exeSize, i32 exeChec
     /* The version data file contains a list of all the accepted versions
      * for the game.
      * Each line in that file is in the following format:
-     * 
+     *
      * VERSION  EXE_SIZE EXE_CHECKSUM
      *
      * For example:
