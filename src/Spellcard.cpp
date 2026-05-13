@@ -1,5 +1,6 @@
 #include "Spellcard.hpp"
 #include "utils.hpp"
+#include "ScoreDat.hpp"
 
 namespace th08
 {
@@ -352,13 +353,13 @@ i32 Spellcard::GetDifficultyFromSpellCard(i32 spellCardNumber)
   {
     i32 difficulty;
     i32 i;
-    for (difficulty = 0; difficulty < 5; difficulty++) {
+    for (difficulty = 0; difficulty < MAX_DIFFICULTIES; difficulty++) {
         for (i = 0; i < g_SpellcardCountsPerDifficulty[difficulty]; i++) {
             if (g_SpellcardNumbersPerDifficulty[difficulty][i] == spellCardNumber) {
                 return difficulty;
             }
         }
     }
-    return 5;
+    return MAX_DIFFICULTIES;
   }
 } /* namespace th08 */
