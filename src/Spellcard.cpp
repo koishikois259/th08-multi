@@ -1,4 +1,5 @@
 #include "Spellcard.hpp"
+#include "ScoreDat.hpp"
 #include "utils.hpp"
 
 namespace th08
@@ -346,10 +347,22 @@ DIFFABLE_STATIC_ARRAY_ASSIGN(i32, 10, g_SpellcardCountPerStage) = {
 // clang-format on
 // TODO: stop clang-format from fucking with whitespace formatting
 
-// STUB: th08 0x4144d0
+// FUNCTION: th08 0x4144d0
+#pragma var_order(difficulty, i)
 i32 Spellcard::GetDifficultyFromSpellCard(i32 spellCardNumber)
 {
-    return 0;
+    i32 difficulty;
+    i32 i;
+    for (difficulty = 0; difficulty < MAX_DIFFICULTIES; difficulty++)
+    {
+        for (i = 0; i < g_SpellcardCountsPerDifficulty[difficulty]; i++)
+        {
+            if (g_SpellcardNumbersPerDifficulty[difficulty][i] == spellCardNumber)
+            {
+                return difficulty;
+            }
+        }
+    }
+    return MAX_DIFFICULTIES;
 }
-
 } /* namespace th08 */
