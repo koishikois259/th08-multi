@@ -214,7 +214,7 @@ i32 MusicRoom::ProcessInput()
     {
         g_Supervisor.curState = SupervisorState_TitleScreen;
 
-        g_Supervisor.SetupLoadingVmsAndInitCapture(&D3DXVECTOR3(500.0, 440.0f, 0.0f));
+        g_Supervisor.SetupLoadingVmsAndInitCapture(&Float3(500.0, 440.0f, 0.0f));
 
         return 1;
     }
@@ -314,7 +314,7 @@ start:
 ChainCallbackResult MusicRoom::OnDraw(MusicRoom *musicRoom)
 {
     int i;
-    D3DXVECTOR3 position;
+    Float3 position;
     D3DCOLOR color;
     char arrowText[4];
 

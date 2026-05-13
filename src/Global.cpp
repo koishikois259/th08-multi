@@ -1236,7 +1236,7 @@ f32 AddNormalizeAngle(f32 a, f32 b)
 }
 
 #pragma var_order(sinOut, cosOut)
-void Rotate(D3DXVECTOR3 *outVector, D3DXVECTOR3 *point, f32 angle)
+void Rotate(Float3 *outVector, Float3 *point, f32 angle)
 {
     f32 sinOut = sinf(angle);
     f32 cosOut = cosf(angle);

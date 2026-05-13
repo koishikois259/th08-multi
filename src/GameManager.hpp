@@ -257,10 +257,10 @@ struct GameManager
     u32 unk3ddcc;
     u16 unk3DDD0;
     u16 unk3DDD2;
-    D3DXVECTOR2 arcadeRegionTopLeftPos;
-    D3DXVECTOR2 arcadeRegionSize;
-    D3DXVECTOR2 playerMovementTopLeftPos;
-    D3DXVECTOR2 playerMovementAreaSize;
+    Float2 arcadeRegionTopLeftPos;
+    Float2 arcadeRegionSize;
+    Float2 playerMovementTopLeftPos;
+    Float2 playerMovementAreaSize;
     f32 antiTamperExpectedValue;
     i16 youkaiGaugeHumanLimit;
     i16 youkaiGaugeYoukaiLimit;

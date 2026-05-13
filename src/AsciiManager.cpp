@@ -152,7 +152,7 @@ void AsciiManager::CutChain()
 }
 
 #pragma var_order(nextString)
-void AsciiManager::AddString(D3DXVECTOR3 *position, const char *string)
+void AsciiManager::AddString(Float3 *position, const char *string)
 {
     AsciiManagerString *nextString;
 
@@ -183,7 +183,7 @@ void AsciiManager::AddString(D3DXVECTOR3 *position, const char *string)
     }
 }
 
-void AsciiManager::AddFormatText(D3DXVECTOR3 *position, const char *fmt, ...)
+void AsciiManager::AddFormatText(Float3 *position, const char *fmt, ...)
 {
     char buf[512];
     va_list va;
@@ -194,7 +194,7 @@ void AsciiManager::AddFormatText(D3DXVECTOR3 *position, const char *fmt, ...)
     va_end(va);
 }
 
-int AsciiManager::AddFormatText2(D3DXVECTOR3 *position, const char *fmt, ...)
+int AsciiManager::AddFormatText2(Float3 *position, const char *fmt, ...)
 {
     char buf[512];
     va_list args;
@@ -213,7 +213,7 @@ int AsciiManager::AddFormatText2(D3DXVECTOR3 *position, const char *fmt, ...)
 #pragma var_order(spaceWidth, i, curString, text, isGui, vector)
 void AsciiManager::OnDrawLowPrioImpl()
 {
-    D3DXVECTOR3 vector;
+    Float3 vector;
     ZunBool isGui = TRUE;
     int i;
     AsciiManagerString *curString = &this->strings[0];
@@ -379,7 +379,7 @@ void AsciiManager::OnDrawLowPrioImpl()
     }
 }
 
-void AsciiManager::CreateScorePopup(D3DXVECTOR3 *position, i32 number, D3DCOLOR color)
+void AsciiManager::CreateScorePopup(Float3 *position, i32 number, D3DCOLOR color)
 {
     AsciiManagerPopup *popup;
     int characterCount;
@@ -422,7 +422,7 @@ void AsciiManager::CreateScorePopup(D3DXVECTOR3 *position, i32 number, D3DCOLOR 
     this->nextScorePopupIndex++;
 }
 
-void AsciiManager::CreatePlayerPointPopup(D3DXVECTOR3 *position, i32 number, D3DCOLOR color)
+void AsciiManager::CreatePlayerPointPopup(Float3 *position, i32 number, D3DCOLOR color)
 {
     AsciiManagerPopup *popup;
     int characterCount;
@@ -465,7 +465,7 @@ void AsciiManager::CreatePlayerPointPopup(D3DXVECTOR3 *position, i32 number, D3D
     this->nextPlayerPointPopupIndex++;
 }
 
-void AsciiManager::CreateTimePopup(D3DXVECTOR3 *position, i32 number, i32 param3, D3DCOLOR color)
+void AsciiManager::CreateTimePopup(Float3 *position, i32 number, i32 param3, D3DCOLOR color)
 {
     AsciiManagerPopup *popup;
     int characterCount;
@@ -521,7 +521,7 @@ void AsciiManager::CreateTimePopup(D3DXVECTOR3 *position, i32 number, i32 param3
     this->nextTimePopupIndex++;
 }
 
-void AsciiManager::CreateFamiliarPopup(D3DXVECTOR3 *position, i32 number, i32 param3, D3DCOLOR color)
+void AsciiManager::CreateFamiliarPopup(Float3 *position, i32 number, i32 param3, D3DCOLOR color)
 {
     AsciiManagerPopup *popup;
     int characterCount;
@@ -607,7 +607,7 @@ void AsciiManager::OnDrawHighPrioImpl()
 }
 
 // STUB: th08 0x405e10
-void AsciiManager::DrawPercentage(D3DXVECTOR3 *position, i32 percentage, D3DCOLOR color)
+void AsciiManager::DrawPercentage(Float3 *position, i32 percentage, D3DCOLOR color)
 {
 }
 

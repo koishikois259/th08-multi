@@ -9,7 +9,7 @@ namespace th08
 DIFFABLE_STATIC(ItemManager, g_ItemManager);
 
 #pragma var_order(i, item)
-Item *ItemManager::SpawnItem(D3DXVECTOR3 *position, ItemType itemType, i32 state)
+Item *ItemManager::SpawnItem(Float3 *position, ItemType itemType, i32 state)
 {
     i32 i;
     Item *item = &this->items[this->nextIndex];

@@ -171,7 +171,7 @@ DIFFABLE_STATIC_ASSIGN(const char *, g_FullWidthDigits[]) = {
     TH_TITLE_FULLWIDTH_DIGIT_8, TH_TITLE_FULLWIDTH_DIGIT_9,
 };
 
-void DrawPieChart(D3DXVECTOR3 *position, D3DCOLOR color, float param_3, float param_4);
+void DrawPieChart(Float3 *position, D3DCOLOR color, float param_3, float param_4);
 
 ChainCallbackResult TitleScreen::OnUpdate(TitleScreen *titleScreen)
 {
@@ -1935,7 +1935,7 @@ ChainCallbackResult TitleScreen::OnUpdateSpellStageSelect()
             }
 
             this->resultTextAnm->InitializeAndSetSprite(&this->spellCardNameVms[0], 2);
-            this->spellCardNameVms[0].pos = D3DXVECTOR3(0, 0, 0);
+            this->spellCardNameVms[0].pos = Float3(0, 0, 0);
             this->spellCardNameVms[0].prefix.anchor = 3;
             this->spellCardNameVms[0].fontWidth = 15;
             this->spellCardNameVms[0].fontHeight = 15;
@@ -1946,7 +1946,7 @@ ChainCallbackResult TitleScreen::OnUpdateSpellStageSelect()
             g_AnmManager->DrawTextLeft(&this->spellCardNameVms[0], 0xffffff, 0, TH_TITLE_SPELL_STAGE_INFO);
 
             this->resultTextAnm->InitializeAndSetSprite(&this->spellCardNameVms[1], 3);
-            this->spellCardNameVms[1].pos = D3DXVECTOR3(0, 0, 0);
+            this->spellCardNameVms[1].pos = Float3(0, 0, 0);
             this->spellCardNameVms[1].prefix.anchor = 3;
             this->spellCardNameVms[1].fontWidth = 15;
             this->spellCardNameVms[1].fontHeight = 15;
@@ -2139,7 +2139,7 @@ ChainCallbackResult TitleScreen::OnUpdateSpellCardSelect()
                                                                      TITLE_SPELL_CARD_SPELLCARDS_PER_PAGE];
 
                 this->resultTextAnm->InitializeAndSetSprite(&this->spellCardNameVms[i], i + 2);
-                this->spellCardNameVms[i].pos = D3DXVECTOR3(0, 0, 0);
+                this->spellCardNameVms[i].pos = Float3(0, 0, 0);
                 this->spellCardNameVms[i].prefix.anchor = 3;
                 /* Copy paste mistake? */
                 this->spellCardNameVms[0].fontWidth = 15;
@@ -2174,7 +2174,7 @@ ChainCallbackResult TitleScreen::OnUpdateSpellCardSelect()
 
             i = TITLE_SPELL_CARD_SPELLCARDS_PER_PAGE;
             this->resultTextAnm->InitializeAndSetSprite(&this->spellCardNameVms[i], i + 2);
-            this->spellCardNameVms[i].pos = D3DXVECTOR3(0, 0, 0);
+            this->spellCardNameVms[i].pos = Float3(0, 0, 0);
             this->spellCardNameVms[i].prefix.anchor = 3;
             this->spellCardNameVms[i].fontWidth = 15;
             this->spellCardNameVms[i].fontHeight = 15;
@@ -2197,11 +2197,11 @@ ChainCallbackResult TitleScreen::OnUpdateSpellCardSelect()
 
                 if (i < 4)
                 {
-                    this->spellCardInfoVms[i].pos = D3DXVECTOR3(64.0f, (i * 16) + 344.0f, 0.0f);
+                    this->spellCardInfoVms[i].pos = Float3(64.0f, (i * 16) + 344.0f, 0.0f);
                 }
                 else
                 {
-                    this->spellCardInfoVms[i].pos = D3DXVECTOR3(64.0f, (i * 16) + 344.0f + 8.0f, 0.0f);
+                    this->spellCardInfoVms[i].pos = Float3(64.0f, (i * 16) + 344.0f + 8.0f, 0.0f);
                 }
 
                 this->spellCardInfoVms[i].prefix.anchor = 3;
@@ -2279,7 +2279,7 @@ ChainCallbackResult TitleScreen::OnUpdateSpellCardSelect()
                 }
 
                 this->resultTextAnm->InitializeAndSetSprite(&this->spellCardNameVms[i2], i2 + 2);
-                this->spellCardNameVms[i2].pos = D3DXVECTOR3(0, 0, 0);
+                this->spellCardNameVms[i2].pos = Float3(0, 0, 0);
                 this->spellCardNameVms[i2].prefix.anchor = 3;
                 /* Similar copy paste mistake as before? */
                 this->spellCardInfoVms[0].fontWidth = 15;
@@ -2453,7 +2453,7 @@ ChainCallbackResult TitleScreen::DrawReplayMenu()
 #pragma var_order(vm, i, clearInfo, position)
 ChainCallbackResult TitleScreen::DrawPracticeStageSelect()
 {
-    D3DXVECTOR3 position;
+    Float3 position;
     u16 clearInfo;
     i32 i;
     AnmVm *vm;
@@ -2537,8 +2537,8 @@ ChainCallbackResult TitleScreen::DrawSpellStageSelect()
     i32 i;
     i32 spellCardIdx;
     i32 spellCardNumber;
-    D3DXVECTOR3 position;
-    D3DXVECTOR3 pieChartPosition;
+    Float3 position;
+    Float3 pieChartPosition;
 
     totalCapturesSpellPracticePerShot = 0;
     totalCapturesSpellPractice = 0;
@@ -2764,10 +2764,10 @@ ChainCallbackResult TitleScreen::DrawSpellStageSelect()
 
 /* Is matching except for missing stack space. */
 #pragma var_order(center, vm, vertices, i, angle)
-void DrawPieChart(D3DXVECTOR3 *position, D3DCOLOR color, float param_3, float param_4)
+void DrawPieChart(Float3 *position, D3DCOLOR color, float param_3, float param_4)
 {
     VertexDiffuseXyzrhw vertices[64];
-    D3DXVECTOR3 center;
+    Float3 center;
     AnmVm vm;
     float angle;
     i32 i;
@@ -2807,12 +2807,12 @@ ChainCallbackResult TitleScreen::DrawSpellCardSelect()
     i32 i;
     i32 spellCardNumber;
     u16 clearInfo;
-    D3DXVECTOR3 position;
+    Float3 position;
 
     g_AsciiManager.SetColor(0xffffffff);
     g_AsciiManager.SetIsSelected(FALSE);
 
-    position = D3DXVECTOR3(16.0f, 78.0f, 0.0f);
+    position = Float3(16.0f, 78.0f, 0.0f);
 
     clearInfo = g_GameManager.clrdData[g_GameManager.shotType]
                     .difficultiesClearedWithRetries[g_Supervisor.cfg.defaultDifficulty];
@@ -3034,7 +3034,7 @@ ChainCallbackResult TitleScreen::DrawCompletionStatusText()
 #pragma var_order(i, vm, position)
 ChainCallbackResult TitleScreen::OnDraw(TitleScreen *titleScreen)
 {
-    D3DXVECTOR3 position;
+    Float3 position;
     AnmVm *vm;
     int i;
 
@@ -3189,7 +3189,7 @@ ZunResult TitleScreen::ActualAddedCallback()
     g_GameManager.flags.isPracticeMode = FALSE;
     g_GameManager.flags.isSpellPractice = FALSE;
 
-    D3DXVECTOR3 loadingVmsPosition(500.0f, 440.0f, 0.0f);
+    Float3 loadingVmsPosition(500.0f, 440.0f, 0.0f);
 
     if (g_Supervisor.wantedState2 == SupervisorState_GameManager)
     {
@@ -3247,11 +3247,11 @@ void TitleScreen::TitleSetupThread(TitleScreen *titleScreen)
 
         if (i <= 4)
         {
-            g_TitleScreen->spellCardInfoVms[i].pos = D3DXVECTOR3(64.0f, (i * 16.0f) + 352.0f, 0.0f);
+            g_TitleScreen->spellCardInfoVms[i].pos = Float3(64.0f, (i * 16.0f) + 352.0f, 0.0f);
         }
         else
         {
-            g_TitleScreen->spellCardInfoVms[i].pos = D3DXVECTOR3(64.0f, (i * 16.0f) + 352.0f + 10.0f, 0.0f);
+            g_TitleScreen->spellCardInfoVms[i].pos = Float3(64.0f, (i * 16.0f) + 352.0f + 10.0f, 0.0f);
         }
 
         g_TitleScreen->spellCardInfoVms[i].prefix.anchor = 3;
