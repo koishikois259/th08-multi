@@ -7,6 +7,17 @@
 namespace th08
 {
 
+Ending::Ending()
+{
+  memset(this, 0, sizeof(Ending));
+  this->unknown_2a90 = 8;
+  this->timer2 = 0;
+  this->timer1 = 0;
+  this->unk08 = 0;
+  this->unk0c = 0;
+  this->unk10 = 0;
+}
+
 ZunResult Ending::ReadEndFileParameter()
 {
     DWORD param;
