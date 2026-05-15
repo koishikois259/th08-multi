@@ -1,5 +1,6 @@
 #include "Ending.hpp"
 #include "ZunColor.hpp"
+#include "i18n.hpp"
 #include <cstdlib>
 
 namespace th08
@@ -95,10 +96,26 @@ ZunResult Ending::ParseEndFile()
     return ZUN_SUCCESS;
 }
 
-// STUB: th08 0x4295e0
 ZunResult Ending::LoadEnding(const char *path)
 {
-    return ZUN_SUCCESS;
+  void *prevFile = this->fileData;
+  this->fileData = FileSystem::OpenFile(path, NULL, 0);
+
+  if (this->fileData == NULL) {
+    this->fileData = prevFile;
+    g_GameErrorContext.Log(TH_ERR_ENDING_FILE_UNREADABLE);
+    return ZUN_ERROR;
+  }
+
+  this->cursorPtr = (char *)this->fileData;
+  this->unknown_2a90 = 8;
+  this->timer2 = 0;
+  this->timer1 = 0;
+
+  if (prevFile != NULL){
+    g_ZunMemory.Free(prevFile);
+  }
+  return ZUN_SUCCESS;
 }
 
 // STUB: th08 0x4296a0
