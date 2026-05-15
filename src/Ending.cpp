@@ -1,5 +1,6 @@
 #include "Ending.hpp"
 #include "ZunColor.hpp"
+#include "AnmManager.hpp"
 #include "i18n.hpp"
 #include <cstdlib>
 
@@ -124,9 +125,29 @@ ZunResult Ending::RegisterChain()
     return ZUN_SUCCESS;
 }
 
-// STUB: th08 0x429860
 ChainCallbackResult Ending::OnUpdate(Ending *ending)
 {
+    i32 frameSkip = 0;
+
+    for(;;) {
+        if (ending->ParseEndFile() != ZUN_SUCCESS) {
+            return CHAIN_CALLBACK_RESULT_CONTINUE_AND_REMOVE_JOB;
+        }
+
+         for (i32 i = 0; i < 15; i++) {
+            g_AnmManager->ExecuteScript(&ending->vms[i]);
+        }
+
+          if (ending->canSkip != 0) {
+            if ((g_CurFrameInput & 0x100) != 0) {
+                if (frameSkip < 8) {
+                    frameSkip++;
+                    continue;
+                }
+            }
+        }
+        break;
+    }
     return CHAIN_CALLBACK_RESULT_CONTINUE;
 }
 
