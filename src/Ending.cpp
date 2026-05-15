@@ -1,13 +1,24 @@
 #include "Ending.hpp"
 #include "ZunColor.hpp"
+#include <cstdlib>
 
 namespace th08
 {
 
-// STUB: th08 0x428890
 ZunResult Ending::ReadEndFileParameter()
 {
-    return ZUN_SUCCESS;
+    DWORD param;
+
+    param = atol(this->cursorPtr);
+
+    while (*this->cursorPtr != '\0') {
+        this->cursorPtr++;
+    }
+    while (*this->cursorPtr == '\0') {
+        this->cursorPtr++;
+    }
+
+    return (ZunResult)param;
 }
 
 #pragma var_order(rect, alpha)
