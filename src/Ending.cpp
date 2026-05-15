@@ -119,9 +119,22 @@ ZunResult Ending::LoadEnding(const char *path)
   return ZUN_SUCCESS;
 }
 
-// STUB: th08 0x4296a0
 ZunResult Ending::RegisterChain()
 {
+    Ending *ending = ZUN_NEW(Ending, "EndingInf");
+
+    ending->calcChain = g_Chain.CreateElem((ChainCallback)Ending::OnUpdate);
+    ending->calcChain->arg = ending;
+    ending->calcChain->addedCallback = (ChainLifetimeCallback)Ending::AddedCallback;
+    ending->calcChain->deletedCallback = (ChainLifetimeCallback)Ending::DeletedCallback;
+
+    if (g_Chain.AddToCalcChain(ending->calcChain, 5) != ZUN_SUCCESS) {
+        return ZUN_ERROR;
+      }
+
+    ending->drawChain = g_Chain.CreateElem((ChainCallback)Ending::OnDraw);
+    ending->drawChain->arg = ending;
+    g_Chain.AddToDrawChain(ending->drawChain, 4);
     return ZUN_SUCCESS;
 }
 
