@@ -163,9 +163,16 @@ ZunResult Ending::AddedCallback(Ending *ending)
     return ZUN_SUCCESS;
 }
 
-// STUB: th08 0x429d40
 ZunResult Ending::DeletedCallback(Ending *ending)
 {
+    g_AnmManager->ReleaseAnm(24);
+    g_Supervisor.curState = SupervisorState_ResultScreenFromGame;
+    g_AnmManager->ReleaseSurface(0);
+    g_ZunMemory.Free(ending->fileData);
+    g_Chain.Cut(ending->drawChain);
+    ending->drawChain = NULL;
+    ZUN_DELETE(ending);
+    g_Supervisor.unk178 = 0;
     return ZUN_SUCCESS;
 }
 
