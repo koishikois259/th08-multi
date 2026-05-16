@@ -31,24 +31,25 @@ struct Ending
     ChainElem *calcChain; //0x0
     ChainElem *drawChain; //0x4
     i32 unk08;
-    i32 unk0c;
-    i32 unk10;
+    f32 unk0c;
+    f32 unk10;
     AnmVm vms[16];      //0x14
     void *fileData;     //0x2a54
     i32 canSkip;        //0x2a58
-
-    unknown_fields(0x2a5c, 0x8);
-
+    i32 unk2a5c;
+    AnmLoaded *anmFile;   //0x2a60
     ZunTimer timer1;     //0x2a64
     ZunTimer timer2;     //0x2a70
     ZunTimer timer3;     //0x2a7c
+    i32 unk2a88;
+    i32 unk2a8c;
+    i32 unk2a90;
+    i32 unk2a94;
 
-    unknown_fields(0x2a88, 0x8);
+    unknown_fields(0x2a98, 0x4);
 
-    i32 unknown_2a90;    //0x2a90
-
-    unknown_fields(0x2a94, 0x10);
-
+    i32 unk2a9c;
+    i32 unk2aa0;
     D3DCOLOR fadeColor; //0x2aa4
     i32 fadeTimer;      //0x2aa8
     i32 fadeDuration;   //0x2aac
