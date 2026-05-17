@@ -10,12 +10,12 @@ namespace th08
 Ending::Ending()
 {
   memset(this, 0, sizeof(Ending));
-  this->unk2a90 = 8;
+  this->line2Delay = 8;
   this->timer2 = 0;
   this->timer1 = 0;
-  this->unk08 = 0;
-  this->unk0c = 0;
-  this->unk10 = 0;
+  this->backgroundPos.x = 0;
+  this->backgroundPos.y = 0;
+  this->backgroundScrollSpeed = 0;
 }
 
 ZunResult Ending::ReadEndFileParameter()
@@ -46,53 +46,53 @@ void Ending::FadingEffect()
     rect.bottom = (f32)GAME_WINDOW_HEIGHT;
 
     switch (this->fadeMode) {
-    case 1:
+    case ENDING_FADE_TYPE_FADE_IN_BLACK:
         if (this->fadeTimer >= this->fadeDuration) {
-            this->fadeMode = 0;
+            this->fadeMode = ENDING_FADE_TYPE_NO_FADE;
             this->fadeColor = 0;
             break;
         } else {
-            alpha = 0xff - (this->fadeTimer * 0xff) / this->fadeDuration;
-            this->fadeColor = COLOR_SET_ALPHA(0, alpha);
+            alpha = 255 - (this->fadeTimer * 255) / this->fadeDuration;
+            this->fadeColor = COLOR_SET_ALPHA(COLOR_BLACK, alpha);
             this->fadeTimer++;
             break;
         }
 
-    case 2:
+    case ENDING_FADE_TYPE_FADE_OUT_BLACK:
         if (this->fadeTimer >= this->fadeDuration) {
             this->fadeColor = COLOR_BLACK;
             break;
         } else {
-            alpha = (this->fadeTimer * 0xff) / this->fadeDuration;
-            this->fadeColor = COLOR_SET_ALPHA(0, alpha);
+            alpha = (this->fadeTimer * 255) / this->fadeDuration;
+            this->fadeColor = COLOR_SET_ALPHA(COLOR_BLACK, alpha);
             this->fadeTimer++;
             break;
         }
 
-    case 3:
+    case ENDING_FADE_TYPE_FADE_IN_WHITE:
         if (this->fadeTimer >= this->fadeDuration) {
-            this->fadeMode = 0;
+            this->fadeMode = ENDING_FADE_TYPE_NO_FADE;
             this->fadeColor = 0;
             break;
         } else {
-            alpha = 0xff - (this->fadeTimer * 0xff) / this->fadeDuration;
+            alpha = 255 - (this->fadeTimer * 255) / this->fadeDuration;
             this->fadeColor = COLOR_SET_ALPHA3(COLOR_WHITE, alpha);
             this->fadeTimer++;
             break;
         }
 
-    case 4:
+    case ENDING_FADE_TYPE_FADE_OUT_WHITE:
         if (this->fadeTimer >= this->fadeDuration) {
             this->fadeColor = COLOR_WHITE;
             break;
         } else {
-            alpha = (this->fadeTimer * 0xff) / this->fadeDuration;
+            alpha = (this->fadeTimer * 255) / this->fadeDuration;
             this->fadeColor = COLOR_SET_ALPHA3(COLOR_WHITE, alpha);
             this->fadeTimer++;
             break;
         }
 
-    case 0:
+    case ENDING_FADE_TYPE_NO_FADE:
         this->fadeColor = 0;
         break;
     }
@@ -102,23 +102,23 @@ void Ending::FadingEffect()
     }
 }
 
-#pragma var_order(local_8, textBuffer, index, i, scriptIdx, vmIndex, spriteIdx, firstRead, secondRead, cmdParam, fadeTime)
+#pragma var_order(lineEndDisplayed, textBuffer, index, i, anmScriptIdx, vmIndex, anmSpriteIdx, firstRead, secondRead, spriteIdx, fadeTime)
 ZunResult Ending::ParseEndFile()
 {
     char textBuffer[68];
     i32 index;
-    i32 local_8;
+    ZunBool lineEndDisplayed;
     i32 i;
 
     i32 vmIndex;
-    i32 scriptIdx;
-    i32 spriteIdx;
+    i32 anmScriptIdx;
+    i32 anmSpriteIdx;
     i32 firstRead;
     i32 secondRead;
-    i32 cmdParam;
+    i32 spriteIdx;
     f32 fadeTime;
 
-    local_8 = false;
+    lineEndDisplayed = false;
     index = 0;
 
     memset(textBuffer, 0, sizeof(textBuffer));
@@ -126,20 +126,20 @@ ZunResult Ending::ParseEndFile()
     if(this->timer3 > 0){
         this->timer3--;
 
-        if (this->unk2a88 != 0){
-            this->unk2a88--;
+        if (this->minWaitResetFrames != 0){
+            this->minWaitResetFrames--;
         }
         else {
-            if((WAS_PRESSED(0x1001)) || ((this->canSkip != 0 && (IS_PRESSED(0x100) != 0)))){
+            if((WAS_PRESSED(TH_BUTTON_SELECTMENU)) || ((this->canSkip && (IS_PRESSED(TH_BUTTON_SKIP) != 0)))){
               this->timer3 = 0;
             }
         }
 
         if (this->timer3 <= 0){
-            for(i = 0; i < 15; i++){
+            for(i = 0; i < ARRAY_SIZE_SIGNED(this->vms) - 1; i++){
                 this->vms[i].SetInterrupt(2);
             }
-            this->unk2a9c = 0;
+            this->timesFileParsed = 0;
         }
         else {
           goto end_of_parse;
@@ -148,11 +148,11 @@ ZunResult Ending::ParseEndFile()
 
     if (this->timer2 > 0) {
     this->timer2--;
-    if (this->unk2a8c != 0) {
-      this->unk2a8c--;
+    if (this->minWaitFrames != 0) {
+      this->minWaitFrames--;
 
     } else {
-      if ((WAS_PRESSED(0x1001)) || ((this->canSkip != 0 && (IS_PRESSED(0x100) != 0)))){
+      if ((WAS_PRESSED(TH_BUTTON_SELECTMENU)) || ((this->canSkip && (IS_PRESSED(TH_BUTTON_SKIP) != 0)))){
         this->timer2 = 0;
       }
     }
@@ -161,79 +161,79 @@ ZunResult Ending::ParseEndFile()
 
         while(true){
             switch(*this->cursorPtr){
-            case '@':
+            case END_READ_OPCODE:
+
                 this->cursorPtr++;
                 switch(*this->cursorPtr){
-                case 'b':
+                case END_OPCODE_BACKGROUND:
                     if(g_AnmManager->LoadSurface(0, (this->cursorPtr + 1))){
                         return ZUN_ERROR;
                     }
                     break;
-                case 'a':
+
+                case END_OPCODE_EXECUTE_ANM:
                     this->cursorPtr++;
                     vmIndex = this->ReadEndFileParameter();
-                    scriptIdx = this->ReadEndFileParameter();
-                    spriteIdx = this->ReadEndFileParameter();
-                    this->anmFile->ExecuteAnmIdx(&this->vms[vmIndex], scriptIdx);
-                    this->anmFile->SetSprite(&this->vms[vmIndex], spriteIdx);
+                    anmScriptIdx = this->ReadEndFileParameter();
+                    anmSpriteIdx = this->ReadEndFileParameter();
+                    this->anmFile->ExecuteAnmIdx(&this->vms[vmIndex], anmScriptIdx);
+                    this->anmFile->SetSprite(&this->vms[vmIndex], anmSpriteIdx);
                     break;
-                case 'V':
+
+                case END_OPCODE_SCROLL_BACKGROUND:
                     this->cursorPtr++;
                     firstRead = this->ReadEndFileParameter();
                     secondRead = this->ReadEndFileParameter();
-                    this->unk10 = (f32)firstRead / (f32)secondRead;
+                    this->backgroundScrollSpeed = (f32)firstRead / (f32)secondRead;
                     break;
-                case 'v':
+
+                case END_OPCODE_SET_VERTICAL_SCROLL_POS:
                     this->cursorPtr++;
-                    this->unk0c = (f32)this->ReadEndFileParameter();
+                    this->backgroundPos.y = (f32)this->ReadEndFileParameter();
                     break;
-                case 'F':
+
+                case END_OPCODE_EXEC_END_FILE:
                     if(this->LoadEnding(this->cursorPtr + 1) != ZUN_SUCCESS){
                         return ZUN_ERROR;
                     }
                     index = 0;
-                    local_8 = 0;
+                    lineEndDisplayed = false;
                     this->canSkip = this->unk2a5c;
-                case 'R':
-                    for(cmdParam = 0; cmdParam < 16; cmdParam++){
-                        this->vms[cmdParam].scriptIndex = 0;
+                    
+                case END_OPCODE_ROLL_STAFF:
+                    for(spriteIdx = 0; spriteIdx < ARRAY_SIZE_SIGNED(this->vms); spriteIdx++){
+                        this->vms[spriteIdx].scriptIndex = 0;
                     }
                     break;
-                case 'm':
+
+                case END_OPCODE_PLAY_MUSIC:
                     g_Supervisor.LoadMusic(0, this->cursorPtr + 1);
                     g_Supervisor.PlayMusic(0, 0);
                     break;
-                case 'M':
+
+                case END_OPCODE_FADE_MUSIC:
                     this->cursorPtr++;
                     fadeTime = (f32)this->ReadEndFileParameter();
                     g_Supervisor.FadeOutMusic(fadeTime);
                     break;
-                case 's':
+
+                case END_OPCODE_SET_DELAY:
                     this->cursorPtr++;
-                    this->unk2a90 = this->ReadEndFileParameter();
-                    this->unk2a94 = this->ReadEndFileParameter();
+                    this->line2Delay = this->ReadEndFileParameter();
+                    this->topLineDelay = this->ReadEndFileParameter();
                     break;
-                case 'c':
+
+                case END_OPCODE_COLOR:
                     this->cursorPtr++;
-                    this->unk2aa0 = this->ReadEndFileParameter();
+                    this->textColor = this->ReadEndFileParameter();
                     break;
-                case 'r':
+
+                case END_OPCODE_WAIT_RESET:
                     this->cursorPtr++;
                     this->timer3 = this->ReadEndFileParameter();
-                    this->unk2a88 = this->ReadEndFileParameter();
+                    this->minWaitResetFrames = this->ReadEndFileParameter();
                     this->timer2 = 0;
-                    this->unk2a8c = 0;
-                    while(*this->cursorPtr != '\n' && *this->cursorPtr != '\r'){
-                        this->cursorPtr++;
-                    }
-                    while(*this->cursorPtr == '\n' || *this->cursorPtr == '\r'){
-                        this->cursorPtr++;
-                    }
-                    goto end_of_parse;
-                case 'w':
-                    this->cursorPtr++;
-                    this->timer2 = this->ReadEndFileParameter();
-                    this->unk2a8c = this->ReadEndFileParameter();
+                    this->minWaitFrames = 0;
                     while(*this->cursorPtr != '\n' && *this->cursorPtr != '\r'){
                         this->cursorPtr++;
                     }
@@ -242,34 +242,47 @@ ZunResult Ending::ParseEndFile()
                     }
                     goto end_of_parse;
 
-                case '0':
+                case END_OPCODE_WAIT:
                     this->cursorPtr++;
-                    this->fadeMode = 1;
+                    this->timer2 = this->ReadEndFileParameter();
+                    this->minWaitFrames = this->ReadEndFileParameter();
+                    while(*this->cursorPtr != '\n' && *this->cursorPtr != '\r'){
+                        this->cursorPtr++;
+                    }
+                    while(*this->cursorPtr == '\n' || *this->cursorPtr == '\r'){
+                        this->cursorPtr++;
+                    }
+                    goto end_of_parse;
+
+                case END_OPCODE_FADE_IN_BLACK:
+                    this->cursorPtr++;
+                    this->fadeMode = ENDING_FADE_TYPE_FADE_IN_BLACK;
                     this->fadeTimer = 0;
                     this->fadeDuration = this->ReadEndFileParameter();
                     break;
-                case '1':
+
+                case END_OPCODE_FADE_OUT_BLACK:
                     this->cursorPtr++;
-                    this->fadeMode = 2;
+                    this->fadeMode = ENDING_FADE_TYPE_FADE_OUT_BLACK;
                     this->fadeTimer = 0;
                     this->fadeDuration = this->ReadEndFileParameter();
                     break;
-                case '2':
+
+                case END_OPCODE_FADE_IN:
                     this->cursorPtr++;
-                    this->fadeMode = 3;
+                    this->fadeMode = ENDING_FADE_TYPE_FADE_IN_WHITE;
                     this->fadeTimer = 0;
                     this->fadeDuration = this->ReadEndFileParameter();
                     break;
-                case '3':
+
+                case END_OPCODE_FADE_OUT:
                     this->cursorPtr++;
-                    this->fadeMode = 4;
+                    this->fadeMode = ENDING_FADE_TYPE_FADE_OUT_WHITE;
                     this->fadeTimer = 0;
                     this->fadeDuration = this->ReadEndFileParameter();
                     break;                
 
-                
-                
-                case 'z':
+                case END_OPCODE_END:
                     return ZUN_ERROR;
                 }
                 while(*this->cursorPtr != '\n' && *this->cursorPtr != '\r'){
@@ -285,25 +298,25 @@ ZunResult Ending::ParseEndFile()
             case '\r':
                 if(index != 0){
                     g_AnmManager->DrawTextLeft(
-                        &this->vms[this->unk2a9c],
-                        this->unk2aa0,
+                        &this->vms[this->timesFileParsed],
+                        this->textColor,
                         COLOR_WHITE,
                         textBuffer
                     );
-                    this->vms[this->unk2a9c].SetInterrupt(1);
+                    this->vms[this->timesFileParsed].SetInterrupt(1);
                 }
                     while(*this->cursorPtr == '\n' || *this->cursorPtr == '\0' || *this->cursorPtr == '\r'){
                         this->cursorPtr++;
                     }
-                    if(IS_PRESSED(0x1001)){
-                        this->timer2 = this->unk2a94;
-                        this->unk2a8c = this->unk2a94;
+                    if(IS_PRESSED(TH_BUTTON_SELECTMENU)){
+                        this->timer2 = this->topLineDelay;
+                        this->minWaitFrames = this->topLineDelay;
                     }
                     else {
-                        this->timer2 = this->unk2a90;
-                        this->unk2a8c = this->unk2a94;
+                        this->timer2 = this->line2Delay;
+                        this->minWaitFrames = this->topLineDelay;
                     }
-                    this->unk2a9c++;
+                    this->timesFileParsed++;
                     goto end_of_parse;
 
             default:
@@ -318,19 +331,19 @@ ZunResult Ending::ParseEndFile()
     
 end_of_parse:
     this->timer1++;
-    this->unk0c -= this->unk10;
+    this->backgroundPos.y -= this->backgroundScrollSpeed;
 
-    if(this->unk0c <= 0.0f){
-        this->unk0c = 0.0f;
-        this->unk10 = 0.0f;
+    if(this->backgroundPos.y <= 0.0f){
+        this->backgroundPos.y = 0.0f;
+        this->backgroundScrollSpeed = 0.0f;
     }
     return ZUN_SUCCESS;
 }
 
 ZunResult Ending::LoadEnding(const char *path)
 {
-  void *prevFile = this->fileData;
-  this->fileData = FileSystem::OpenFile(path, NULL, 0);
+  char *prevFile = this->fileData;
+  this->fileData = (char *)FileSystem::OpenFile(path, NULL, 0);
 
   if (this->fileData == NULL) {
     this->fileData = prevFile;
@@ -338,8 +351,8 @@ ZunResult Ending::LoadEnding(const char *path)
     return ZUN_ERROR;
   }
 
-  this->cursorPtr = (char *)this->fileData;
-  this->unk2a90 = 8;
+  this->cursorPtr = this->fileData;
+  this->line2Delay = 8;
   this->timer2 = 0;
   this->timer1 = 0;
 
@@ -377,12 +390,12 @@ ChainCallbackResult Ending::OnUpdate(Ending *ending)
             return CHAIN_CALLBACK_RESULT_CONTINUE_AND_REMOVE_JOB;
         }
 
-         for (i32 i = 0; i < 15; i++) {
+         for (i32 i = 0; i < ARRAY_SIZE_SIGNED(ending->vms) - 1; i++) {
             g_AnmManager->ExecuteScript(&ending->vms[i]);
         }
 
-          if (ending->canSkip != 0) {
-            if (IS_PRESSED(0x100) != 0) {
+          if (ending->canSkip) {
+            if (IS_PRESSED(TH_BUTTON_SKIP) != 0) {
                 if (frameSkip < 8) {
                     frameSkip++;
                     continue;
