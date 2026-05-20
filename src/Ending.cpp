@@ -381,6 +381,17 @@ ZunResult Ending::RegisterChain()
     return ZUN_SUCCESS;
 }
 
+Ending::Ending()
+{
+  memset(this, 0, sizeof(Ending));
+  this->line2Delay = 8;
+  this->timer2 = 0;
+  this->timer1 = 0;
+  this->backgroundPos.x = 0;
+  this->backgroundPos.y = 0;
+  this->backgroundScrollSpeed = 0;
+}
+
 ChainCallbackResult Ending::OnUpdate(Ending *ending)
 {
     i32 frameSkip = 0;
@@ -407,9 +418,15 @@ ChainCallbackResult Ending::OnUpdate(Ending *ending)
     return CHAIN_CALLBACK_RESULT_CONTINUE;
 }
 
-// STUB: th08 0x4298f0
 ChainCallbackResult Ending::OnDraw(Ending *ending)
 {
+    i32 idx;
+    
+    g_AnmManager->CopySurfaceToBackbuffer2(0, 0, 0, ending->backgroundPos.x, ending->backgroundPos.y, GAME_WINDOW_WIDTH, GAME_WINDOW_HEIGHT);
+    for(idx = 0; idx < ARRAY_SIZE_SIGNED(ending->vms) - 1; idx++){
+      g_AnmManager->Draw2D(&ending->vms[idx]);
+    }
+    ending->FadingEffect();
     return CHAIN_CALLBACK_RESULT_CONTINUE;
 }
 

@@ -2044,6 +2044,55 @@ void AnmManager::CopySurfaceToBackbuffer(i32 surfaceIdx, i32 left, i32 top, i32 
     destSurface->Release();
 }
 
+void AnmManager::CopySurfaceToBackbuffer2(i32 surfaceIdx, i32 rectX, i32 rectY, i32 rectLeft, i32 rectTop, i32 width, i32 height)
+{
+    if (this->surfacesBis[surfaceIdx] == NULL)
+    {
+        return;
+    }
+
+    IDirect3DSurface8 *backbuffer;
+    if (g_Supervisor.d3dDevice->GetBackBuffer(0, D3DBACKBUFFER_TYPE_MONO, &backbuffer) != D3D_OK)
+    {
+        return;
+    }
+
+    if (this->surfaces[surfaceIdx] == NULL)
+    {
+        if (g_Supervisor.d3dDevice->CreateRenderTarget(
+                this->surfaceInfo[surfaceIdx].Width, this->surfaceInfo[surfaceIdx].Height,
+                g_Supervisor.presentParameters.BackBufferFormat, D3DMULTISAMPLE_NONE, TRUE,
+                &this->surfaces[surfaceIdx]) != D3D_OK)
+        {
+            if (g_Supervisor.d3dDevice->CreateImageSurface(
+                    this->surfaceInfo[surfaceIdx].Width, this->surfaceInfo[surfaceIdx].Height,
+                    g_Supervisor.presentParameters.BackBufferFormat, &this->surfaces[surfaceIdx]) != D3D_OK)
+            {
+                backbuffer->Release();
+                return;
+            }
+        }
+        // Il caricamento originario usa D3DXLoadSurfaceFromSurface
+        if (D3DXLoadSurfaceFromSurface(this->surfaces[surfaceIdx], NULL, NULL, this->surfacesBis[surfaceIdx], NULL,
+                                       NULL, D3DX_FILTER_NONE, 0) != D3D_OK)
+        {
+            backbuffer->Release();
+            return;
+        }
+    }
+
+    RECT rect;
+    POINT point;
+    rect.left = rectLeft;
+    rect.top = rectTop;
+    rect.right = rectLeft + width;
+    rect.bottom = rectTop + height;
+    point.x = rectX;
+    point.y = rectY;
+    g_Supervisor.d3dDevice->CopyRects(this->surfaces[surfaceIdx], &rect, 1, backbuffer, &point);
+    backbuffer->Release();
+}
+
 // STUB: th08 0x466f20
 void AnmManager::CaptureToTexture(i32 captureAnmIdx, i32 srcX, i32 srcY, i32 srcW, i32 srcH, i32 dstX, i32 dstY,
                                   i32 dstW, i32 dstH)

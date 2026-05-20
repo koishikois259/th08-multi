@@ -515,6 +515,7 @@ struct AnmManager
     ZunResult PreloadSurface(i32 surfaceIdx, const char *path);
     void ReleaseSurface(i32 surfaceIdx);
     void CopySurfaceToBackbuffer(int surfaceIdx, int left, int top, int x, int y);
+    void CopySurfaceToBackbuffer2(i32 surfaceIdx, i32 destX, i32 destY, i32 srcX, i32 srcY, i32 width, i32 height);
 
     void ReleaseVertexBuffer()
     {
