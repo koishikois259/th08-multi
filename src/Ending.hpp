@@ -65,7 +65,7 @@ struct Ending
     f32 backgroundScrollSpeed;  //0x10
     AnmVm vms[16];      //0x14
     char *fileData;     //0x2a54
-    ZunBool canSkip;        //0x2a58
+    ZunBool hasSeenEnding;        //0x2a58
     i32 unk2a5c;
     AnmLoaded *anmFile;   //0x2a60
     ZunTimer timer1;     //0x2a64

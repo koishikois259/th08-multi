@@ -2,25 +2,36 @@
 #include "ZunColor.hpp"
 #include "AnmManager.hpp"
 #include "i18n.hpp"
+#include "GameManager.hpp"
 #include <cstdlib>
 
 namespace th08
 {
 
-Ending::Ending()
+DIFFABLE_STATIC_ARRAY_ASSIGN(const char*, 12, g_EndingFiles[3]) =
 {
-  memset(this, 0, sizeof(Ending));
-  this->line2Delay = 8;
-  this->timer2 = 0;
-  this->timer1 = 0;
-  this->backgroundPos.x = 0;
-  this->backgroundPos.y = 0;
-  this->backgroundScrollSpeed = 0;
-}
+  {
+    "end00a.end", "end01a.end", "end02a.end", "end03a.end",
+    "end00a.end", "end00a.end", "end01a.end", "end01a.end",
+    "end02a.end", "end02a.end", "end03a.end", "end03a.end"
+  },
+
+  {
+    "end00b.end", "end01b.end", "end02b.end", "end03b.end",
+    "end00b.end", "end00b.end", "end01b.end", "end01b.end",
+    "end02b.end", "end02b.end", "end03b.end", "end03b.end"
+  },
+
+  {
+    "end00c.end", "end01c.end", "end02c.end", "end03c.end",
+    "end00c.end", "end00c.end", "end01c.end", "end01c.end",
+    "end02c.end", "end02c.end", "end03c.end", "end03c.end"
+  }
+};
 
 ZunResult Ending::ReadEndFileParameter()
 {
-    DWORD param;
+    i32 param;
 
     param = atol(this->cursorPtr);
 
@@ -130,7 +141,7 @@ ZunResult Ending::ParseEndFile()
             this->minWaitResetFrames--;
         }
         else {
-            if((WAS_PRESSED(TH_BUTTON_SELECTMENU)) || ((this->canSkip && (IS_PRESSED(TH_BUTTON_SKIP) != 0)))){
+            if((WAS_PRESSED(TH_BUTTON_SELECTMENU)) || ((this->hasSeenEnding && (IS_PRESSED(TH_BUTTON_SKIP) != 0)))){
               this->timer3 = 0;
             }
         }
@@ -152,7 +163,7 @@ ZunResult Ending::ParseEndFile()
       this->minWaitFrames--;
 
     } else {
-      if ((WAS_PRESSED(TH_BUTTON_SELECTMENU)) || ((this->canSkip && (IS_PRESSED(TH_BUTTON_SKIP) != 0)))){
+      if ((WAS_PRESSED(TH_BUTTON_SELECTMENU)) || ((this->hasSeenEnding && (IS_PRESSED(TH_BUTTON_SKIP) != 0)))){
         this->timer2 = 0;
       }
     }
@@ -198,7 +209,7 @@ ZunResult Ending::ParseEndFile()
                     }
                     index = 0;
                     lineEndDisplayed = false;
-                    this->canSkip = this->unk2a5c;
+                    this->hasSeenEnding = this->unk2a5c;
                     
                 case END_OPCODE_ROLL_STAFF:
                     for(spriteIdx = 0; spriteIdx < ARRAY_SIZE_SIGNED(this->vms); spriteIdx++){
@@ -405,7 +416,7 @@ ChainCallbackResult Ending::OnUpdate(Ending *ending)
             g_AnmManager->ExecuteScript(&ending->vms[i]);
         }
 
-          if (ending->canSkip) {
+          if (ending->hasSeenEnding) {
             if (IS_PRESSED(TH_BUTTON_SKIP) != 0) {
                 if (frameSkip < 8) {
                     frameSkip++;
@@ -430,10 +441,94 @@ ChainCallbackResult Ending::OnDraw(Ending *ending)
     return CHAIN_CALLBACK_RESULT_CONTINUE;
 }
 
-// STUB: th08 0x429980
+#pragma var_order(endingFile, shotType1, shotType2, stageBit, i)
 ZunResult Ending::AddedCallback(Ending *ending)
 {
-    return ZUN_SUCCESS;
+    const char *endingFile;
+    i32 shotType1;
+    i32 shotType2;
+    u32 stageBit;
+    i32 i;
+
+    shotType1 = g_GameManager.shotType;
+
+    g_AnmManager->ClearTexture();
+    g_AnmManager->ClearSprite();
+    g_AnmManager->ClearBlendMode();
+    g_AnmManager->ClearVertexShader();
+    ScreenEffect::Clear(COLOR_WHITE);
+    g_Supervisor.unk178 = 1;
+
+    ending->anmFile = g_AnmManager->LoadAnm(0x18, "staff01.anm");
+
+if (g_GameManager.flags.unk4) {
+
+        shotType2 = g_GameManager.shotType;
+
+        stageBit = (g_GameManager.currentStage != STAGE6B) ? 0x8000 : 0x4000;
+
+        g_GameManager.plst.playDataByDifficulty[g_GameManager.difficulty].clears++;
+        g_GameManager.plst.playDataTotals.clears++;
+
+        ending->hasSeenEnding = false;
+        ending->unk2a5c = 0;
+
+        if ((g_GameManager.currentStage == STAGE6B && g_GameManager.IsExtraUnlocked()) ||
+            (g_GameManager.currentStage == STAGE6A && g_GameManager.IsSpellPracticeUnlocked())) {
+            ending->unk2a5c = 1;
+        }
+
+        if ((g_GameManager.globals)->numRetries == 0) {
+            if ((g_GameManager.clrdData[shotType2].difficultiesClearedWithoutRetries[EASY] & stageBit) ||
+                (g_GameManager.clrdData[shotType2].difficultiesClearedWithoutRetries[NORMAL] & stageBit) ||
+                (g_GameManager.clrdData[shotType2].difficultiesClearedWithoutRetries[HARD] & stageBit) ||
+                (g_GameManager.clrdData[shotType2].difficultiesClearedWithoutRetries[LUNATIC] & stageBit)) {
+                ending->hasSeenEnding = true;
+            }
+            g_GameManager.clrdData[shotType2].difficultiesClearedWithoutRetries[g_GameManager.difficulty] |= stageBit;
+            g_GameManager.clrdData[SHOT_ALL].difficultiesClearedWithoutRetries[g_GameManager.difficulty] |= stageBit;
+
+        } else {
+            if ((g_GameManager.clrdData[shotType2].difficultiesClearedWithRetries[EASY] & stageBit) ||
+                (g_GameManager.clrdData[shotType2].difficultiesClearedWithRetries[NORMAL] & stageBit) ||
+                (g_GameManager.clrdData[shotType2].difficultiesClearedWithRetries[HARD] & stageBit) ||
+                (g_GameManager.clrdData[shotType2].difficultiesClearedWithRetries[LUNATIC] & stageBit)) {
+                ending->hasSeenEnding = true;
+            }
+
+        }
+
+        g_GameManager.clrdData[shotType2].difficultiesClearedWithRetries[g_GameManager.difficulty] |= stageBit;
+        g_GameManager.clrdData[SHOT_ALL].difficultiesClearedWithRetries[g_GameManager.difficulty] |= stageBit;
+
+        g_GameManager.plst.bgmUnlocked[18] = 1;
+        g_GameManager.plst.bgmUnlocked[19] = 1;
+
+    } else {
+        ending->hasSeenEnding = g_GameManager.clrdData[g_GameManager.shotType].unk_20;
+        g_GameManager.clrdData[g_GameManager.shotType].unk_20 = 0;
+        g_GameManager.plst.bgmUnlocked[18] = 0x12;
+    }
+
+execute_anms:
+    for (i = 0; i < ARRAY_SIZE_SIGNED(ending->vms) - 1; i++) {
+        g_Supervisor.textAnm->ExecuteAnmIdx(&ending->vms[i], i + 0x12);
+        ending->vms[i].pos = Float3(64.0f, i * 16.0f + 400.0f, 0.0f);
+    }
+
+    if (g_GameManager.flags.unk4 == 0) {
+        endingFile = g_EndingFiles[0][g_GameManager.shotType];
+    } else if (g_GameManager.currentStage != STAGE6B) {
+        endingFile = g_EndingFiles[1][g_GameManager.shotType];
+    } else {
+        endingFile = g_EndingFiles[2][g_GameManager.shotType];
+    }
+
+    if (ending->LoadEnding(endingFile) != ZUN_SUCCESS) {
+        return ZUN_ERROR;
+    } else {
+        return ZUN_SUCCESS;
+    }
 }
 
 ZunResult Ending::DeletedCallback(Ending *ending)
