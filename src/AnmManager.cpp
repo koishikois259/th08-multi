@@ -1361,6 +1361,8 @@ ZunResult AnmManager::DrawTriangleFan(AnmVm *vm, VertexDiffuseXyzrhw *vertices, 
 AnmManager::AnmManager()
 {
     memset((void *)this, 0, sizeof(AnmManager));
+
+    g_QuadVertices[0].w = g_QuadVertices[1].w = g_QuadVertices[2].w = g_QuadVertices[3].w = 1.0f;
 }
 
 // STUB: th08 0x465250
