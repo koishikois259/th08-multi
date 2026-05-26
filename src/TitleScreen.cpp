@@ -139,6 +139,20 @@ DIFFABLE_STATIC_ASSIGN(const char *, g_DemoReplayFiles[]) = {
     "demo/demorpy3.rpy",
 };
 
+DIFFABLE_STATIC_ASSIGN(const char *, g_StageNames[]) = {
+    "Stage1 ", "Stage2 ", "Stage3 ", "Stage4A", "Stage4B", "Stage5 ", "Stage6A", "Stage6B", "StageEX",
+};
+
+DIFFABLE_STATIC_ASSIGN(const char *, g_StageNamesSpellPractice[]) = {"Stage1   ", "Stage2   ", "Stage3   ", "Stage4A  ",
+                                                                     "Stage4B  ", "Stage5   ", "Stage6A  ", "Stage6B  ",
+                                                                     "Extra    ", "Last Word"};
+
+DIFFABLE_STATIC_ASSIGN(const char *, g_FullWidthDigits[]) = {
+    TH_TITLE_FULLWIDTH_DIGIT_0, TH_TITLE_FULLWIDTH_DIGIT_1, TH_TITLE_FULLWIDTH_DIGIT_2, TH_TITLE_FULLWIDTH_DIGIT_3,
+    TH_TITLE_FULLWIDTH_DIGIT_4, TH_TITLE_FULLWIDTH_DIGIT_5, TH_TITLE_FULLWIDTH_DIGIT_6, TH_TITLE_FULLWIDTH_DIGIT_7,
+    TH_TITLE_FULLWIDTH_DIGIT_8, TH_TITLE_FULLWIDTH_DIGIT_9,
+};
+
 DIFFABLE_STATIC_ASSIGN(const char *, g_StartMenuHelpText[]) = {
     TH_TITLE_STARTMENU_HELPTEXT0, TH_TITLE_STARTMENU_HELPTEXT1, TH_TITLE_STARTMENU_HELPTEXT2,
     TH_TITLE_STARTMENU_HELPTEXT3, TH_TITLE_STARTMENU_HELPTEXT4, TH_TITLE_STARTMENU_HELPTEXT5,
@@ -160,18 +174,29 @@ DIFFABLE_STATIC_ASSIGN(const char *, g_KeyConfigHelpText[]) = {
     TH_TITLE_KEYCONFIG_HELPTEXT9, TH_TITLE_KEYCONFIG_HELPTEXT10, TH_TITLE_KEYCONFIG_HELPTEXT11,
 };
 
-DIFFABLE_STATIC_ASSIGN(const char *, g_StageNames[]) = {
-    "Stage1 ", "Stage2 ", "Stage3 ", "Stage4A", "Stage4B", "Stage5 ", "Stage6A", "Stage6B", "StageEX",
+DIFFABLE_STATIC_ASSIGN(const char *, g_ReplayCharacterNames[]) =
+{
+    "Rm & Yk",
+    "Ms & Al",
+    "Sk & Rr",
+    "Ym & Yy",
+    "Reimu  ",
+    "Yukari ",
+    "Marisa ",
+    "Alice  ",
+    "Sakuya ",
+    "Remilia",
+    "Youmu  ",
+    "Yuyuko ",
 };
 
-DIFFABLE_STATIC_ASSIGN(const char *, g_StageNamesSpellPractice[]) = {"Stage1   ", "Stage2   ", "Stage3   ", "Stage4A  ",
-                                                                     "Stage4B  ", "Stage5   ", "Stage6A  ", "Stage6B  ",
-                                                                     "Extra    ", "Last Word"};
-
-DIFFABLE_STATIC_ASSIGN(const char *, g_FullWidthDigits[]) = {
-    TH_TITLE_FULLWIDTH_DIGIT_0, TH_TITLE_FULLWIDTH_DIGIT_1, TH_TITLE_FULLWIDTH_DIGIT_2, TH_TITLE_FULLWIDTH_DIGIT_3,
-    TH_TITLE_FULLWIDTH_DIGIT_4, TH_TITLE_FULLWIDTH_DIGIT_5, TH_TITLE_FULLWIDTH_DIGIT_6, TH_TITLE_FULLWIDTH_DIGIT_7,
-    TH_TITLE_FULLWIDTH_DIGIT_8, TH_TITLE_FULLWIDTH_DIGIT_9,
+DIFFABLE_STATIC_ASSIGN(const char *, g_ReplayDifficulties[]) =
+{
+    "Easy    ",
+    "Normal  ",
+    "Hard    ",
+    "Lunatic ",
+    "Extra   ",
 };
 
 void DrawPieChart(Float3 *position, D3DCOLOR color, float param_3, float param_4);
@@ -1984,7 +2009,7 @@ ChainCallbackResult TitleScreen::OnUpdateSpellStageSelect()
             this->spellCardNameVms[0].prefix.color1.r = 255;
             this->spellCardNameVms[0].prefix.color1.g = 255;
             this->spellCardNameVms[0].prefix.color1.b = 255;
-            g_AnmManager->DrawTextLeft(&this->spellCardNameVms[0], 0xffffff, 0, TH_TITLE_SPELL_STAGE_INFO);
+            g_AnmManager->DrawTextLeft(&this->spellCardNameVms[0], COLOR_TEXT_WHITE, 0, TH_TITLE_SPELL_STAGE_INFO);
 
             this->resultTextAnm->InitializeAndSetSprite(&this->spellCardNameVms[1], 3);
             this->spellCardNameVms[1].pos = Float3(0, 0, 0);
@@ -1995,7 +2020,7 @@ ChainCallbackResult TitleScreen::OnUpdateSpellStageSelect()
             this->spellCardNameVms[1].prefix.color1.r = 255;
             this->spellCardNameVms[1].prefix.color1.g = 255;
             this->spellCardNameVms[1].prefix.color1.b = 255;
-            g_AnmManager->DrawTextLeft(&this->spellCardNameVms[1], 0xffffff, 0, TH_TITLE_SPELL_CAPTURE_PERCENTAGE);
+            g_AnmManager->DrawTextLeft(&this->spellCardNameVms[1], COLOR_TEXT_WHITE, 0, TH_TITLE_SPELL_CAPTURE_PERCENTAGE);
 
             /* ZUN bug: possible copy paste mistake? */
             this->titleAnm->InitializeAndSetSprite(&this->spellCardNameVms[2], 144);
@@ -2192,18 +2217,18 @@ ChainCallbackResult TitleScreen::OnUpdateSpellCardSelect()
                     if (Spellcard::GetDifficultyFromSpellCard(spellCardNumber) <= EXTRA ||
                         !g_GameManager.IsLastWordSpellCardAttempted(spellCardNumber))
                     {
-                        g_AnmManager->DrawTextLeft(&this->spellCardNameVms[i], 0xffffff, 0,
+                        g_AnmManager->DrawTextLeft(&this->spellCardNameVms[i], COLOR_TEXT_WHITE, 0,
                                                    TH_TITLE_SPELLCARD_NOT_UNLOCKED);
                     }
                     else
                     {
-                        g_AnmManager->DrawTextLeft(&this->spellCardNameVms[i], 0xffffff, 0,
+                        g_AnmManager->DrawTextLeft(&this->spellCardNameVms[i], COLOR_TEXT_WHITE, 0,
                                                    TH_TITLE_SPELLCARD_AVAILABLE);
                     }
                 }
                 else
                 {
-                    g_AnmManager->DrawTextLeft(&this->spellCardNameVms[i], 0xffffff, 0,
+                    g_AnmManager->DrawTextLeft(&this->spellCardNameVms[i], COLOR_TEXT_WHITE, 0,
                                                g_GameManager.catkData[spellCardNumber].spellName);
                 }
 
@@ -2220,7 +2245,7 @@ ChainCallbackResult TitleScreen::OnUpdateSpellCardSelect()
             this->spellCardNameVms[i].fontWidth = 15;
             this->spellCardNameVms[i].fontHeight = 15;
 
-            g_AnmManager->DrawTextLeft(&this->spellCardNameVms[i], 0xffffff, 0, TH_TITLE_SPELL_CARD_INFO);
+            g_AnmManager->DrawTextLeft(&this->spellCardNameVms[i], COLOR_TEXT_WHITE, 0, TH_TITLE_SPELL_CARD_INFO);
 
             this->spellCardNameVms[i].prefix.color1.a = 255;
             this->spellCardNameVms[i].prefix.color1.r = 255;
@@ -2248,7 +2273,7 @@ ChainCallbackResult TitleScreen::OnUpdateSpellCardSelect()
                 this->spellCardInfoVms[i].prefix.anchor = 3;
                 this->spellCardInfoVms[i].fontWidth = 15;
                 this->spellCardInfoVms[i].fontHeight = 15;
-                this->spellCardInfoVms[i].prefix.color1.d3dColor = 0xffffffff;
+                this->spellCardInfoVms[i].prefix.color1.d3dColor = COLOR_WHITE;
             }
 
             this->FormatSpellCardInfo();
@@ -2333,7 +2358,7 @@ ChainCallbackResult TitleScreen::OnUpdateSpellCardSelect()
                 /* Why does ZUN use this helper method here, and in the initialization , use direct access? */
                 if (g_GameManager.HasSpellCardBeenEncountered(spellCardNumber2, SHOT_ALL))
                 {
-                    g_AnmManager->DrawTextLeft(&this->spellCardNameVms[i2], 0xffffff, 0,
+                    g_AnmManager->DrawTextLeft(&this->spellCardNameVms[i2], COLOR_TEXT_WHITE, 0,
                                                g_GameManager.catkData[spellCardNumber2].spellName);
                 }
                 else
@@ -2341,12 +2366,12 @@ ChainCallbackResult TitleScreen::OnUpdateSpellCardSelect()
                     if (Spellcard::GetDifficultyFromSpellCard(spellCardNumber2) <= EXTRA ||
                         !g_GameManager.IsLastWordSpellCardAttempted(spellCardNumber2))
                     {
-                        g_AnmManager->DrawTextLeft(&this->spellCardNameVms[i2], 0xffffff, 0,
+                        g_AnmManager->DrawTextLeft(&this->spellCardNameVms[i2], COLOR_TEXT_WHITE, 0,
                                                    TH_TITLE_SPELLCARD_NOT_UNLOCKED);
                     }
                     else
                     {
-                        g_AnmManager->DrawTextLeft(&this->spellCardNameVms[i2], 0xffffff, 0,
+                        g_AnmManager->DrawTextLeft(&this->spellCardNameVms[i2], COLOR_TEXT_WHITE, 0,
                                                    TH_TITLE_SPELLCARD_AVAILABLE);
                     }
                 }
@@ -2485,9 +2510,133 @@ void TitleScreen::UnlockLastWordSpellCards()
 {
 }
 
-// STUB: th08 0x46ef8d
+#pragma var_order(vm, i2, i, position)
 ChainCallbackResult TitleScreen::DrawReplayMenu()
 {
+    i32 i;
+    i32 i2;
+    AnmVm *vm = &this->vms[79];
+    Float3 position;
+
+    g_AsciiManager.AddFormatText(&vm->pos, "No.   Name       Date  Player   Rank");
+
+    for (i = this->selectedReplay - (this->selectedReplay % TITLE_REPLAYS_PER_PAGE),
+         i2 = i + TITLE_REPLAYS_PER_PAGE; i < i2; i++)
+    {
+        if (i >= this->replayCount)
+        {
+            break;
+        }
+
+        vm++;
+
+        g_AsciiManager.SetIsSelected(i == this->selectedReplay);
+        if (i == this->selectedReplay)
+        {
+            g_AsciiManager.SetColor(COLOR_WHITE);
+        }
+        else
+        {
+            g_AsciiManager.SetColor(0xff808080);
+        }
+        
+        if (this->replays[i].spellcardNumber < 0)
+        {
+            g_AsciiManager.AddFormatText(&vm->pos, "%s %8s  %6s %7s  %8s", &this->replayNumbers[i],
+                                                                             this->replays[i].playerName, 
+                                                                             this->replays[i].date,
+                                                                             g_ReplayCharacterNames[this->replays[i].shotType],
+                                                                             g_ReplayDifficulties[this->replays[i].difficulty]);
+        }
+        else
+        {
+            g_AsciiManager.AddFormatText(&vm->pos, "%s %8s  %6s %7s  Spell No.%3d", &this->replayNumbers[i],
+                                                                                      this->replays[i].playerName, 
+                                                                                      this->replays[i].date,
+                                                                                      g_ReplayCharacterNames[this->replays[i].shotType],
+                                                                                      this->replays[i].spellcardNumber + 1);
+        }
+    }
+
+    if ((this->currentScreenState == 2 || this->currentScreenState == 3) && this->currentReplay)
+    {
+        g_AsciiManager.SetColor(COLOR_WHITE);
+        g_AsciiManager.SetIsSelected(FALSE);
+
+        vm = &this->vms[78];
+
+        g_AsciiManager.AddFormatText(&vm->pos, "       %2.3f%%", this->currentReplay->slowDownRate);
+
+        vm = &this->vms[95];
+
+        position = vm->pos;
+
+        g_AsciiManager.AddFormatText(&position, "Stage    LastScore");
+
+        i = this->selectedReplay - (this->selectedReplay % TITLE_REPLAYS_PER_PAGE);
+
+        if (this->currentReplay->spellcardNumber < 0)
+        {
+            for (i2 = 0; i2 < ARRAY_SIZE(g_StageNames); i2++, i++)
+            {
+                vm++;
+
+                if (this->currentScreenState != 3)
+                {
+                    g_AsciiManager.SetIsSelected(i2 == this->selectedReplayStage);
+
+                    if (i2 == this->selectedReplayStage)
+                    {
+                        g_AsciiManager.SetColor(0xffffffff);
+                    }
+                    else
+                    {
+                        g_AsciiManager.SetColor(0xff808080);
+                    }
+                }
+                else
+                {
+                    if (i2 == this->selectedReplayStage)
+                    {
+                        g_AsciiManager.SetColor(0x60ffffff);
+                    }
+                    else
+                    {
+                        g_AsciiManager.SetColor(0x60808080);
+                    }
+                }
+
+                position = vm->pos;
+
+                if (this->currentReplay->header.stageReplayData[i2] != NULL)
+                {
+                    g_AsciiManager.AddFormatText(&position, "%s %9d0", g_StageNames[i2], this->currentReplay->header.stageReplayData[i2]->score);
+                }
+                else
+                {
+                    g_AsciiManager.AddFormatText(&position, "%s ----------", g_StageNames[i2]);
+                }
+            }
+        }
+        else
+        {
+            vm++;
+            vm++;
+
+            position = vm->pos;
+
+            g_AsciiManager.AddFormatText(&position, "No.%.3d %9d0", this->currentReplay->spellcardNumber + 1, this->currentReplay->spellcardScore);
+
+            this->spellCardNameVms[0].pos= vm->pos;
+            this->spellCardNameVms[0].pos.y += 16.0f;
+
+            g_AnmManager->DrawNoRotation(&this->spellCardNameVms[0]);
+        }
+    }
+
+    g_AsciiManager.SetColor(COLOR_WHITE);
+    g_AsciiManager.SetIsSelected(FALSE);
+
     return CHAIN_CALLBACK_RESULT_CONTINUE;
 }
 
@@ -2499,7 +2648,7 @@ ChainCallbackResult TitleScreen::DrawPracticeStageSelect()
     i32 i;
     AnmVm *vm;
 
-    g_AsciiManager.SetColor(0xffffffff);
+    g_AsciiManager.SetColor(COLOR_WHITE);
     g_AsciiManager.SetIsSelected(FALSE);
 
     vm = &this->vms[141];
@@ -2528,7 +2677,7 @@ ChainCallbackResult TitleScreen::DrawPracticeStageSelect()
 
         if (i == this->cursor)
         {
-            g_AsciiManager.SetColor(0xffffffff);
+            g_AsciiManager.SetColor(COLOR_WHITE);
         }
         else if (IS_STAGE_CLEARED(clearInfo, i))
         {
@@ -2546,7 +2695,7 @@ ChainCallbackResult TitleScreen::DrawPracticeStageSelect()
         position.y += 16.0f;
     }
 
-    g_AsciiManager.SetColor(0xffffffff);
+    g_AsciiManager.SetColor(COLOR_WHITE);
     g_AsciiManager.SetIsSelected(FALSE);
 
     return CHAIN_CALLBACK_RESULT_CONTINUE;
@@ -2588,7 +2737,7 @@ ChainCallbackResult TitleScreen::DrawSpellStageSelect()
     totalAttemptedLastWordPerShot = 0;
     totalAttemptedLastWord = 0;
 
-    g_AsciiManager.SetColor(0xffffffff);
+    g_AsciiManager.SetColor(COLOR_WHITE);
     g_AsciiManager.SetIsSelected(FALSE);
 
     vm = &this->vms[141];
@@ -2606,7 +2755,7 @@ ChainCallbackResult TitleScreen::DrawSpellStageSelect()
         g_AsciiManager.SetIsSelected(i == this->cursor);
         if (i == this->cursor)
         {
-            g_AsciiManager.SetColor(0xffffffff);
+            g_AsciiManager.SetColor(COLOR_WHITE);
         }
         else
         {
@@ -2702,7 +2851,7 @@ ChainCallbackResult TitleScreen::DrawSpellStageSelect()
     position.x -= 182.0f;
 
     g_AsciiManager.SetScale(1.0f, 1.0f);
-    g_AsciiManager.SetColor(0xffffffff);
+    g_AsciiManager.SetColor(COLOR_WHITE);
     g_AsciiManager.SetIsSelected(FALSE);
 
     this->spellCardNameVms[1].pos.x = 400.0f;
@@ -2752,7 +2901,7 @@ ChainCallbackResult TitleScreen::DrawSpellStageSelect()
     pieChartPosition.x = 514.0f;
     pieChartPosition.y = 404.0f;
 
-    g_AsciiManager.DrawPercentage(&pieChartPosition, percentageCapturedSpellPractice * 10000, 0xffffffff);
+    g_AsciiManager.DrawPercentage(&pieChartPosition, percentageCapturedSpellPractice * 10000, COLOR_WHITE);
     pieChartPosition.y += 8.0f;
     g_AsciiManager.DrawPercentage(&pieChartPosition, percentageCapturedInGame * 10000, 0x80c0c080);
 
@@ -2796,7 +2945,7 @@ ChainCallbackResult TitleScreen::DrawSpellStageSelect()
     pieChartPosition.x = 580.0f;
     pieChartPosition.y = 451.0f;
 
-    g_AsciiManager.DrawPercentage(&pieChartPosition, percentageCapturedSpellPractice * 10000, 0xffffffff);
+    g_AsciiManager.DrawPercentage(&pieChartPosition, percentageCapturedSpellPractice * 10000, COLOR_WHITE);
     pieChartPosition.y -= 8.0f;
     g_AsciiManager.DrawPercentage(&pieChartPosition, percentageCapturedInGame * 10000, 0x80c0c080);
 
@@ -2814,7 +2963,7 @@ void DrawPieChart(Float3 *position, D3DCOLOR color, float param_3, float param_4
     i32 i;
 
     vm.prefix.blendMode = AnmBlendMode_Normal;
-    vm.prefix.color1.d3dColor = 0xffffffff;
+    vm.prefix.color1.d3dColor = COLOR_WHITE;
     vm.prefix.zWriteDisabled = TRUE;
     vm.prefix.flag15 = FALSE;
 
@@ -2850,7 +2999,7 @@ ChainCallbackResult TitleScreen::DrawSpellCardSelect()
     u16 clearInfo;
     Float3 position;
 
-    g_AsciiManager.SetColor(0xffffffff);
+    g_AsciiManager.SetColor(COLOR_WHITE);
     g_AsciiManager.SetIsSelected(FALSE);
 
     position = Float3(16.0f, 78.0f, 0.0f);
@@ -2919,7 +3068,7 @@ ChainCallbackResult TitleScreen::DrawSpellCardSelect()
     g_AnmManager->DrawNoRotation(&this->spellCardInfoVms[5]);
     g_AnmManager->DrawNoRotation(&this->spellCardInfoVms[6]);
 
-    g_AsciiManager.SetColor(0xffffffff);
+    g_AsciiManager.SetColor(COLOR_WHITE);
     g_AsciiManager.SetIsSelected(FALSE);
 
     return CHAIN_CALLBACK_RESULT_CONTINUE;
@@ -3009,9 +3158,338 @@ void TitleScreen::FormatSpellCardInfo()
 {
 }
 
-// STUB: th08 0x46e136
+// This function is 100% matching except for stack nonsense cause by AnmLoaded::InitializeAndSetSprite.
+#pragma var_order(i, firstFile, replayCount, fileSize, replayData, path, findData, fileSize2)
 ChainCallbackResult TitleScreen::OnUpdateReplayMenu()
 {
+    i32 i;
+    i32 replayCount;
+    i32 fileSize;
+    i32 fileSize2;
+    HANDLE firstFile;
+    WIN32_FIND_DATAA findData;
+    ReplayData *replayData;
+    char path[64];
+
+    // Yeah, the enum doesn't work well here so, it's cast into an int
+    switch ((i32) this->currentScreenState)
+    {
+    case 0:
+        if (this->stateTimer2 == 0)
+        {
+            if (this->previousScreen != TitleCurrentScreen_Replay)
+            {
+                if (g_AnmManager->LoadSurface(0, "title/select00.png") != ZUN_SUCCESS)
+                {
+                    return CHAIN_CALLBACK_RESULT_CONTINUE_AND_REMOVE_JOB;
+                }
+            }
+
+            g_AnmManager->SetInterruptArray(this->vms, this->vmCount, 14);
+
+            this->cursor = 0;
+            this->currentScreenState = TitleCurrentScreenState_Init;
+            this->stateTimer = 0;
+            this->currentHelpTextVm = NULL;
+
+            replayCount = 0;
+
+            for (i = 0; i < 15; i++)
+            {
+                sprintf(path, "./replay/th8_%.2d.rpy", i + 1);
+
+                replayData = (ReplayData *) FileSystem::OpenFile(path, &fileSize, TRUE);
+                if (replayData == NULL)
+                {
+                    continue;
+                }
+
+                replayData = ReplayManager::LoadReplayData(replayData, fileSize);
+                if (replayData != NULL)
+                {
+                    this->replays[replayCount] = *replayData;
+
+                    strcpy(this->replayFilePaths[replayCount], path);
+                    sprintf(this->replayNumbers[replayCount], "No.%.2d", i + 1);
+
+                    replayCount++;
+
+                    g_ZunMemory.Free(replayData);
+                }
+            }
+
+            _mkdir("./replay");
+            _chdir("./replay");
+
+            firstFile = FindFirstFileA("th8_ud????.rpy", &findData);
+            if (firstFile != INVALID_HANDLE_VALUE)
+            {
+                for (i = 0; i < 45; i++)
+                {
+                    replayData = (ReplayData *) FileSystem::OpenFile(findData.cFileName, &fileSize, TRUE);
+                    if (replayData == NULL)
+                    {
+                        continue;
+                    }
+
+                    replayData = ReplayManager::LoadReplayData(replayData, fileSize);
+                    if (replayData != NULL)
+                    {
+                         this->replays[replayCount] = *replayData;
+
+                         sprintf(this->replayFilePaths[replayCount], "./replay/%s", findData.cFileName);
+                         sprintf(this->replayNumbers[replayCount], "User ");
+
+                         g_ZunMemory.Free(replayData);
+
+                         replayCount++;
+                    }
+
+                    if (!FindNextFileA(firstFile, &findData))
+                    {
+                        break;
+                    }
+                }
+            }
+
+            /* ZUN bug: this should be in the above `if` block, but this
+             * doesn't do anything really if it's invalid.
+             */
+            FindClose(firstFile);
+            _chdir("../");
+            this->replayCount = replayCount;
+            this->unk0xc284 = 0;
+        }
+
+        if (this->stateTimer2 >= 8)
+        {
+            this->currentScreenState = (TitleCurrentScreenState) 1;
+            this->stateTimer = 0;
+        }
+        break;
+    case 1:
+        this->MoveCursorVertical(this->replayCount);
+        if (this->replayCount > TITLE_REPLAYS_PER_PAGE)
+        {
+            if (WAS_PRESSED_SCROLLING(TH_BUTTON_LEFT))
+            {
+                this->cursor -= TITLE_REPLAYS_PER_PAGE;
+                if (this->cursor < 0)
+                {
+                    this->cursor += this->replayCount;
+                }
+                g_SoundPlayer.PlaySoundByIdx(SOUND_MOVE_MENU, 0);
+            }
+            if (WAS_PRESSED_SCROLLING(TH_BUTTON_RIGHT))
+            {
+                this->cursor += TITLE_REPLAYS_PER_PAGE;
+                if (this->cursor >= this->replayCount)
+                {
+                    this->cursor -= this->replayCount;
+                }
+                g_SoundPlayer.PlaySoundByIdx(SOUND_MOVE_MENU, 0);
+            }
+        }
+
+        this->selectedReplay = this->cursor;
+
+        if (this->stateTimer < 10)
+        {
+            break;
+        }
+
+        if (WAS_PRESSED(TH_BUTTON_SHOOT | TH_BUTTON_ENTER))
+        {
+            if (this->replayCount == 0)
+            {
+                break;
+            }
+
+            g_SoundPlayer.PlaySoundByIdx(SOUND_SELECT, 0);
+
+            this->currentScreenState = (TitleCurrentScreenState) 2;
+
+            g_AnmManager->SetInterruptArray(this->vms, this->vmCount, 15);
+            this->vms[this->selectedReplay % TITLE_REPLAYS_PER_PAGE + 80].SetInterrupt(17);
+
+            this->currentReplay = (ReplayData *) FileSystem::OpenFile(this->replayFilePaths[this->selectedReplay], &fileSize2, TRUE);
+            this->currentReplay = ReplayManager::LoadReplayData(this->currentReplay, fileSize2);
+
+            for (i = 0; i < MAX_STAGES; i++)
+            {
+                if (this->currentReplay->header.stageReplayData[i] != NULL)
+                {
+                    this->currentReplay->header.stageReplayData[i] = (StageReplayData *) ((u32) this->currentReplay + (u32) this->currentReplay->header.stageReplayData[i]);
+                }
+            }
+
+            this->cursor = 0;
+
+            while (this->replays[this->selectedReplay].header.stageReplayData[this->cursor] == NULL)
+            {
+                this->cursor++;
+                if (this->cursor > EXTRASTAGE)
+                {
+                    g_GameErrorContext.Fatal(TH_ERR_REPLAY_CORRUPTED);
+                    g_Supervisor.curState = SupervisorState_ExitGame;
+
+                    return CHAIN_CALLBACK_RESULT_CONTINUE_AND_REMOVE_JOB;
+                }
+            }
+
+            this->resultTextAnm->InitializeAndSetSprite(&this->spellCardNameVms[0], i + 2);
+
+            this->spellCardNameVms[0].pos = Float3(0.0, 0.0, 0.0);
+            this->spellCardNameVms[0].prefix.anchor = 3;
+            this->spellCardNameVms[0].fontWidth = 15;
+            this->spellCardNameVms[0].fontHeight = 15;
+
+            g_AnmManager->DrawTextLeft(&this->spellCardNameVms[0], COLOR_TEXT_WHITE, 0, this->replays[this->selectedReplay].spellcardName);
+
+            this->spellCardNameVms[0].prefix.color1.a = 255;
+            this->spellCardNameVms[0].prefix.color1.r = 255;
+            this->spellCardNameVms[0].prefix.color1.g = 255;
+            this->spellCardNameVms[0].prefix.color1.b = 255;
+            break;
+        }
+
+        if (WAS_PRESSED(TH_BUTTON_BOMB | TH_BUTTON_MENU))
+        {
+            g_SoundPlayer.PlaySoundByIdx(SOUND_BACK, 0);
+            this->currentScreenState = (TitleCurrentScreenState) 4;
+            this->stateTimer = 0;
+            g_AnmManager->SetInterruptArray(this->vms, this->vmCount, 16);
+        }
+
+        break;
+    case 2:
+        i = this->MoveCursorVertical(9);
+        if (i < 0)
+        {
+            while (this->replays[this->selectedReplay].header.stageReplayData[this->cursor] == NULL)
+            {
+                this->cursor--;
+                if (this->cursor < 0)
+                {
+                    this->cursor = MAX_STAGES;
+                }
+            }
+        }
+        else if (i > 0)
+        {
+            while (this->replays[this->selectedReplay].header.stageReplayData[this->cursor] == NULL)
+            {
+                this->cursor++;
+                if (this->cursor >= ARRAY_SIZE(g_StageNames))
+                {
+                    this->cursor = 0;
+                }
+            }
+        }
+
+        this->selectedReplayStage = this->cursor;
+
+        if (WAS_PRESSED(TH_BUTTON_SHOOT | TH_BUTTON_ENTER))
+        {
+            g_AnmManager->SetInterruptArray(this->vms, this->vmCount, 19);
+            this->vms[this->selectedReplay % TITLE_REPLAYS_PER_PAGE + 80].SetInterrupt(17);
+
+            this->currentScreenState = (TitleCurrentScreenState) 3;
+            this->cursor = 0;
+
+            this->vms[108].prefix.pendingInterrupt = 21;
+            this->vms[109].prefix.pendingInterrupt = 21;
+            if (this->currentReplay->spellcardNumber < 0)
+            {
+                this->vms[110].prefix.pendingInterrupt = 21;
+            }
+            else
+            {
+                this->vms[110].prefix.color1.a = 0;
+            }
+            this->vms[this->cursor + 108].prefix.pendingInterrupt = 20;
+            break;
+        }
+
+        if (WAS_PRESSED(TH_BUTTON_BOMB | TH_BUTTON_MENU))
+        {
+            g_ZunMemory.Free(this->currentReplay);
+            this->currentReplay = NULL;
+            this->currentScreenState = (TitleCurrentScreenState) 1;
+            this->stateTimer2 = 0;
+            g_AnmManager->SetInterruptArray(this->vms, this->vmCount, 14);
+            this->cursor = this->selectedReplay;
+            break;
+        }
+        break;
+    case 3:
+        i = this->MoveCursorVertical((this->currentReplay->spellcardNumber < 0) ? 3 : 2);
+        if (i != 0)
+        {
+            this->vms[108].prefix.pendingInterrupt = 21;
+            this->vms[109].prefix.pendingInterrupt = 21;
+            if (this->currentReplay->spellcardNumber < 0)
+            {
+                this->vms[110].prefix.pendingInterrupt = 21;
+            }
+            else
+            {
+                this->vms[110].prefix.color1.a = 0;
+            }
+            this->vms[this->cursor + 108].prefix.pendingInterrupt = 20;
+        }
+        if (WAS_PRESSED(TH_BUTTON_SHOOT | TH_BUTTON_ENTER))
+        {
+            g_GameManager.SetIsReplayWeird(TRUE);
+
+            strcpy(g_GameManager.replayFilename, this->replayFilePaths[this->selectedReplay]);
+
+            g_GameManager.difficulty = this->currentReplay->difficulty;
+            g_GameManager.shotType = this->currentReplay->shotType;
+            // Leftover from PCB
+            g_GameManager.shotType = this->currentReplay->shotType;
+            g_GameManager.flags.isSpellPractice = (this->currentReplay->spellcardNumber >= 0);
+            g_GameManager.currentSpellCardNumber = this->currentReplay->spellcardNumber;
+
+            g_ZunMemory.Free(this->currentReplay);
+            this->currentReplay = NULL;
+
+            g_GameManager.currentStage = this->selectedReplayStage;
+            g_Supervisor.curState = SupervisorState_GameManager;
+            g_GameManager.replayMode = this->cursor;
+
+            g_Supervisor.StopAudio();
+
+            return CHAIN_CALLBACK_RESULT_CONTINUE_AND_REMOVE_JOB;
+        }
+
+        if (WAS_PRESSED(TH_BUTTON_BOMB | TH_BUTTON_MENU))
+        {
+            this->currentScreenState = (TitleCurrentScreenState) 2;
+            this->stateTimer2 = 0;
+            this->cursor = this->selectedReplayStage;
+
+            g_AnmManager->SetInterruptArray(this->vms, this->vmCount, 15);
+
+            this->vms[this->selectedReplay % TITLE_REPLAYS_PER_PAGE + 80].SetInterrupt(17);
+            break;
+        }
+        break;
+    case 4:
+        if (this->stateTimer >= 30)
+        {
+            this->ChangeCurrentScreen(TitleCurrentScreen_StartMenu);
+            this->cursor = TITLE_MENU_ITEM_START_REPLAY;
+
+            return CHAIN_CALLBACK_RESULT_CONTINUE;
+        }
+        break;
+    }
+    
+    this->idleFrames++;
+    this->stateTimer++;
+    this->stateTimer2++;
+
     return CHAIN_CALLBACK_RESULT_CONTINUE;
 }
 
