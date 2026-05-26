@@ -8,6 +8,9 @@
 #include "ZunMath.hpp"
 #include "i18n.hpp"
 
+#include <stdio.h>
+#include <direct.h>
+
 #define TITLE_SPRITE_OPTION_START 10
 
 #define TITLE_SPRITE_OPTION_PLAYER_START 20
@@ -237,6 +240,7 @@ ChainCallbackResult TitleScreen::OnUpdate(TitleScreen *titleScreen)
 ChainCallbackResult TitleScreen::OnUpdateStartMenu()
 {
     i32 i;
+    i32 fileSize;
 
     switch (this->currentScreenState)
     {
@@ -290,7 +294,7 @@ ChainCallbackResult TitleScreen::OnUpdateStartMenu()
                 }
 
                 this->ChangeCurrentScreen(g_GameManager.IsSpellPractice() ? TitleCurrentScreen_CharacterSelectSpell
-                                                                          : TitleCurrentScreen_CharacterSelectPractice);
+                                                                          : TitleCurrentScreen_DifficultySelectPractice);
 
                 g_AnmManager->SetInterruptArray(this->vms, this->vmCount, 5);
                 this->currentHelpTextVm->SetInterrupt(2);
@@ -388,18 +392,52 @@ ChainCallbackResult TitleScreen::OnUpdateStartMenu()
 
         if (this->startMenuIdleFrames > 1500)
         {
-            /* TODO: needs ReplayManager work */
-
-            g_GameManager.currentDemoReplay =
-                (g_GameManager.currentDemoReplay + 1) % ARRAY_SIZE_SIGNED(g_DemoReplayFiles);
+            g_GameManager.currentDemoReplay++;
+            g_GameManager.currentDemoReplay %= ARRAY_SIZE_SIGNED(g_DemoReplayFiles);
             strcpy(g_GameManager.replayFilename, g_DemoReplayFiles[g_GameManager.currentDemoReplay]);
 
-            ZUN_FREE(this->currentReplay);
+            this->currentReplay = (ReplayData *) FileSystem::OpenFile(g_GameManager.replayFilename, &fileSize, FALSE);
+            this->currentReplay = ReplayManager::LoadReplayData(this->currentReplay, fileSize);
 
-            utils::GuiDebugPrint("error : Demo Play is not ready\r\n");
+            if (this->currentReplay == NULL)
+            {
+                utils::GuiDebugPrint("error : Demo Play is not ready\r\n");
+                this->startMenuIdleFrames = 0;
+            }
+            else
+            {
+                g_GameManager.SetIsReplayWeird(TRUE);
+                g_GameManager.flags.isDemoMode = TRUE;
+                g_GameManager.demoFrameCount = 0;
+                g_GameManager.difficulty = this->currentReplay->difficulty;
+
+                // Leftover from PCB
+                g_GameManager.shotType = this->currentReplay->shotType / 2;
+                g_GameManager.fullShotType = this->currentReplay->shotType % 2;
+                g_GameManager.shotType = this->currentReplay->shotType;
+
+                i = 0;
+
+                while (this->currentReplay->header.stageReplayData[i] == NULL)
+                {
+                    i++;
+                }
+
+                g_GameManager.currentStage = i;
+
+                g_ZunMemory.Free(this->currentReplay);
+                this->currentReplay = NULL;
+
+                g_Supervisor.curState = SupervisorState_GameManager;
+                g_GameManager.replayMode = REPLAY_MODE_NORMAL;
+
+                g_GameManager.flags.isSpellPractice = FALSE;
+
+                return CHAIN_CALLBACK_RESULT_CONTINUE_AND_REMOVE_JOB;
+            }
         }
 
-        if (this->cursor != this->cursor2)
+        if (this->cursor2 != this->cursor)
         {
             this->currentHelpTextVm = this->helpTextVms + this->cursor;
             this->currentHelpTextVm->SetInterrupt(1);
@@ -497,7 +535,7 @@ ChainCallbackResult TitleScreen::OnUpdateStartMenu()
                 return CHAIN_CALLBACK_RESULT_CONTINUE_AND_REMOVE_JOB;
             case TITLE_MENU_ITEM_START_OPTION:
                 /* ??? */
-                this->currentScreenState = TitleCurrentScreenState_Ready;
+                this->currentScreenState = TitleCurrentScreenState_Init;
                 this->cursor = 0;
                 this->stateTimer2 = 0;
                 this->stateTimer = 0;
@@ -522,7 +560,7 @@ ChainCallbackResult TitleScreen::OnUpdateStartMenu()
         {
             this->titleAnm->SetSprite(&this->vms[this->cursor + 1], this->vms[this->cursor + 1].baseSpriteIndex + 1);
             this->cursor = TITLE_MENU_ITEM_START_QUIT;
-            this->titleAnm->SetSprite(&this->vms[this->cursor + 1], this->vms[this->cursor + 1].baseSpriteIndex + 1);
+            this->titleAnm->SetSprite(&this->vms[this->cursor + 1], this->vms[this->cursor + 1].baseSpriteIndex);
             g_SoundPlayer.PlaySoundByIdx(SOUND_BACK, 0);
             g_SoundPlayer.ProcessQueues();
         }
@@ -531,11 +569,12 @@ ChainCallbackResult TitleScreen::OnUpdateStartMenu()
         if (stateTimer >= 60)
         {
             ZUN_DELETE2(this->vms);
+            // Yes, this->vms is set to NULL twice.
             this->vms = NULL;
-            /* Yes, this->vms is set to NULL twice. */
-            this->vms = NULL;
+
             this->vmCount = 0;
             this->stateTimer2 = 0;
+
             g_Supervisor.curState = SupervisorState_ExitGame;
 
             return CHAIN_CALLBACK_RESULT_CONTINUE_AND_REMOVE_JOB;
@@ -545,6 +584,7 @@ ChainCallbackResult TitleScreen::OnUpdateStartMenu()
         if (stateTimer >= 30)
         {
             this->ChangeCurrentScreen(TitleCurrentScreen_Option);
+            this->cursor = 0;
             this->currentGameConfig = g_Supervisor.cfg;
 
             return CHAIN_CALLBACK_RESULT_CONTINUE;
@@ -552,6 +592,7 @@ ChainCallbackResult TitleScreen::OnUpdateStartMenu()
         break;
     }
 
+    this->idleFrames++;
     this->stateTimer++;
     this->stateTimer2++;
 
@@ -3202,7 +3243,7 @@ ZunResult TitleScreen::ActualAddedCallback()
     }
 
     g_GameManager.flags.isDemoMode = FALSE;
-    g_GameManager.unk3DBB8 = 0;
+    g_GameManager.demoFrameCount = 0;
 
     this->state = TitleScreenState_Loading;
     g_Supervisor.ThreadStart((LPTHREAD_START_ROUTINE)TitleScreen::TitleSetupThread, NULL);

@@ -40,6 +40,13 @@ struct GameManagerFlags
     u32 isExtraUnlockedWithAllTeams : 1;
 };
 
+enum
+{
+    REPLAY_MODE_NORMAL,
+    REPLAY_MODE_SLOWDOWN,
+    REPLAY_MODE_BOSS,
+};
+
 struct GameManager
 {
     GameManager();
@@ -243,12 +250,12 @@ struct GameManager
     i16 currentSpellCardNumber;
     u8 isInGameMenu;
     u8 showRetryMenu;
-    i8 currentDemoReplay;
-    u8 unk3DBB5;
+    u8 currentDemoReplay;
+    u8 replayMode;
     u8 unk3DBB6;
     u8 unk3DBB7;
 
-    u32 unk3DBB8;
+    i32 demoFrameCount;
     char replayFilename[512];
     u32 unk3ddbc;
     u32 unk3ddc0;
