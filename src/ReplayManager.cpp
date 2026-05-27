@@ -24,14 +24,14 @@ ReplayData *ReplayManager::LoadReplayData(void *data, int fileSize)
     u32 checksum;
     i32 i;
     ReplayData *decodedReplay;
-    ReplayData *replayData = (ReplayData *) data;
+    ReplayData *replayData = (ReplayData *)data;
 
     if (replayData == NULL)
     {
         goto err1;
     }
 
-    if (replayData->header.magic != *(u32 *) REPLAY_MAGIC)
+    if (replayData->header.magic != *(u32 *)REPLAY_MAGIC)
     {
         goto err1;
     }
@@ -41,10 +41,11 @@ ReplayData *ReplayManager::LoadReplayData(void *data, int fileSize)
         goto err1;
     }
 
-    obfuscateCursor = (u8 *) &replayData->header.compressedSize;
+    obfuscateCursor = (u8 *)&replayData->header.compressedSize;
     obfuscateOffset = replayData->header.value1;
 
-    for (i = 0; i < replayData->header.fileSize - (i32) offsetof(ReplayDataHeader, compressedSize); i++, obfuscateCursor++)
+    for (i = 0; i < replayData->header.fileSize - (i32)offsetof(ReplayDataHeader, compressedSize);
+         i++, obfuscateCursor++)
     {
         *obfuscateCursor -= obfuscateOffset;
         obfuscateOffset += 7;
@@ -53,7 +54,7 @@ ReplayData *ReplayManager::LoadReplayData(void *data, int fileSize)
     checksumCursor = &replayData->header.value1;
     checksum = REPLAY_OBFUSCATION_VALUE;
 
-    for (i = 0; i < replayData->header.fileSize - (i32) offsetof(ReplayDataHeader, value1); i++, checksumCursor++)
+    for (i = 0; i < replayData->header.fileSize - (i32)offsetof(ReplayDataHeader, value1); i++, checksumCursor++)
     {
         checksum += *checksumCursor;
     }
@@ -63,13 +64,16 @@ ReplayData *ReplayManager::LoadReplayData(void *data, int fileSize)
         goto err1;
     }
 
-    decodedReplay = (ReplayData *) g_ZunMemory.Alloc(replayData->header.decompressedSize + sizeof(ReplayDataHeader) + (fileSize - replayData->header.fileSize));
+    decodedReplay = (ReplayData *)g_ZunMemory.Alloc(replayData->header.decompressedSize + sizeof(ReplayDataHeader) +
+                                                    (fileSize - replayData->header.fileSize));
 
     memcpy(&decodedReplay->header, data, sizeof(ReplayDataHeader));
 
-    Lzss::Decode((u8 *) replayData + sizeof(ReplayDataHeader), replayData->header.compressedSize, (u8 *) decodedReplay + sizeof(ReplayDataHeader), replayData->header.decompressedSize);
+    Lzss::Decode((u8 *)replayData + sizeof(ReplayDataHeader), replayData->header.compressedSize,
+                 (u8 *)decodedReplay + sizeof(ReplayDataHeader), replayData->header.decompressedSize);
 
-    memcpy((u8 *) decodedReplay + sizeof(ReplayDataHeader) + replayData->header.decompressedSize, (u8 *) data + replayData->header.fileSize, fileSize - replayData->header.fileSize);
+    memcpy((u8 *)decodedReplay + sizeof(ReplayDataHeader) + replayData->header.decompressedSize,
+           (u8 *)data + replayData->header.fileSize, fileSize - replayData->header.fileSize);
 
     replayData = decodedReplay;
 

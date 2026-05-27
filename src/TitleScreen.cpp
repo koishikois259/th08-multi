@@ -8,8 +8,8 @@
 #include "ZunMath.hpp"
 #include "i18n.hpp"
 
-#include <stdio.h>
 #include <direct.h>
+#include <stdio.h>
 
 #define TITLE_SPRITE_OPTION_START 10
 
@@ -174,29 +174,13 @@ DIFFABLE_STATIC_ASSIGN(const char *, g_KeyConfigHelpText[]) = {
     TH_TITLE_KEYCONFIG_HELPTEXT9, TH_TITLE_KEYCONFIG_HELPTEXT10, TH_TITLE_KEYCONFIG_HELPTEXT11,
 };
 
-DIFFABLE_STATIC_ASSIGN(const char *, g_ReplayCharacterNames[]) =
-{
-    "Rm & Yk",
-    "Ms & Al",
-    "Sk & Rr",
-    "Ym & Yy",
-    "Reimu  ",
-    "Yukari ",
-    "Marisa ",
-    "Alice  ",
-    "Sakuya ",
-    "Remilia",
-    "Youmu  ",
-    "Yuyuko ",
+DIFFABLE_STATIC_ASSIGN(const char *, g_ReplayCharacterNames[]) = {
+    "Rm & Yk", "Ms & Al", "Sk & Rr", "Ym & Yy", "Reimu  ", "Yukari ",
+    "Marisa ", "Alice  ", "Sakuya ", "Remilia", "Youmu  ", "Yuyuko ",
 };
 
-DIFFABLE_STATIC_ASSIGN(const char *, g_ReplayDifficulties[]) =
-{
-    "Easy    ",
-    "Normal  ",
-    "Hard    ",
-    "Lunatic ",
-    "Extra   ",
+DIFFABLE_STATIC_ASSIGN(const char *, g_ReplayDifficulties[]) = {
+    "Easy    ", "Normal  ", "Hard    ", "Lunatic ", "Extra   ",
 };
 
 void DrawPieChart(Float3 *position, D3DCOLOR color, float param_3, float param_4);
@@ -318,8 +302,9 @@ ChainCallbackResult TitleScreen::OnUpdateStartMenu()
                     g_GameManager.flags.isSpellPractice = TRUE;
                 }
 
-                this->ChangeCurrentScreen(g_GameManager.IsSpellPractice() ? TitleCurrentScreen_CharacterSelectSpell
-                                                                          : TitleCurrentScreen_DifficultySelectPractice);
+                this->ChangeCurrentScreen(g_GameManager.IsSpellPractice()
+                                              ? TitleCurrentScreen_CharacterSelectSpell
+                                              : TitleCurrentScreen_DifficultySelectPractice);
 
                 g_AnmManager->SetInterruptArray(this->vms, this->vmCount, 5);
                 this->currentHelpTextVm->SetInterrupt(2);
@@ -421,7 +406,7 @@ ChainCallbackResult TitleScreen::OnUpdateStartMenu()
             g_GameManager.currentDemoReplay %= ARRAY_SIZE_SIGNED(g_DemoReplayFiles);
             strcpy(g_GameManager.replayFilename, g_DemoReplayFiles[g_GameManager.currentDemoReplay]);
 
-            this->currentReplay = (ReplayData *) FileSystem::OpenFile(g_GameManager.replayFilename, &fileSize, FALSE);
+            this->currentReplay = (ReplayData *)FileSystem::OpenFile(g_GameManager.replayFilename, &fileSize, FALSE);
             this->currentReplay = ReplayManager::LoadReplayData(this->currentReplay, fileSize);
 
             if (this->currentReplay == NULL)
@@ -2020,7 +2005,8 @@ ChainCallbackResult TitleScreen::OnUpdateSpellStageSelect()
             this->spellCardNameVms[1].prefix.color1.r = 255;
             this->spellCardNameVms[1].prefix.color1.g = 255;
             this->spellCardNameVms[1].prefix.color1.b = 255;
-            g_AnmManager->DrawTextLeft(&this->spellCardNameVms[1], COLOR_TEXT_WHITE, 0, TH_TITLE_SPELL_CAPTURE_PERCENTAGE);
+            g_AnmManager->DrawTextLeft(&this->spellCardNameVms[1], COLOR_TEXT_WHITE, 0,
+                                       TH_TITLE_SPELL_CAPTURE_PERCENTAGE);
 
             /* ZUN bug: possible copy paste mistake? */
             this->titleAnm->InitializeAndSetSprite(&this->spellCardNameVms[2], 144);
@@ -2520,8 +2506,8 @@ ChainCallbackResult TitleScreen::DrawReplayMenu()
 
     g_AsciiManager.AddFormatText(&vm->pos, "No.   Name       Date  Player   Rank");
 
-    for (i = this->selectedReplay - (this->selectedReplay % TITLE_REPLAYS_PER_PAGE),
-         i2 = i + TITLE_REPLAYS_PER_PAGE; i < i2; i++)
+    for (i = this->selectedReplay - (this->selectedReplay % TITLE_REPLAYS_PER_PAGE), i2 = i + TITLE_REPLAYS_PER_PAGE;
+         i < i2; i++)
     {
         if (i >= this->replayCount)
         {
@@ -2539,22 +2525,20 @@ ChainCallbackResult TitleScreen::DrawReplayMenu()
         {
             g_AsciiManager.SetColor(0xff808080);
         }
-        
+
         if (this->replays[i].spellcardNumber < 0)
         {
             g_AsciiManager.AddFormatText(&vm->pos, "%s %8s  %6s %7s  %8s", &this->replayNumbers[i],
-                                                                             this->replays[i].playerName, 
-                                                                             this->replays[i].date,
-                                                                             g_ReplayCharacterNames[this->replays[i].shotType],
-                                                                             g_ReplayDifficulties[this->replays[i].difficulty]);
+                                         this->replays[i].playerName, this->replays[i].date,
+                                         g_ReplayCharacterNames[this->replays[i].shotType],
+                                         g_ReplayDifficulties[this->replays[i].difficulty]);
         }
         else
         {
             g_AsciiManager.AddFormatText(&vm->pos, "%s %8s  %6s %7s  Spell No.%3d", &this->replayNumbers[i],
-                                                                                      this->replays[i].playerName, 
-                                                                                      this->replays[i].date,
-                                                                                      g_ReplayCharacterNames[this->replays[i].shotType],
-                                                                                      this->replays[i].spellcardNumber + 1);
+                                         this->replays[i].playerName, this->replays[i].date,
+                                         g_ReplayCharacterNames[this->replays[i].shotType],
+                                         this->replays[i].spellcardNumber + 1);
         }
     }
 
@@ -2610,7 +2594,8 @@ ChainCallbackResult TitleScreen::DrawReplayMenu()
 
                 if (this->currentReplay->header.stageReplayData[i2] != NULL)
                 {
-                    g_AsciiManager.AddFormatText(&position, "%s %9d0", g_StageNames[i2], this->currentReplay->header.stageReplayData[i2]->score);
+                    g_AsciiManager.AddFormatText(&position, "%s %9d0", g_StageNames[i2],
+                                                 this->currentReplay->header.stageReplayData[i2]->score);
                 }
                 else
                 {
@@ -2625,9 +2610,10 @@ ChainCallbackResult TitleScreen::DrawReplayMenu()
 
             position = vm->pos;
 
-            g_AsciiManager.AddFormatText(&position, "No.%.3d %9d0", this->currentReplay->spellcardNumber + 1, this->currentReplay->spellcardScore);
+            g_AsciiManager.AddFormatText(&position, "No.%.3d %9d0", this->currentReplay->spellcardNumber + 1,
+                                         this->currentReplay->spellcardScore);
 
-            this->spellCardNameVms[0].pos= vm->pos;
+            this->spellCardNameVms[0].pos = vm->pos;
             this->spellCardNameVms[0].pos.y += 16.0f;
 
             g_AnmManager->DrawNoRotation(&this->spellCardNameVms[0]);
@@ -3172,7 +3158,7 @@ ChainCallbackResult TitleScreen::OnUpdateReplayMenu()
     char path[64];
 
     // Yeah, the enum doesn't work well here so, it's cast into an int
-    switch ((i32) this->currentScreenState)
+    switch ((i32)this->currentScreenState)
     {
     case 0:
         if (this->stateTimer2 == 0)
@@ -3198,7 +3184,7 @@ ChainCallbackResult TitleScreen::OnUpdateReplayMenu()
             {
                 sprintf(path, "./replay/th8_%.2d.rpy", i + 1);
 
-                replayData = (ReplayData *) FileSystem::OpenFile(path, &fileSize, TRUE);
+                replayData = (ReplayData *)FileSystem::OpenFile(path, &fileSize, TRUE);
                 if (replayData == NULL)
                 {
                     continue;
@@ -3226,7 +3212,7 @@ ChainCallbackResult TitleScreen::OnUpdateReplayMenu()
             {
                 for (i = 0; i < 45; i++)
                 {
-                    replayData = (ReplayData *) FileSystem::OpenFile(findData.cFileName, &fileSize, TRUE);
+                    replayData = (ReplayData *)FileSystem::OpenFile(findData.cFileName, &fileSize, TRUE);
                     if (replayData == NULL)
                     {
                         continue;
@@ -3235,14 +3221,14 @@ ChainCallbackResult TitleScreen::OnUpdateReplayMenu()
                     replayData = ReplayManager::LoadReplayData(replayData, fileSize);
                     if (replayData != NULL)
                     {
-                         this->replays[replayCount] = *replayData;
+                        this->replays[replayCount] = *replayData;
 
-                         sprintf(this->replayFilePaths[replayCount], "./replay/%s", findData.cFileName);
-                         sprintf(this->replayNumbers[replayCount], "User ");
+                        sprintf(this->replayFilePaths[replayCount], "./replay/%s", findData.cFileName);
+                        sprintf(this->replayNumbers[replayCount], "User ");
 
-                         g_ZunMemory.Free(replayData);
+                        g_ZunMemory.Free(replayData);
 
-                         replayCount++;
+                        replayCount++;
                     }
 
                     if (!FindNextFileA(firstFile, &findData))
@@ -3263,7 +3249,7 @@ ChainCallbackResult TitleScreen::OnUpdateReplayMenu()
 
         if (this->stateTimer2 >= 8)
         {
-            this->currentScreenState = (TitleCurrentScreenState) 1;
+            this->currentScreenState = (TitleCurrentScreenState)1;
             this->stateTimer = 0;
         }
         break;
@@ -3307,19 +3293,22 @@ ChainCallbackResult TitleScreen::OnUpdateReplayMenu()
 
             g_SoundPlayer.PlaySoundByIdx(SOUND_SELECT, 0);
 
-            this->currentScreenState = (TitleCurrentScreenState) 2;
+            this->currentScreenState = (TitleCurrentScreenState)2;
 
             g_AnmManager->SetInterruptArray(this->vms, this->vmCount, 15);
             this->vms[this->selectedReplay % TITLE_REPLAYS_PER_PAGE + 80].SetInterrupt(17);
 
-            this->currentReplay = (ReplayData *) FileSystem::OpenFile(this->replayFilePaths[this->selectedReplay], &fileSize2, TRUE);
+            this->currentReplay =
+                (ReplayData *)FileSystem::OpenFile(this->replayFilePaths[this->selectedReplay], &fileSize2, TRUE);
             this->currentReplay = ReplayManager::LoadReplayData(this->currentReplay, fileSize2);
 
             for (i = 0; i < MAX_STAGES; i++)
             {
                 if (this->currentReplay->header.stageReplayData[i] != NULL)
                 {
-                    this->currentReplay->header.stageReplayData[i] = (StageReplayData *) ((u32) this->currentReplay + (u32) this->currentReplay->header.stageReplayData[i]);
+                    this->currentReplay->header.stageReplayData[i] =
+                        (StageReplayData *)((u32)this->currentReplay +
+                                            (u32)this->currentReplay->header.stageReplayData[i]);
                 }
             }
 
@@ -3344,7 +3333,8 @@ ChainCallbackResult TitleScreen::OnUpdateReplayMenu()
             this->spellCardNameVms[0].fontWidth = 15;
             this->spellCardNameVms[0].fontHeight = 15;
 
-            g_AnmManager->DrawTextLeft(&this->spellCardNameVms[0], COLOR_TEXT_WHITE, 0, this->replays[this->selectedReplay].spellcardName);
+            g_AnmManager->DrawTextLeft(&this->spellCardNameVms[0], COLOR_TEXT_WHITE, 0,
+                                       this->replays[this->selectedReplay].spellcardName);
 
             this->spellCardNameVms[0].prefix.color1.a = 255;
             this->spellCardNameVms[0].prefix.color1.r = 255;
@@ -3356,7 +3346,7 @@ ChainCallbackResult TitleScreen::OnUpdateReplayMenu()
         if (WAS_PRESSED(TH_BUTTON_BOMB | TH_BUTTON_MENU))
         {
             g_SoundPlayer.PlaySoundByIdx(SOUND_BACK, 0);
-            this->currentScreenState = (TitleCurrentScreenState) 4;
+            this->currentScreenState = (TitleCurrentScreenState)4;
             this->stateTimer = 0;
             g_AnmManager->SetInterruptArray(this->vms, this->vmCount, 16);
         }
@@ -3394,7 +3384,7 @@ ChainCallbackResult TitleScreen::OnUpdateReplayMenu()
             g_AnmManager->SetInterruptArray(this->vms, this->vmCount, 19);
             this->vms[this->selectedReplay % TITLE_REPLAYS_PER_PAGE + 80].SetInterrupt(17);
 
-            this->currentScreenState = (TitleCurrentScreenState) 3;
+            this->currentScreenState = (TitleCurrentScreenState)3;
             this->cursor = 0;
 
             this->vms[108].prefix.pendingInterrupt = 21;
@@ -3415,7 +3405,7 @@ ChainCallbackResult TitleScreen::OnUpdateReplayMenu()
         {
             g_ZunMemory.Free(this->currentReplay);
             this->currentReplay = NULL;
-            this->currentScreenState = (TitleCurrentScreenState) 1;
+            this->currentScreenState = (TitleCurrentScreenState)1;
             this->stateTimer2 = 0;
             g_AnmManager->SetInterruptArray(this->vms, this->vmCount, 14);
             this->cursor = this->selectedReplay;
@@ -3465,7 +3455,7 @@ ChainCallbackResult TitleScreen::OnUpdateReplayMenu()
 
         if (WAS_PRESSED(TH_BUTTON_BOMB | TH_BUTTON_MENU))
         {
-            this->currentScreenState = (TitleCurrentScreenState) 2;
+            this->currentScreenState = (TitleCurrentScreenState)2;
             this->stateTimer2 = 0;
             this->cursor = this->selectedReplayStage;
 
@@ -3485,7 +3475,7 @@ ChainCallbackResult TitleScreen::OnUpdateReplayMenu()
         }
         break;
     }
-    
+
     this->idleFrames++;
     this->stateTimer++;
     this->stateTimer2++;

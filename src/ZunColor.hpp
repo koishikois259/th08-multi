@@ -6,7 +6,7 @@
 #define COLOR_LIGHT_GREY 0xffa0a0a0
 #define COLOR_WHITE 0xffffffff
 
-#define COLOR_TEXT_WHITE    0xffffff
+#define COLOR_TEXT_WHITE 0xffffff
 
 union ZunColor {
     u32 d3dColor;

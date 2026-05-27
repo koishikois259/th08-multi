@@ -8,9 +8,9 @@
 
 #include <windows.h>
 
-#define REPLAY_MAGIC                "T8RP"
-#define REPLAY_VERSION              6
-#define REPLAY_OBFUSCATION_VALUE    0x3f000318
+#define REPLAY_MAGIC "T8RP"
+#define REPLAY_VERSION 6
+#define REPLAY_OBFUSCATION_VALUE 0x3f000318
 
 namespace th08
 {

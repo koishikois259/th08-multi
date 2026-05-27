@@ -5,8 +5,8 @@
 #include "ReplayManager.hpp"
 #include "ZunResult.hpp"
 
-#define TITLE_SPELL_CARD_SPELLCARDS_PER_PAGE    15
-#define TITLE_REPLAYS_PER_PAGE                  15
+#define TITLE_SPELL_CARD_SPELLCARDS_PER_PAGE 15
+#define TITLE_REPLAYS_PER_PAGE 15
 
 namespace th08
 {
