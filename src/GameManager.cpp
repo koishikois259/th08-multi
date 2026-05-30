@@ -85,31 +85,31 @@ void GameManager::InitializeAntiTamper()
     u32 i;
 
     g_GameManager.globals->rng6 = g_Rng.GetRandomU32InRange(ANTITAMPER_RNG_RANGE) + ANTITAMPER_RNG_ADD;
-    for (i = 0; i < 7; i++)
+    for (i = 0; i < ARRAY_SIZE(g_GameManager.globals->rng1); i++)
     {
         g_GameManager.globals->rng1[i] = g_Rng.GetRandomU32InRange(ANTITAMPER_RNG_RANGE) + ANTITAMPER_RNG_ADD;
     }
-    for (i = 0; i < 8; i++)
+    for (i = 0; i < ARRAY_SIZE(g_GameManager.globals->rng7); i++)
     {
         g_GameManager.globals->rng7[i] = g_Rng.GetRandomU32InRange(ANTITAMPER_RNG_RANGE) + ANTITAMPER_RNG_ADD;
     }
-    for (i = 0; i < 2; i++)
+    for (i = 0; i < ARRAY_SIZE(g_GameManager.globals->rng2); i++)
     {
         g_GameManager.globals->rng2[i] = g_Rng.GetRandomF32InRange(ANTITAMPER_RNG_RANGE) + ANTITAMPER_RNG_ADD;
     }
-    for (i = 0; i < 2; i++)
+    for (i = 0; i < ARRAY_SIZE(g_GameManager.globals->rng3); i++)
     {
         g_GameManager.globals->rng3[i] = g_Rng.GetRandomF32InRange(ANTITAMPER_RNG_RANGE) + ANTITAMPER_RNG_ADD;
     }
-    for (i = 0; i < 3; i++)
+    for (i = 0; i < ARRAY_SIZE(g_GameManager.globals->rng4); i++)
     {
         g_GameManager.globals->rng4[i] = g_Rng.GetRandomF32InRange(ANTITAMPER_RNG_RANGE) + ANTITAMPER_RNG_ADD;
     }
-    for (i = 0; i < 2; i++)
+    for (i = 0; i < ARRAY_SIZE(g_GameManager.globals->rng5); i++)
     {
         g_GameManager.globals->rng5[i] = g_Rng.GetRandomF32InRange(ANTITAMPER_RNG_RANGE) + ANTITAMPER_RNG_ADD;
     }
-    for (i = 0; i < 5; i++)
+    for (i = 0; i < ARRAY_SIZE(g_GameManager.globals->rng8); i++)
     {
         g_GameManager.globals->rng8[i] = g_Rng.GetRandomU32InRange(ANTITAMPER_RNG_RANGE) + ANTITAMPER_RNG_ADD;
     }
