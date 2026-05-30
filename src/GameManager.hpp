@@ -8,6 +8,7 @@
 #include "inttypes.hpp"
 #include "utils.hpp"
 #include <windows.h>
+#include <stddef.h>
 
 #define EXTRA_UNLOCKED_FLAG ZUN_BIT(14)
 #define SPELL_PRACTICE_UNLOCKED_FLAG ZUN_BIT(15)
@@ -53,7 +54,7 @@ struct GameManager
 
     ZunBool IsWithinPlayfield();
     i32 CalcAntiTamperChecksum();
-    static i32 CalcChecksum(u8 *param_1, i32 param_2);
+    static i32 CalcChecksum(u8 *address, i32 size);
     void CollectExtend();
 
     static ChainCallbackResult OnUpdate(GameManager *gameManager);
@@ -68,17 +69,34 @@ struct GameManager
     {
     }
 
-    void InitializeAntiTamper()
-    {
-    }
+    static void InitializeAntiTamper();
 
     void UpdateAntiTamper()
     {
+        this->globals->rng1[2] = g_Rng.GetRandomU32InRange(100000) + 6543;
+        this->globals->rng7[3] = g_Rng.GetRandomU32InRange(100000) + 6543;
+        this->globals->antiTamperValue = this->globals->rng1[2];
+        this->globals->antiTamperChecksum = CalcAntiTamperChecksum();
+        this->antiTamperExpectedValue = this->globals->antiTamperChecksum + this->globals->rng7[3];
+    }
+
+    void RandomizeAntiTamper()
+    {
+        this->globals->rng1[0] = g_Rng.GetRandomU32InRange(100000) + 6543;
+        this->globals->rng1[1] = g_Rng.GetRandomU32InRange(100000) + 6543;
+        this->globals->rng1[2] = g_Rng.GetRandomU32InRange(100000) + 6543;
+        this->globals->rng1[3] = g_Rng.GetRandomU32InRange(100000) + 6543;
+        this->globals->rng1[4] = g_Rng.GetRandomU32InRange(100000) + 6543;
+        this->globals->rng4[0] = g_Rng.GetRandomF32InRange(100000) + 6543;
+        this->globals->rng4[1] = g_Rng.GetRandomF32InRange(100000) + 6543;
+        this->globals->rng4[2] = g_Rng.GetRandomF32InRange(100000) + 6543;
     }
 
     ZunBool IsTampered()
     {
-        return FALSE;
+        return this->globals->antiTamperValue != this->globals->rng1[2] + this->globals->rng8[2] *
+               ((intptr_t)&this->globals->antiTamperValue - (intptr_t)&this->globals->rng1 + 500) ||
+               this->globals->antiTamperChecksum + this->globals->rng7[3] != (i32)this->antiTamperExpectedValue;
     }
 
     static ZunResult DeletedCallback(GameManager *gameManager);
