@@ -15,6 +15,9 @@
 
 #define IS_STAGE_CLEARED(difficulty, stage) (difficulty & ZUN_BIT(stage))
 
+#define ANTITAMPER_RNG_RANGE 100000
+#define ANTITAMPER_RNG_ADD 6543
+
 namespace th08
 {
 
@@ -73,8 +76,8 @@ struct GameManager
 
     void UpdateAntiTamper()
     {
-        this->globals->rng1[2] = g_Rng.GetRandomU32InRange(100000) + 6543;
-        this->globals->rng7[3] = g_Rng.GetRandomU32InRange(100000) + 6543;
+        this->globals->rng1[2] = g_Rng.GetRandomU32InRange(ANTITAMPER_RNG_RANGE) + ANTITAMPER_RNG_ADD;
+        this->globals->rng7[3] = g_Rng.GetRandomU32InRange(ANTITAMPER_RNG_RANGE) + ANTITAMPER_RNG_ADD;
         this->globals->antiTamperValue = this->globals->rng1[2];
         this->globals->antiTamperChecksum = CalcAntiTamperChecksum();
         this->antiTamperExpectedValue = this->globals->antiTamperChecksum + this->globals->rng7[3];
@@ -82,18 +85,20 @@ struct GameManager
 
     void RandomizeAntiTamper()
     {
-        this->globals->rng1[0] = g_Rng.GetRandomU32InRange(100000) + 6543;
-        this->globals->rng1[1] = g_Rng.GetRandomU32InRange(100000) + 6543;
-        this->globals->rng1[2] = g_Rng.GetRandomU32InRange(100000) + 6543;
-        this->globals->rng1[3] = g_Rng.GetRandomU32InRange(100000) + 6543;
-        this->globals->rng1[4] = g_Rng.GetRandomU32InRange(100000) + 6543;
-        this->globals->rng4[0] = g_Rng.GetRandomF32InRange(100000) + 6543;
-        this->globals->rng4[1] = g_Rng.GetRandomF32InRange(100000) + 6543;
-        this->globals->rng4[2] = g_Rng.GetRandomF32InRange(100000) + 6543;
+        this->globals->rng1[0] = g_Rng.GetRandomU32InRange(ANTITAMPER_RNG_RANGE) + ANTITAMPER_RNG_ADD;
+        this->globals->rng1[1] = g_Rng.GetRandomU32InRange(ANTITAMPER_RNG_RANGE) + ANTITAMPER_RNG_ADD;
+        this->globals->rng1[2] = g_Rng.GetRandomU32InRange(ANTITAMPER_RNG_RANGE) + ANTITAMPER_RNG_ADD;
+        this->globals->rng1[3] = g_Rng.GetRandomU32InRange(ANTITAMPER_RNG_RANGE) + ANTITAMPER_RNG_ADD;
+        this->globals->rng1[4] = g_Rng.GetRandomU32InRange(ANTITAMPER_RNG_RANGE) + ANTITAMPER_RNG_ADD;
+        this->globals->rng4[0] = g_Rng.GetRandomF32InRange(ANTITAMPER_RNG_RANGE) + ANTITAMPER_RNG_ADD;
+        this->globals->rng4[1] = g_Rng.GetRandomF32InRange(ANTITAMPER_RNG_RANGE) + ANTITAMPER_RNG_ADD;
+        this->globals->rng4[2] = g_Rng.GetRandomF32InRange(ANTITAMPER_RNG_RANGE) + ANTITAMPER_RNG_ADD;
     }
 
     ZunBool IsTampered()
     {
+        // There is zero chance ZUN actually used intptr_t here, but the codegen matches and not making
+        // assumptions about pointer size is always nice
         return this->globals->antiTamperValue !=
                    this->globals->rng1[2] + this->globals->rng8[2] * ((intptr_t)&this->globals->antiTamperValue -
                                                                       (intptr_t)&this->globals->rng1 + 500) ||

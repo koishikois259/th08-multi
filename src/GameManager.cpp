@@ -18,6 +18,8 @@ i32 GameManager::CalcAntiTamperChecksum()
 {
     i32 sum;
 
+    // There is zero chance ZUN actually used intptr_t here, but the codegen matches
+    // and not making assumptions about pointer size is always nice
     sum = CalcChecksum((u8 *)&g_GameManager.globals->rng1,
                        (intptr_t)&globals->antiTamperValue - (intptr_t)&globals->rng1);
     sum += CalcChecksum((u8 *)&g_GameManager.globals->rng8, sizeof(g_GameManager.globals->rng8));
@@ -82,34 +84,34 @@ void GameManager::InitializeAntiTamper()
     i32 sum;
     u32 i;
 
-    g_GameManager.globals->rng6 = g_Rng.GetRandomU32InRange(100000) + 6543;
+    g_GameManager.globals->rng6 = g_Rng.GetRandomU32InRange(ANTITAMPER_RNG_RANGE) + ANTITAMPER_RNG_ADD;
     for (i = 0; i < 7; i++)
     {
-        g_GameManager.globals->rng1[i] = g_Rng.GetRandomU32InRange(100000) + 6543;
+        g_GameManager.globals->rng1[i] = g_Rng.GetRandomU32InRange(ANTITAMPER_RNG_RANGE) + ANTITAMPER_RNG_ADD;
     }
     for (i = 0; i < 8; i++)
     {
-        g_GameManager.globals->rng7[i] = g_Rng.GetRandomU32InRange(100000) + 6543;
+        g_GameManager.globals->rng7[i] = g_Rng.GetRandomU32InRange(ANTITAMPER_RNG_RANGE) + ANTITAMPER_RNG_ADD;
     }
     for (i = 0; i < 2; i++)
     {
-        g_GameManager.globals->rng2[i] = g_Rng.GetRandomF32InRange(100000) + 6543;
+        g_GameManager.globals->rng2[i] = g_Rng.GetRandomF32InRange(ANTITAMPER_RNG_RANGE) + ANTITAMPER_RNG_ADD;
     }
     for (i = 0; i < 2; i++)
     {
-        g_GameManager.globals->rng3[i] = g_Rng.GetRandomF32InRange(100000) + 6543;
+        g_GameManager.globals->rng3[i] = g_Rng.GetRandomF32InRange(ANTITAMPER_RNG_RANGE) + ANTITAMPER_RNG_ADD;
     }
     for (i = 0; i < 3; i++)
     {
-        g_GameManager.globals->rng4[i] = g_Rng.GetRandomF32InRange(100000) + 6543;
+        g_GameManager.globals->rng4[i] = g_Rng.GetRandomF32InRange(ANTITAMPER_RNG_RANGE) + ANTITAMPER_RNG_ADD;
     }
     for (i = 0; i < 2; i++)
     {
-        g_GameManager.globals->rng5[i] = g_Rng.GetRandomF32InRange(100000) + 6543;
+        g_GameManager.globals->rng5[i] = g_Rng.GetRandomF32InRange(ANTITAMPER_RNG_RANGE) + ANTITAMPER_RNG_ADD;
     }
     for (i = 0; i < 5; i++)
     {
-        g_GameManager.globals->rng8[i] = g_Rng.GetRandomU32InRange(100000) + 6543;
+        g_GameManager.globals->rng8[i] = g_Rng.GetRandomU32InRange(ANTITAMPER_RNG_RANGE) + ANTITAMPER_RNG_ADD;
     }
     g_GameManager.globals->antiTamperValue = g_GameManager.globals->rng1[2];
     sum = g_GameManager.CalcAntiTamperChecksum();
