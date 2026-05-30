@@ -14,16 +14,34 @@ ZunBool GameManager::IsWithinPlayfield()
     return FALSE;
 }
 
-// STUB: th08 0x439a2e
 i32 GameManager::CalcAntiTamperChecksum()
 {
-    return 0;
+    i32 sum;
+
+    // There is zero chance ZUN actually used intptr_t here, but the codegen matches
+    // and not making assumptions about pointer size is always nice
+    sum = CalcChecksum((u8 *)&g_GameManager.globals->rng1,
+                       (intptr_t)&globals->antiTamperValue - (intptr_t)&globals->rng1);
+    sum += CalcChecksum((u8 *)&g_GameManager.globals->rng8, sizeof(g_GameManager.globals->rng8));
+    sum += CalcChecksum((u8 *)g_GameManager.cfg, sizeof(GameConfiguration));
+    sum += CalcChecksum((u8 *)&g_Supervisor.cfg, sizeof(GameConfiguration));
+    sum += CalcChecksum((u8 *)&this->hscr, sizeof(Hscr));
+
+    return sum;
 }
 
-// STUB: th08 0x439ac5
-i32 GameManager::CalcChecksum(u8 *param_1, i32 param_2)
+i32 GameManager::CalcChecksum(u8 *address, i32 size)
 {
-    return 0;
+    i32 sum;
+    i32 i;
+
+    for (sum = 0, i = 0; i < size; i++, address++)
+    {
+        sum += *address;
+        g_GameManager.globals->antiTamperValue += g_GameManager.globals->rng8[2];
+    }
+
+    return sum;
 }
 
 // STUB: th08 0x439b29
@@ -58,6 +76,47 @@ ZunResult GameManager::AddedCallback(GameManager *gameManager)
 // STUB: th08 0x43abd7
 void GameManager::GameplaySetupThread()
 {
+}
+
+#pragma var_order(sum, i)
+void GameManager::InitializeAntiTamper()
+{
+    i32 sum;
+    u32 i;
+
+    g_GameManager.globals->rng6 = g_Rng.GetRandomU32InRange(ANTITAMPER_RNG_RANGE) + ANTITAMPER_RNG_ADD;
+    for (i = 0; i < ARRAY_SIZE(g_GameManager.globals->rng1); i++)
+    {
+        g_GameManager.globals->rng1[i] = g_Rng.GetRandomU32InRange(ANTITAMPER_RNG_RANGE) + ANTITAMPER_RNG_ADD;
+    }
+    for (i = 0; i < ARRAY_SIZE(g_GameManager.globals->rng7); i++)
+    {
+        g_GameManager.globals->rng7[i] = g_Rng.GetRandomU32InRange(ANTITAMPER_RNG_RANGE) + ANTITAMPER_RNG_ADD;
+    }
+    for (i = 0; i < ARRAY_SIZE(g_GameManager.globals->rng2); i++)
+    {
+        g_GameManager.globals->rng2[i] = g_Rng.GetRandomF32InRange(ANTITAMPER_RNG_RANGE) + ANTITAMPER_RNG_ADD;
+    }
+    for (i = 0; i < ARRAY_SIZE(g_GameManager.globals->rng3); i++)
+    {
+        g_GameManager.globals->rng3[i] = g_Rng.GetRandomF32InRange(ANTITAMPER_RNG_RANGE) + ANTITAMPER_RNG_ADD;
+    }
+    for (i = 0; i < ARRAY_SIZE(g_GameManager.globals->rng4); i++)
+    {
+        g_GameManager.globals->rng4[i] = g_Rng.GetRandomF32InRange(ANTITAMPER_RNG_RANGE) + ANTITAMPER_RNG_ADD;
+    }
+    for (i = 0; i < ARRAY_SIZE(g_GameManager.globals->rng5); i++)
+    {
+        g_GameManager.globals->rng5[i] = g_Rng.GetRandomF32InRange(ANTITAMPER_RNG_RANGE) + ANTITAMPER_RNG_ADD;
+    }
+    for (i = 0; i < ARRAY_SIZE(g_GameManager.globals->rng8); i++)
+    {
+        g_GameManager.globals->rng8[i] = g_Rng.GetRandomU32InRange(ANTITAMPER_RNG_RANGE) + ANTITAMPER_RNG_ADD;
+    }
+    g_GameManager.globals->antiTamperValue = g_GameManager.globals->rng1[2];
+    sum = g_GameManager.CalcAntiTamperChecksum();
+    g_GameManager.globals->antiTamperChecksum = sum;
+    g_GameManager.antiTamperExpectedValue = (f32)sum + (f32)g_GameManager.globals->rng7[3];
 }
 
 // STUB: th08 0x43be2c

@@ -98,7 +98,7 @@ def configure(build_type):
             "EnemyManager": debug_codegen,
             "BulletManager": debug_codegen,
             "Gui": small_codegen,
-            "GameManager": small_codegen,
+            "GameManager": small_codegen + " /Ob1",
             "utils": debug_codegen,
             "Global": debug_codegen,
             "TextHelper": small_codegen,

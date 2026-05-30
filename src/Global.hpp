@@ -336,7 +336,7 @@ struct ZunGlobals
     i32 currentTimeOrbs;
     i32 lastSpellTimeOrbThreshold;
     i32 totalTimeOrbs;
-    u32 rng1[7];
+    i32 rng1[7];
     f32 deaths;
     f32 deathInStage;
     f32 rng2[2];
@@ -348,11 +348,11 @@ struct ZunGlobals
     f32 rng4[3];
     f32 playerPower;
     f32 rng5[2];
-    u32 rng6;
-    u32 rng7[8];
+    i32 rng6;
+    i32 rng7[8];
     u32 antiTamperValue;
-    u32 antiTamperChecksum;
-    u32 rng8[5];
+    i32 antiTamperChecksum;
+    i32 rng8[5];
 };
 
 C_ASSERT(sizeof(ZunGlobals) == 0xe4);
