@@ -6,6 +6,7 @@
 #include "ZunResult.hpp"
 
 #define TITLE_SPELL_CARD_SPELLCARDS_PER_PAGE 15
+#define TITLE_REPLAYS_PER_PAGE 15
 
 namespace th08
 {
@@ -166,7 +167,7 @@ struct TitleScreen
     i32 cursor;
     i32 currentPageSpellCardSelect;
     i32 cursor2;
-    TitleCurrentScreenState currentScreenState;
+    i32 currentScreenState;
     i32 stateTimer;
     i32 unk0x14;
     u8 padding[80];
@@ -175,7 +176,7 @@ struct TitleScreen
     u32 practiceState;
 
     char replayFilePaths[TITLE_MAX_REPLAYS][512];
-    char replayPlayerNames[TITLE_MAX_REPLAYS][8];
+    char replayNumbers[TITLE_MAX_REPLAYS][8];
     ReplayData replays[TITLE_MAX_REPLAYS];
     ReplayData *currentReplay;
     i32 unk0xc284;
