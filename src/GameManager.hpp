@@ -7,8 +7,8 @@
 #include "diffbuild.hpp"
 #include "inttypes.hpp"
 #include "utils.hpp"
-#include <windows.h>
 #include <stddef.h>
+#include <windows.h>
 
 #define EXTRA_UNLOCKED_FLAG ZUN_BIT(14)
 #define SPELL_PRACTICE_UNLOCKED_FLAG ZUN_BIT(15)
@@ -94,8 +94,9 @@ struct GameManager
 
     ZunBool IsTampered()
     {
-        return this->globals->antiTamperValue != this->globals->rng1[2] + this->globals->rng8[2] *
-               ((intptr_t)&this->globals->antiTamperValue - (intptr_t)&this->globals->rng1 + 500) ||
+        return this->globals->antiTamperValue !=
+                   this->globals->rng1[2] + this->globals->rng8[2] * ((intptr_t)&this->globals->antiTamperValue -
+                                                                      (intptr_t)&this->globals->rng1 + 500) ||
                this->globals->antiTamperChecksum + this->globals->rng7[3] != (i32)this->antiTamperExpectedValue;
     }
 

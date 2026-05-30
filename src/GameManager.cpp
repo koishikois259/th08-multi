@@ -17,17 +17,13 @@ ZunBool GameManager::IsWithinPlayfield()
 i32 GameManager::CalcAntiTamperChecksum()
 {
     i32 sum;
-    
-    sum  = CalcChecksum((u8 *)&g_GameManager.globals->rng1,
-                        (intptr_t)&globals->antiTamperValue - (intptr_t)&globals->rng1);
-    sum += CalcChecksum((u8 *)&g_GameManager.globals->rng8,
-                        sizeof(g_GameManager.globals->rng8));
-    sum += CalcChecksum((u8 *)g_GameManager.cfg,
-                        sizeof(GameConfiguration));
-    sum += CalcChecksum((u8 *)&g_Supervisor.cfg,
-                        sizeof(GameConfiguration));
-    sum += CalcChecksum((u8 *)&this->hscr,
-                        sizeof(Hscr));
+
+    sum = CalcChecksum((u8 *)&g_GameManager.globals->rng1,
+                       (intptr_t)&globals->antiTamperValue - (intptr_t)&globals->rng1);
+    sum += CalcChecksum((u8 *)&g_GameManager.globals->rng8, sizeof(g_GameManager.globals->rng8));
+    sum += CalcChecksum((u8 *)g_GameManager.cfg, sizeof(GameConfiguration));
+    sum += CalcChecksum((u8 *)&g_Supervisor.cfg, sizeof(GameConfiguration));
+    sum += CalcChecksum((u8 *)&this->hscr, sizeof(Hscr));
 
     return sum;
 }
