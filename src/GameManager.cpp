@@ -140,6 +140,7 @@ void GameManager::AddToYoukaiGauge(u16 param_1, i32 param_2)
 {
 }
 
+// Leftover from PCB.
 ZunBool GameManager::IsPhantasmUnlocked()
 {
     return FALSE;
@@ -157,10 +158,72 @@ void GameManager::CutChain()
     g_Supervisor.framerateMultiplier = 1.0f;
 }
 
-// STUB: th08 0x43c35f
 i32 GameManager::GetClockTimeIncrement()
 {
-    return 0;
+    // ZUN bloat: Why not use switch case fallthrough?
+    switch (g_GameManager.currentStage)
+    {
+    case STAGE1:
+        if (g_GameManager.GetTimeOrbs() >= g_GameManager.GetLastSpellTimeOrbThreshold())
+        {
+            return 1;
+        }
+        else
+        {
+            return 2;
+        }
+    case STAGE2:
+        if (g_GameManager.GetTimeOrbs() >= g_GameManager.GetLastSpellTimeOrbThreshold())
+        {
+            return 1;
+        }
+        else
+        {
+            return 2;
+        }
+    case STAGE3:
+        if (g_GameManager.GetTimeOrbs() >= g_GameManager.GetLastSpellTimeOrbThreshold())
+        {
+            return 1;
+        }
+        else
+        {
+            return 2;
+        }
+    case STAGE4A:
+        if (g_GameManager.GetTimeOrbs() >= g_GameManager.GetLastSpellTimeOrbThreshold())
+        {
+            return 1;
+        }
+        else
+        {
+            return 2;
+        }
+    case STAGE4B:
+        if (g_GameManager.GetTimeOrbs() >= g_GameManager.GetLastSpellTimeOrbThreshold())
+        {
+            return 1;
+        }
+        else
+        {
+            return 2;
+        }
+    case STAGE5:
+        if (g_GameManager.GetTimeOrbs() >= g_GameManager.GetLastSpellTimeOrbThreshold())
+        {
+            return 1;
+        }
+        else
+        {
+            return 2;
+        }
+    case STAGE6A:
+        return 0;
+    case STAGE6B:
+        return 0;
+    default:
+        return 4;
+    }
 }
 
 // STUB: th08 0x43c4b3

@@ -74,6 +74,16 @@ struct GameManager
 
     static void InitializeAntiTamper();
 
+    i32 GetTimeOrbs()
+    {
+        return this->globals->currentTimeOrbs;
+    }
+
+    i32 GetLastSpellTimeOrbThreshold()
+    {
+        return this->globals->lastSpellTimeOrbThreshold;
+    }
+
     void UpdateAntiTamper()
     {
         this->globals->rng1[2] = g_Rng.GetRandomU32InRange(ANTITAMPER_RNG_RANGE) + ANTITAMPER_RNG_ADD;
