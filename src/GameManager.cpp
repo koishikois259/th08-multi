@@ -125,9 +125,18 @@ ZunResult GameManager::DeletedCallback(GameManager *gameManager)
     return ZUN_SUCCESS;
 }
 
-// STUB: th08 0x43bfc3
 void GameManager::IncreaseSubrank(int amount)
 {
+    this->subRank += amount;
+    while (this->subRank >= 100)
+    {
+        this->rank++;
+        this->subRank -= 100;
+    }
+    if (this->rank > this->maxRank)
+    {
+        this->rank = this->maxRank;
+    }
 }
 
 // STUB: th08 0x43c03f
