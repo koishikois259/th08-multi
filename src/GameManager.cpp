@@ -274,10 +274,14 @@ void GameManager::AdvanceToNextStage()
     }
 }
 
-// STUB: th08 0x43c5e1
 GameManager::GameManager()
 {
     memset(this, 0, sizeof(GameManager));
+    this->arcadeRegionTopLeftPos.x = 32.0f;
+    this->arcadeRegionTopLeftPos.y = 16.0f;
+    this->arcadeRegionSize.x = 384.0f;
+    this->arcadeRegionSize.y = 448.0f;
+    this->currentDemoReplay = 3;
 }
 
 // STUB: th08 0x43c686
