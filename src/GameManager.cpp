@@ -139,9 +139,18 @@ void GameManager::IncreaseSubrank(int amount)
     }
 }
 
-// STUB: th08 0x43c03f
 void GameManager::DecreaseSubrank(int amount)
 {
+    this->subRank -= amount;
+    while (this->subRank < 0)
+    {
+        this->rank--;
+        this->subRank += 100;
+    }
+    if (this->rank < this->minRank)
+    {
+        this->rank = this->minRank;
+    }
 }
 
 // STUB: th08 0x43c0bb
