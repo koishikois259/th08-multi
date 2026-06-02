@@ -284,9 +284,16 @@ GameManager::GameManager()
     this->currentDemoReplay = 3;
 }
 
-// STUB: th08 0x43c686
 void GameManager::InitArcadeRegionParams()
 {
+    this->arcadeRegionTopLeftPos.x = 32.0f;
+    this->arcadeRegionTopLeftPos.y = 16.0f;
+    this->arcadeRegionSize.x = 384.0f;
+    this->arcadeRegionSize.y = 448.0f;
+    this->playerMovementTopLeftPos.x = 8.0f;
+    this->playerMovementTopLeftPos.y = 16.0f;
+    this->playerMovementAreaSize.x = 368.0f;
+    this->playerMovementAreaSize.y = 416.0f;
 }
 
 }; // Namespace th08
