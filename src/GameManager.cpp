@@ -226,9 +226,52 @@ i32 GameManager::GetClockTimeIncrement()
     }
 }
 
-// STUB: th08 0x43c4b3
 void GameManager::AdvanceToNextStage()
 {
+    switch (this->currentStage)
+    {
+    case STAGE1:
+        this->currentStage = STAGE2;
+        break;
+    case STAGE2:
+        this->currentStage = STAGE3;
+        break;
+    case STAGE3:
+        switch (g_GameManager.shotType)
+        {
+        case SHOT_REIMU_YUKARI:
+        case SHOT_REIMU:
+        case SHOT_YUKARI:
+            this->currentStage = STAGE4B;
+            break;
+        case SHOT_MARISA_ALICE:
+        case SHOT_MARISA:
+        case SHOT_ALICE:
+            this->currentStage = STAGE4A;
+            break;
+        case SHOT_SAKUYA_REMILIA:
+        case SHOT_SAKUYA:
+        case SHOT_REMILIA:
+            this->currentStage = STAGE4A;
+            break;
+        case SHOT_YOUMU_YUYUKO:
+        case SHOT_YOUMU:
+        case SHOT_YUYUKO:
+            this->currentStage = STAGE4B;
+            break;
+        }
+        break;
+    case STAGE4A:
+    case STAGE4B:
+        this->currentStage = STAGE5;
+        break;
+    case STAGE5:
+        this->currentStage = g_GameManager.flags.isGoingToFinalB ? STAGE6B : STAGE6A;
+        break;
+    case STAGE6A:
+        this->currentStage = STAGE6B; // Was Kaguya meant to be a TLB at one point???
+        break;
+    }
 }
 
 // STUB: th08 0x43c5e1

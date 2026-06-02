@@ -34,8 +34,7 @@ struct GameManagerFlags
     u32 unk8 : 1;
     u32 unk9 : 1;
     u32 unk10 : 1;
-    u32 unk11 : 1;
-    u32 unk12 : 1;
+    u32 isGoingToFinalB : 2; // why 2 bits?
     u32 unk13 : 1;
     u32 isSpellPractice : 1;
 
