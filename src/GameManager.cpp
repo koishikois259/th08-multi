@@ -1,7 +1,7 @@
 #include "GameManager.hpp"
-#include "SoundPlayer.hpp"
-#include "Gui.hpp"
 #include "Global.hpp"
+#include "Gui.hpp"
+#include "SoundPlayer.hpp"
 
 namespace th08
 {
