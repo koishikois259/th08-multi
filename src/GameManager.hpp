@@ -83,6 +83,16 @@ struct GameManager
         return this->globals->lastSpellTimeOrbThreshold;
     }
 
+    i32 GetLives()
+    {
+        return this->globals->livesRemaining;
+    }
+
+    i32 GetBombsRemaining()
+    {
+        return this->globals->bombsRemaining;
+    }
+
     void UpdateAntiTamper()
     {
         this->globals->rng1[2] = g_Rng.GetRandomU32InRange(ANTITAMPER_RNG_RANGE) + ANTITAMPER_RNG_ADD;
@@ -244,6 +254,16 @@ struct GameManager
             CRASH_GAME();
         }
         this->globals->playerPower += power;
+        this->UpdateAntiTamper();
+    }
+
+    void AddToBombCount(int amount)
+    {
+        if (this->IsTampered())
+        {
+            CRASH_GAME();
+        }
+        this->globals->bombsRemaining += amount;
         this->UpdateAntiTamper();
     }
 

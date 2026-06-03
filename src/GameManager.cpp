@@ -1,4 +1,6 @@
 #include "GameManager.hpp"
+#include "SoundPlayer.hpp"
+#include "Gui.hpp"
 #include "Global.hpp"
 
 namespace th08
@@ -44,9 +46,22 @@ i32 GameManager::CalcChecksum(u8 *address, i32 size)
     return sum;
 }
 
-// STUB: th08 0x439b29
 void GameManager::CollectExtend()
 {
+    if (this->GetLives() < 8)
+    {
+        this->AddLives(1);
+        g_SoundPlayer.PlaySoundByIdx(SOUND_1UP, 0);
+        this->IncreaseSubrank(200);
+        g_Gui.flags.lifeDisplayUpdateFrames = 2;
+    }
+    else if (this->GetBombsRemaining() < 8)
+    {
+        this->AddToBombCount(1);
+        g_SoundPlayer.PlaySoundByIdx(SOUND_1UP, 0);
+        this->IncreaseSubrank(200);
+        g_Gui.flags.bombDisplayUpdateFrames = 2;
+    }
 }
 
 // STUB: th08 0x439bc7
