@@ -2072,7 +2072,7 @@ void AnmManager::CopySurfaceToBackbuffer2(i32 surfaceIdx, i32 rectX, i32 rectY, 
                 return;
             }
         }
-        // Il caricamento originario usa D3DXLoadSurfaceFromSurface
+
         if (D3DXLoadSurfaceFromSurface(this->surfaces[surfaceIdx], NULL, NULL, this->surfacesBis[surfaceIdx], NULL,
                                        NULL, D3DX_FILTER_NONE, 0) != D3D_OK)
         {

@@ -406,8 +406,8 @@ Ending::Ending()
 ChainCallbackResult Ending::OnUpdate(Ending *ending)
 {
     i32 frameSkip = 0;
-
-    for(;;) {
+    
+loop:
         if (ending->ParseEndFile() != ZUN_SUCCESS) {
             return CHAIN_CALLBACK_RESULT_CONTINUE_AND_REMOVE_JOB;
         }
@@ -420,12 +420,10 @@ ChainCallbackResult Ending::OnUpdate(Ending *ending)
             if (IS_PRESSED(TH_BUTTON_SKIP) != 0) {
                 if (frameSkip < 8) {
                     frameSkip++;
-                    continue;
+                    goto loop;
                 }
             }
         }
-        break;
-    }
     return CHAIN_CALLBACK_RESULT_CONTINUE;
 }
 
@@ -465,7 +463,7 @@ if (g_GameManager.flags.unk4) {
 
         shotType2 = g_GameManager.shotType;
 
-        stageBit = (g_GameManager.currentStage != STAGE6B) ? 0x8000 : 0x4000;
+        stageBit = (g_GameManager.currentStage != STAGE6B) ? SPELL_PRACTICE_UNLOCKED_FLAG : EXTRA_UNLOCKED_FLAG;
 
         g_GameManager.plst.playDataByDifficulty[g_GameManager.difficulty].clears++;
         g_GameManager.plst.playDataTotals.clears++;
