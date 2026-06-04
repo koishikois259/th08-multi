@@ -1,13 +1,13 @@
 #pragma once
 
+#include "AnmManager.hpp"
 #include "Global.hpp"
+#include "ScreenEffect.hpp"
+#include "Supervisor.hpp"
 #include "ZunResult.hpp"
 #include "diffbuild.hpp"
 #include "inttypes.hpp"
 #include "utils.hpp"
-#include "ScreenEffect.hpp"
-#include "Supervisor.hpp"
-#include "AnmManager.hpp"
 #include <d3dx8.h>
 
 namespace th08
@@ -58,33 +58,33 @@ struct Ending
     static ChainCallbackResult OnDraw(Ending *ending);
     static ZunResult AddedCallback(Ending *ending);
     static ZunResult DeletedCallback(Ending *ending);
-    
-    ChainElem *calcChain; //0x0
-    ChainElem *drawChain; //0x4
-    Float2 backgroundPos;   //0x08 + //0x0c
-    f32 backgroundScrollSpeed;  //0x10
-    AnmVm vms[16];      //0x14
-    char *fileData;     //0x2a54
-    ZunBool hasSeenEnding;        //0x2a58
+
+    ChainElem *calcChain;      // 0x0
+    ChainElem *drawChain;      // 0x4
+    Float2 backgroundPos;      // 0x08 + //0x0c
+    f32 backgroundScrollSpeed; // 0x10
+    AnmVm vms[16];             // 0x14
+    char *fileData;            // 0x2a54
+    ZunBool hasSeenEnding;     // 0x2a58
     i32 unk2a5c;
-    AnmLoaded *anmFile;   //0x2a60
-    ZunTimer timer1;     //0x2a64
-    ZunTimer timer2;     //0x2a70
-    ZunTimer timer3;     //0x2a7c
-    i32 minWaitResetFrames;   //0x2a88
-    i32 minWaitFrames;    //0x2a8c
-    i32 line2Delay;       //0x2a90
-    i32 topLineDelay;     //0x2a94
+    AnmLoaded *anmFile;     // 0x2a60
+    ZunTimer timer1;        // 0x2a64
+    ZunTimer timer2;        // 0x2a70
+    ZunTimer timer3;        // 0x2a7c
+    i32 minWaitResetFrames; // 0x2a88
+    i32 minWaitFrames;      // 0x2a8c
+    i32 line2Delay;         // 0x2a90
+    i32 topLineDelay;       // 0x2a94
 
     unknown_fields(0x2a98, 0x4);
 
-    i32 timesFileParsed;    //0x2a9c
-    i32 textColor;      //0x2aa0
-    D3DCOLOR fadeColor; //0x2aa4
-    i32 fadeTimer;      //0x2aa8
-    i32 fadeDuration;   //0x2aac
-    EndingFadeType fadeMode;       //0x2ab0
-    char *cursorPtr;    //0x2ab4
+    i32 timesFileParsed;     // 0x2a9c
+    i32 textColor;           // 0x2aa0
+    D3DCOLOR fadeColor;      // 0x2aa4
+    i32 fadeTimer;           // 0x2aa8
+    i32 fadeDuration;        // 0x2aac
+    EndingFadeType fadeMode; // 0x2ab0
+    char *cursorPtr;         // 0x2ab4
 };
 
 C_ASSERT(sizeof(Ending) == 0x2ab8);

@@ -2044,7 +2044,8 @@ void AnmManager::CopySurfaceToBackbuffer(i32 surfaceIdx, i32 left, i32 top, i32 
     destSurface->Release();
 }
 
-void AnmManager::CopySurfaceToBackbuffer2(i32 surfaceIdx, i32 rectX, i32 rectY, i32 rectLeft, i32 rectTop, i32 width, i32 height)
+void AnmManager::CopySurfaceToBackbuffer2(i32 surfaceIdx, i32 rectX, i32 rectY, i32 rectLeft, i32 rectTop, i32 width,
+                                          i32 height)
 {
     if (this->surfacesBis[surfaceIdx] == NULL)
     {
