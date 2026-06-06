@@ -1,6 +1,8 @@
 #pragma once
 
+#include "AnmManager.hpp"
 #include "Global.hpp"
+#include "utils.hpp"
 
 namespace th08
 {
@@ -8,6 +10,18 @@ namespace th08
 struct GuiImpl
 {
 };
+
+struct GuiFlags
+{
+    u32 lifeDisplayUpdateFrames : 2;
+    u32 bombDisplayUpdateFrames : 2;
+    u32 powerDisplayUpdateFrames : 2;
+    u32 grazeDisplayUpdateFrames : 2;
+    u32 pointDisplayUpdateFrames : 2;
+    u32 timeDisplayUpdateFrames : 2;
+};
+
+#define MAX_BOSS_LIFEBAR_SEGMENTS 8
 
 struct Gui
 {
@@ -23,7 +37,27 @@ struct Gui
     ZunResult ActualAddedCallback();
     ZunResult LoadMsg(const char *path);
     void FreeMsgFile();
+
+    u32 unk_0;
+    GuiFlags flags;
+    GuiImpl *impl;
+    AnmLoaded *frontAnm;
+    AnmLoaded *stageTextAnm;
+    AnmLoaded *timesAnm;
+    AnmLoaded *loadingPortraitAnm;
+    u32 bossUIOpacity;
+    i32 eclSetLives;
+    i32 spellcardSecondsRemaining;
+    i32 previousSpellcardSecondsRemaining;
+    bool bossPresent;
+    f32 bossLifeBarMaxSize;
+    f32 bossLifeBarSize;
+    unknown_fields(0x38, 0x4);
+    f32 bossLifeBarSegmentStop[MAX_BOSS_LIFEBAR_SEGMENTS];
+    f32 bossLifeBarSegmentStart[MAX_BOSS_LIFEBAR_SEGMENTS];
+    i32 bossLifeBarSegmentColor[MAX_BOSS_LIFEBAR_SEGMENTS];
 };
+C_ASSERT(sizeof(Gui) == 0x9c);
 
 DIFFABLE_EXTERN(Gui, g_Gui);
 

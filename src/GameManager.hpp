@@ -34,8 +34,7 @@ struct GameManagerFlags
     u32 unk8 : 1;
     u32 unk9 : 1;
     u32 unk10 : 1;
-    u32 unk11 : 1;
-    u32 unk12 : 1;
+    u32 isGoingToFinalB : 2; // why 2 bits?
     u32 unk13 : 1;
     u32 isSpellPractice : 1;
 
@@ -73,6 +72,26 @@ struct GameManager
     }
 
     static void InitializeAntiTamper();
+
+    i32 GetTimeOrbs()
+    {
+        return this->globals->currentTimeOrbs;
+    }
+
+    i32 GetLastSpellTimeOrbThreshold()
+    {
+        return this->globals->lastSpellTimeOrbThreshold;
+    }
+
+    i32 GetLives()
+    {
+        return this->globals->livesRemaining;
+    }
+
+    i32 GetBombsRemaining()
+    {
+        return this->globals->bombsRemaining;
+    }
 
     void UpdateAntiTamper()
     {
@@ -235,6 +254,16 @@ struct GameManager
             CRASH_GAME();
         }
         this->globals->playerPower += power;
+        this->UpdateAntiTamper();
+    }
+
+    void AddToBombCount(int amount)
+    {
+        if (this->IsTampered())
+        {
+            CRASH_GAME();
+        }
+        this->globals->bombsRemaining += amount;
         this->UpdateAntiTamper();
     }
 
