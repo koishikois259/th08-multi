@@ -781,7 +781,7 @@ loop:
     default:
         break;
 
-next_command:
+    next_command:
         for (i = 0; i < BGM_QUEUE_LENGTH; i++, commandCursor++)
         {
             if (commandCursor->opcode == 0)
