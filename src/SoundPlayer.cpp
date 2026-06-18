@@ -571,7 +571,7 @@ loop:
     case 8:
         if (this->bgm != NULL)
             this->bgm->SetVolume(this->bgmVolume);
-        break;
+        goto next_command;
     case 1:
         if (g_Supervisor.IsMusicPreloadEnabled())
         {
@@ -581,7 +581,7 @@ loop:
                 this->StopBGM();
                 this->PreloadBGM(commandCursor->arg1, commandCursor->string);
                 bVar5 = TRUE;
-                break;
+                goto next_command;
             }
         }
         else
@@ -589,10 +589,10 @@ loop:
             utils::DebugPrint("Sound : PreLoad Stage\r\n");
             this->PreloadBGM(commandCursor->arg1, commandCursor->string);
             bVar5 = TRUE;
-            break;
+            goto next_command;
         }
         commandCursor->arg2++;
-        goto loop_breakout;
+        break;
     case 2:
         if (g_Supervisor.IsMusicPreloadEnabled() && commandCursor->arg1 >= 0)
         {
@@ -601,7 +601,7 @@ loop:
                 utils::DebugPrint("Sound : Load Stage\r\n");
                 if (this->LoadBGM(commandCursor->arg1) != ZUN_SUCCESS)
                 {
-                    break;
+                    goto next_command;
                 }
             }
             else if (commandCursor->arg2 == 2)
@@ -611,7 +611,7 @@ loop:
                 {
                     if (FAILED(this->bgm->Reset()))
                     {
-                        break;
+                        goto next_command;
                     }
                 }
             }
@@ -622,7 +622,7 @@ loop:
                 commandCursor->arg1 = this->bgm->GetWaveFile()->GetFormat()->totalLength != 0;
                 if (FAILED(this->bgm->FillBufferWithSound(buffer, commandCursor->arg1)))
                 {
-                    break;
+                    goto next_command;
                 }
             }
             else if (commandCursor->arg2 == 7)
@@ -634,13 +634,13 @@ loop:
             {
                 if (commandCursor->arg2 >= 20)
                 {
-                    break;
+                    goto next_command;
                 }
             }
         }
         else if (this->bgm == NULL)
         {
-            break;
+            goto next_command;
         }
         else if (commandCursor->arg2 == 0)
         {
@@ -651,7 +651,7 @@ loop:
         {
             if (this->bgm->m_bIsLocked)
             {
-                goto loop_breakout;
+                break;
             }
             utils::DebugPrint("Sound : Recreate Stage\r\n");
             this->bgm->InitSoundBuffers();
@@ -671,7 +671,7 @@ loop:
             commandCursor->arg1 = this->bgm->GetWaveFile()->GetFormat()->totalLength != 0;
             if (FAILED(this->bgm->FillBufferWithSound(buffer2, commandCursor->arg1)))
             {
-                break;
+                goto next_command;
             }
         }
         else if (commandCursor->arg2 == 4)
@@ -681,14 +681,14 @@ loop:
         }
         else if (commandCursor->arg2 >= 7)
         {
-            break;
+            goto next_command;
         }
         commandCursor->arg2++;
-        goto loop_breakout;
+        break;
     case 4:
         if (this->bgm == NULL)
         {
-            break;
+            goto next_command;
         }
         if (commandCursor->arg2 == 0)
         {
@@ -700,7 +700,7 @@ loop:
             utils::DebugPrint("Sound : Thread Stop Stage\r\n");
             if (this->bgmThreadHandle == NULL)
             {
-                break;
+                goto next_command;
             }
             PostThreadMessageA(this->bgmThreadId, WM_QUIT, 0, 0);
         }
@@ -727,14 +727,14 @@ loop:
         }
         else if (commandCursor->arg2 == 10)
         {
-            break;
+            goto next_command;
         }
         commandCursor->arg2++;
-        goto loop_breakout;
+        break;
     case 3:
         if (this->bgm == NULL)
         {
-            break;
+            goto next_command;
         }
         if (commandCursor->arg2 == 0)
         {
@@ -743,61 +743,60 @@ loop:
         }
         else if (commandCursor->arg2 == 1)
         {
-            break;
+            goto next_command;
         }
         commandCursor->arg2++;
-        goto loop_breakout;
+        break;
     case 5:
         utils::DebugPrint("Sound : Fade Out Stage %d\r\n", commandCursor->arg1);
         g_SoundPlayer.FadeOut(commandCursor->arg1);
-        break;
+        goto next_command;
     case 6:
         if (g_Supervisor.cfg.musicMode == WAV)
         {
             if (this->bgm->m_bIsLocked)
             {
                 utils::DebugPrint("locked\n");
-                goto loop_breakout;
+                break;
             }
             if (this->bgm != NULL)
             {
                 this->bgm->Pause();
             }
         }
-        break;
+        goto next_command;
     case 7:
         if (g_Supervisor.cfg.musicMode == WAV)
         {
             if (this->bgm->m_bIsLocked)
             {
-                goto loop_breakout;
+                break;
             }
             if (this->bgm != NULL)
             {
                 this->bgm->Unpause();
             }
         }
-        break;
-        // TODO: there is a missing JMP here
+        goto next_command;
     default:
-        goto loop_breakout;
+        break;
+
+    next_command:
+        for (i = 0; i < BGM_QUEUE_LENGTH; i++, commandCursor++)
+        {
+            if (commandCursor->opcode == 0)
+            {
+                break;
+            }
+            CopyMemory(commandCursor, commandCursor + 1, sizeof(*commandCursor));
+        }
+
+        if (bVar5)
+        {
+            goto loop;
+        }
     };
 
-    for (i = 0; i < BGM_QUEUE_LENGTH; i++, commandCursor++)
-    {
-        if (commandCursor->opcode == 0)
-        {
-            break;
-        }
-        CopyMemory(commandCursor, commandCursor + 1, sizeof(*commandCursor));
-    }
-
-    if (bVar5)
-    {
-        goto loop;
-    }
-
-loop_breakout:
     if (!g_Supervisor.cfg.playSounds)
     {
         return this->commandQueue[0].opcode;
