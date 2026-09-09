@@ -7,6 +7,10 @@
 #include "GameManager.hpp"
 #include "Global.hpp"
 #include "MusicRoom.hpp"
+#ifdef TH08_MULTI
+#include "MultiPlayerCoordinator.hpp"
+#include "MultiPlayerState.hpp"
+#endif
 #include "ReplayManager.hpp"
 #include "ResultScreen.hpp"
 #include "ScoreDat.hpp"
@@ -115,10 +119,32 @@ ChainCallbackResult Supervisor::OnUpdate(Supervisor *s)
     g_Supervisor.ClearFogState();
     g_SoundPlayer.UpdateFades();
 
+#ifdef TH08_MULTI
+    g_MultiPlayerCoordinator.Pump(timeGetTime());
+#endif
+
     if (!g_GameManager.ShouldSkipCurrentFrame())
     {
+#ifdef TH08_MULTI
+        if (g_MultiPlayerCoordinator.IsGameplayActive())
+        {
+            u16 localInput = Controller::GetInput();
+            u16 p1Input;
+            u16 p2Input;
+            if (!g_MultiPlayerCoordinator.AcquireGameplayInputs(localInput, &p1Input, &p2Input))
+                return CHAIN_CALLBACK_RESULT_BREAK;
+            g_LastFrameInput = g_CurFrameInput;
+            g_CurFrameInput = p1Input;
+        }
+        else
+        {
+            g_LastFrameInput = g_CurFrameInput;
+            g_CurFrameInput = Controller::GetInput();
+        }
+#else
         g_LastFrameInput = g_CurFrameInput;
         g_CurFrameInput = Controller::GetInput();
+#endif
 
         g_IsEighthFrameOfHeldInput = 0;
         if (g_LastFrameInput == g_CurFrameInput)
@@ -144,7 +170,14 @@ ChainCallbackResult Supervisor::OnUpdate(Supervisor *s)
     }
     else
     {
+#ifdef TH08_MULTI
+        if (g_MultiPlayerCoordinator.IsGameplayActive())
+            g_CurFrameInput |= Controller::GetInput();
+        else
+            g_CurFrameInput |= Controller::GetInput();
+#else
         g_CurFrameInput |= Controller::GetInput();
+#endif
     }
 
     if (s->wantedState != s->curState)

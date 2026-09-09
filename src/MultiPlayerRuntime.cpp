@@ -3,6 +3,9 @@
 
 #include "GameManager.hpp"
 #include "Gui.hpp"
+#include "BulletManager.hpp"
+#include "EnemyManager.hpp"
+#include "Global.hpp"
 #include "Player.hpp"
 
 namespace th08
@@ -52,6 +55,8 @@ u32 GetMultiPlayerShotType(const Player *player)
 
 u16 GetMultiPlayerInputCurrent(const Player *player)
 {
+    if (g_MultiPlayerState.IsEnabled())
+        return g_MultiPlayerState.GetInput(GetMultiPlayerSlot(player)).current;
     if (GetMultiPlayerSlot(player) == MULTI_PLAYER_P2)
         return g_MultiPlayerState.GetInput(MULTI_PLAYER_P2).current;
     return g_GuiMessageInputCurrent;
@@ -59,6 +64,8 @@ u16 GetMultiPlayerInputCurrent(const Player *player)
 
 u16 GetMultiPlayerInputPrevious(const Player *player)
 {
+    if (g_MultiPlayerState.IsEnabled())
+        return g_MultiPlayerState.GetInput(GetMultiPlayerSlot(player)).previous;
     if (GetMultiPlayerSlot(player) == MULTI_PLAYER_P2)
         return g_MultiPlayerState.GetInput(MULTI_PLAYER_P2).previous;
     return g_GuiMessageInputPrevious;
@@ -248,6 +255,39 @@ void SyncP1MultiPlayerResourcesFromGame()
     state.youkaiGauge = g_GameManager.GetYoukaiGauge();
     state.graze = g_GameManager.globals->graze;
     state.grazeInStage = g_GameManager.globals->grazeInStage;
+}
+
+u32 ComputeCurrentMultiPlayerStateHash()
+{
+    MultiPlayerPosition positions[MULTI_PLAYER_COUNT];
+    MultiPlayerSharedSnapshot shared;
+    Enemy *boss = NULL;
+    i32 i;
+
+    SyncP1MultiPlayerResourcesFromGame();
+    positions[MULTI_PLAYER_P1].x = g_Player.position.x;
+    positions[MULTI_PLAYER_P1].y = g_Player.position.y;
+    positions[MULTI_PLAYER_P2].x = g_Player2.position.x;
+    positions[MULTI_PLAYER_P2].y = g_Player2.position.y;
+    shared.score = g_GameManager.globals->score;
+    shared.pointItems = static_cast<u32>(g_GameManager.globals->pointItemsCollected);
+    shared.pointItemValue = static_cast<u32>(g_GameManager.globals->pointItemValue);
+    shared.timeOrbs = static_cast<u32>(g_GameManager.globals->currentTimeOrbs);
+    shared.totalTimeOrbs = static_cast<u32>(g_GameManager.globals->totalTimeOrbs);
+    shared.rngSeed = g_Rng.GetSeed();
+    shared.activeEnemies = static_cast<u32>(g_EnemyManager.activeEnemyCount);
+    shared.activeBullets = static_cast<u32>(g_BulletManager.activeBulletCount);
+    for (i = 0; i < 8; ++i)
+    {
+        if (g_EnemyManager.bosses[i] != NULL)
+        {
+            boss = g_EnemyManager.bosses[i];
+            break;
+        }
+    }
+    shared.bossLife = boss != NULL ? boss->life : 0;
+    shared.bossPhase = g_GameManager.currentSpellCardNumber;
+    return g_MultiPlayerState.ComputeStateHash(positions, shared);
 }
 
 MultiPlayerReviveResult UpdateMultiPlayerRevival(Player *rescuer)

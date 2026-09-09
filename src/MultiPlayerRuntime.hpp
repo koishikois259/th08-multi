@@ -41,6 +41,7 @@ bool MultiPlayerShotTypeIsSoloHuman(const Player *player);
 bool MultiPlayerShotTypeIsSoloYoukai(const Player *player);
 
 void SyncP1MultiPlayerResourcesFromGame();
+u32 ComputeCurrentMultiPlayerStateHash();
 MultiPlayerReviveResult UpdateMultiPlayerRevival(Player *rescuer);
 
 } // namespace th08

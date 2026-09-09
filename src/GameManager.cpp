@@ -10,6 +10,11 @@
 #include "Global.hpp"
 #include "Gui.hpp"
 #include "ItemManager.hpp"
+#ifdef TH08_MULTI
+#include "MultiPlayerCoordinator.hpp"
+#include "MultiPlayerRuntime.hpp"
+#include "MultiPlayerState.hpp"
+#endif
 #include "Player.hpp"
 #include "ReplayManager.hpp"
 #include "ResultScreen.hpp"
@@ -698,8 +703,23 @@ void __fastcall GameManager::GameplaySetupThread(void *unused)
     void *allocation;
     i32 stageMode;
     i32 configMode;
+#ifdef TH08_MULTI
+    bool multiNewRun;
+#endif
 
     gameManager = &g_GameManager;
+#ifdef TH08_MULTI
+    multiNewRun = g_Supervisor.isInitialStageLoad || gameManager->flags.isSpellPractice ||
+                  g_GameManager.flags.isPracticeMode || g_GameManager.difficulty >= EXTRA;
+    if (g_MultiPlayerCoordinator.IsConnected())
+    {
+        gameManager->shotType = g_MultiPlayerCoordinator.GetHostTeam();
+        *reinterpret_cast<u16 *>(&g_Rng) =
+            static_cast<u16>(g_MultiPlayerCoordinator.GetRandomSeed());
+        g_MultiPlayerCoordinator.BeginGameplay(
+            multiNewRun, g_Supervisor.cfg.lifeCount, 3, 0);
+    }
+#endif
     gameManager->gameplaySetupWaitFrames = 0;
     g_Supervisor.systemTime = timeGetTime();
 
@@ -761,6 +781,15 @@ void __fastcall GameManager::GameplaySetupThread(void *unused)
             g_GameErrorContext.Log("error: player initialization failed\n");
             goto setup_error;
         }
+#ifdef TH08_MULTI
+        if (g_MultiPlayerState.IsEnabled() && Player::RegisterSecondPlayerChain(0))
+        {
+            if (g_Supervisor.subthreadCloseRequestActive)
+                goto thread_done;
+            g_GameErrorContext.Log("error: second player initialization failed\n");
+            goto setup_error;
+        }
+#endif
 
         if (!g_GameManager.flags.isReplay)
         {
@@ -866,6 +895,15 @@ void __fastcall GameManager::GameplaySetupThread(void *unused)
             g_GameErrorContext.Log("error: player initialization failed\n");
             goto setup_error;
         }
+#ifdef TH08_MULTI
+        if (g_MultiPlayerState.IsEnabled() && Player::RegisterSecondPlayerChain(0))
+        {
+            if (g_Supervisor.subthreadCloseRequestActive)
+                goto thread_done;
+            g_GameErrorContext.Log("error: second player initialization failed\n");
+            goto setup_error;
+        }
+#endif
     }
 
     gameManager->subRank = 0;
@@ -927,6 +965,20 @@ void __fastcall GameManager::GameplaySetupThread(void *unused)
         }
     }
 
+#ifdef TH08_MULTI
+    if (g_MultiPlayerState.IsEnabled())
+    {
+        if (multiNewRun)
+        {
+            g_MultiPlayerCoordinator.SetInitialPlayerResources(
+                g_GameManager.GetBombsRemaining(),
+                static_cast<i32>(g_Player2.primaryShtFile->initialBombCount),
+                g_GameManager.GetPower());
+        }
+        SyncP1MultiPlayerResourcesFromGame();
+    }
+#endif
+
     if (g_GameManager.flags.isReplay)
     {
         gameManager->InitRankParams();
@@ -980,7 +1032,11 @@ void __fastcall GameManager::GameplaySetupThread(void *unused)
         goto setup_error;
     }
 
-    if (!g_GameManager.flags.isReplay)
+    if (!g_GameManager.flags.isReplay
+#ifdef TH08_MULTI
+        && !g_MultiPlayerState.IsEnabled()
+#endif
+    )
         ReplayManager::RegisterChain(0, "replay/th8_00.rpy");
 
     if (g_GameManager.flags.isSpellPractice)
@@ -1254,11 +1310,22 @@ ZunResult GameManager::DeletedCallback(GameManager *gameManager)
     Background::CutChain();
     BulletManager::CutChain();
     Player::CutChain();
+#ifdef TH08_MULTI
+    if (g_MultiPlayerState.IsEnabled())
+    {
+        Player::CutSecondPlayerChain();
+        g_MultiPlayerCoordinator.EndGameplay();
+    }
+#endif
     EnemyManager::CutChain();
     EffectManager::CutChain();
     Gui::CutChain();
 
-    if (!g_GameManager.flags.isReplay)
+    if (!g_GameManager.flags.isReplay
+#ifdef TH08_MULTI
+        && !g_MultiPlayerState.IsEnabled()
+#endif
+    )
     {
         ReplayManager::StopRecording();
     }

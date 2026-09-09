@@ -84,6 +84,12 @@ if(TH08_ENABLE_MULTIPLAYER)
         src/MultiNetProtocol.cpp
         src/MultiPlayerRuntime.cpp
     )
+    if(WIN32)
+        list(APPEND TH08_GAME_SOURCES
+            src/MultiNetSession.cpp
+            src/MultiPlayerCoordinator.cpp
+        )
+    endif()
 endif()
 
 if(WIN32)
@@ -154,7 +160,7 @@ if(MINGW)
         # API through an import library, which is suitable for bring-up builds.
         "${TH08_DX8_SDK_ROOT}/lib/d3dx8d.lib"
         dxguid dinput8 dsound d3d8 winmm
-        kernel32 user32 gdi32 advapi32 shell32 ole32 oleaut32 uuid dbghelp
+        kernel32 user32 gdi32 advapi32 shell32 ole32 oleaut32 uuid dbghelp wsock32
     )
     set(TH08_D3DX8_DEBUG_DLL
         "${TH08_DX8_SDK_ROOT}/samples/multimedia/support/d3dx8d.dll")
@@ -174,7 +180,7 @@ elseif(MSVC)
     target_link_options(th08-modern PRIVATE /DYNAMICBASE:NO)
     target_link_libraries(th08-modern PRIVATE
         dxguid d3dx8 dinput8 dsound d3d8 winmm
-        kernel32 user32 gdi32 advapi32 shell32 ole32 oleaut32 uuid dbghelp
+        kernel32 user32 gdi32 advapi32 shell32 ole32 oleaut32 uuid dbghelp wsock32
     )
 elseif(UNIX AND NOT APPLE)
     find_package(PkgConfig REQUIRED)

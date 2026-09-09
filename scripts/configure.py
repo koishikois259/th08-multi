@@ -130,6 +130,8 @@ def configure(build_type):
             "Player": debug_codegen,
             "MultiPlayerState": debug_codegen,
             "MultiNetProtocol": debug_codegen,
+            "MultiNetSession": debug_codegen,
+            "MultiPlayerCoordinator": debug_codegen,
             "MultiPlayerRuntime": debug_codegen,
             "ReplayManager": debug_codegen,
             "ResultScreen": small_codegen + " /Oi-",
@@ -184,7 +186,13 @@ def configure(build_type):
             "zwave",
         ]
         if build_type == BuildType.MULTI:
-            cxx_sources.extend(["MultiPlayerState", "MultiNetProtocol", "MultiPlayerRuntime"])
+            cxx_sources.extend([
+                "MultiPlayerState",
+                "MultiNetProtocol",
+                "MultiNetSession",
+                "MultiPlayerCoordinator",
+                "MultiPlayerRuntime",
+            ])
 
         # These ECL translation units have a closed natural production-link
         # contract and keep the exact generic /Oi /Gr compile profile used by
@@ -408,6 +416,8 @@ def configure(build_type):
         # KERNEL32, USER32, GDI32, ADVAPI32, ole32.  Static DX libraries remain
         # first and libraries that contribute no descriptor may remain listed.
         th08_link_libs = "dxguid.lib d3dx8.lib dinput8.lib dsound.lib d3d8.lib winmm.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib"
+        if build_type == BuildType.MULTI:
+            th08_link_libs += " wsock32.lib"
         executable_path = "$builddir/th08-multi.exe" if build_type == BuildType.MULTI else "$builddir/th08.exe"
         writer.build(
             executable_path,
