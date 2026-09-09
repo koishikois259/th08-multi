@@ -1,8 +1,4 @@
-#ifdef TH08_MULTI_STANDALONE_TEST
-#include <stddef.h>
-#else
 #include "th_pch.h"
-#endif
 #include "MultiNetProtocol.hpp"
 
 namespace th08
