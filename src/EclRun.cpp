@@ -7,6 +7,12 @@
 #include "GameManager.hpp"
 #include "ItemManager.hpp"
 #include "Player.hpp"
+#ifdef TH08_MULTI
+#include "MultiPlayerRuntime.hpp"
+#define MULTI_ECL_RUN_PLAYER(position) (*GetNearestPhysicalPlayer(position))
+#else
+#define MULTI_ECL_RUN_PLAYER(position) (g_Player)
+#endif
 #include "Spellcard.hpp"
 
 #include <string.h>

@@ -6,8 +6,10 @@ namespace th08
 {
 
 struct Player;
+struct Float3;
 
 MultiPlayerSlot GetMultiPlayerSlot(const Player *player);
+Player *GetNearestPhysicalPlayer(const Float3 &target);
 u32 GetMultiPlayerShotType(const Player *player);
 u16 GetMultiPlayerInputCurrent(const Player *player);
 u16 GetMultiPlayerInputPrevious(const Player *player);

@@ -6,6 +6,12 @@
 #include "Global.hpp"
 #include "ItemManager.hpp"
 #include "Player.hpp"
+#ifdef TH08_MULTI
+#include "MultiPlayerRuntime.hpp"
+#define MULTI_ECL_PLAYER(enemy) (*GetNearestPhysicalPlayer((enemy)->worldPosition))
+#else
+#define MULTI_ECL_PLAYER(enemy) (g_Player)
+#endif
 #include "Spellcard.hpp"
 
 namespace th08
@@ -93,9 +99,9 @@ f32 Enemy::ResolveFloat(f32 operand)
     case ECL_OPERAND_ENEMY_POSITION_X: return this->worldPosition.x;
     case ECL_OPERAND_ENEMY_POSITION_Y: return this->worldPosition.y;
     case ECL_OPERAND_ENEMY_POSITION_Z: return this->worldPosition.z;
-    case ECL_OPERAND_PLAYER_POSITION_X: return g_Player.position.x;
-    case ECL_OPERAND_PLAYER_POSITION_Y: return g_Player.position.y;
-    case ECL_OPERAND_PLAYER_POSITION_Z: return g_Player.position.z;
+    case ECL_OPERAND_PLAYER_POSITION_X: return MULTI_ECL_PLAYER(this).position.x;
+    case ECL_OPERAND_PLAYER_POSITION_Y: return MULTI_ECL_PLAYER(this).position.y;
+    case ECL_OPERAND_PLAYER_POSITION_Z: return MULTI_ECL_PLAYER(this).position.z;
     case ECL_OPERAND_EXTRA_FLOAT_0: return ECL_CONTEXT(this)->extraFloatVariables[0];
     case ECL_OPERAND_EXTRA_FLOAT_1: return ECL_CONTEXT(this)->extraFloatVariables[1];
     case ECL_OPERAND_INTERPOLATION_ORIGIN_X: return this->movementInterpolationOrigin.x;
@@ -112,7 +118,7 @@ f32 Enemy::ResolveFloat(f32 operand)
     case ECL_OPERAND_LIFE_CALLBACK_THRESHOLD_2: return (f32)this->lifeCallbackThresholds[2];
     case ECL_OPERAND_LIFE_CALLBACK_THRESHOLD_3: return (f32)this->lifeCallbackThresholds[3];
     case ECL_OPERAND_ANGLE_TO_PLAYER:
-        return g_Player.AngleToPoint(&this->worldPosition);
+        return MULTI_ECL_PLAYER(this).AngleToPoint(&this->worldPosition);
     case ECL_OPERAND_MOVEMENT_ANGLE: return this->movementAngle;
     case ECL_OPERAND_ANGULAR_VELOCITY: return this->angularVelocity;
     case ECL_OPERAND_SPEED: return this->speed;
@@ -132,10 +138,10 @@ f32 Enemy::ResolveFloat(f32 operand)
 
     case ECL_OPERAND_DISTANCE_TO_PLAYER:
     {
-        Float3 delta = g_Player.position - this->worldPosition;
+        Float3 delta = MULTI_ECL_PLAYER(this).position - this->worldPosition;
         return D3DXVec3Length(D3DXVECTOR3_PTR(&delta));
     }
-    case ECL_OPERAND_PLAYER_IS_YOUKAI: return (f32)g_Player.IsYoukai();
+    case ECL_OPERAND_PLAYER_IS_YOUKAI: return (f32)MULTI_ECL_PLAYER(this).IsYoukai();
     case ECL_OPERAND_SPELL_CAPTURE_STATE:
         return (f32)(g_Spellcard.IsActive()
                          ? g_Spellcard.IsCaptureValid()
@@ -183,9 +189,9 @@ f32 *__fastcall ResolveFloatLValue(Enemy *enemy, f32 *operand, u16 flags, i32 fl
     case ECL_OPERAND_ENEMY_POSITION_X: return &enemy->position.x;
     case ECL_OPERAND_ENEMY_POSITION_Y: return &enemy->position.y;
     case ECL_OPERAND_ENEMY_POSITION_Z: return &enemy->position.z;
-    case ECL_OPERAND_PLAYER_POSITION_X: return &g_Player.position.x;
-    case ECL_OPERAND_PLAYER_POSITION_Y: return &g_Player.position.y;
-    case ECL_OPERAND_PLAYER_POSITION_Z: return &g_Player.position.z;
+    case ECL_OPERAND_PLAYER_POSITION_X: return &MULTI_ECL_PLAYER(enemy).position.x;
+    case ECL_OPERAND_PLAYER_POSITION_Y: return &MULTI_ECL_PLAYER(enemy).position.y;
+    case ECL_OPERAND_PLAYER_POSITION_Z: return &MULTI_ECL_PLAYER(enemy).position.z;
     case ECL_OPERAND_EXTRA_FLOAT_0: return &ECL_CONTEXT(enemy)->extraFloatVariables[0];
     case ECL_OPERAND_EXTRA_FLOAT_1: return &ECL_CONTEXT(enemy)->extraFloatVariables[1];
     case ECL_OPERAND_SHARED_CALL_FLOAT_0: return &EclRunLow::g_EclCallParameters.floats[0];

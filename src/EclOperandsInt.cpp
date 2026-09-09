@@ -6,6 +6,12 @@
 #include "Global.hpp"
 #include "ItemManager.hpp"
 #include "Player.hpp"
+#ifdef TH08_MULTI
+#include "MultiPlayerRuntime.hpp"
+#define MULTI_ECL_PLAYER(enemy) (*GetNearestPhysicalPlayer((enemy)->worldPosition))
+#else
+#define MULTI_ECL_PLAYER(enemy) (g_Player)
+#endif
 #include "Spellcard.hpp"
 
 namespace th08
@@ -97,9 +103,9 @@ i32 __fastcall ResolveInt(Enemy *enemy, i32 operand)
     case ECL_OPERAND_ENEMY_POSITION_X: return (i32)enemy->worldPosition.x;
     case ECL_OPERAND_ENEMY_POSITION_Y: return (i32)enemy->worldPosition.y;
     case ECL_OPERAND_ENEMY_POSITION_Z: return (i32)enemy->worldPosition.z;
-    case ECL_OPERAND_PLAYER_POSITION_X: return (i32)g_Player.position.x;
-    case ECL_OPERAND_PLAYER_POSITION_Y: return (i32)g_Player.position.y;
-    case ECL_OPERAND_PLAYER_POSITION_Z: return (i32)g_Player.position.z;
+    case ECL_OPERAND_PLAYER_POSITION_X: return (i32)MULTI_ECL_PLAYER(enemy).position.x;
+    case ECL_OPERAND_PLAYER_POSITION_Y: return (i32)MULTI_ECL_PLAYER(enemy).position.y;
+    case ECL_OPERAND_PLAYER_POSITION_Z: return (i32)MULTI_ECL_PLAYER(enemy).position.z;
     case ECL_OPERAND_INTERPOLATION_ORIGIN_X: return (i32)enemy->movementInterpolationOrigin.x;
     case ECL_OPERAND_INTERPOLATION_ORIGIN_Y: return (i32)enemy->movementInterpolationOrigin.y;
     case ECL_OPERAND_INTERPOLATION_ORIGIN_Z: return (i32)enemy->movementInterpolationOrigin.z;
@@ -129,13 +135,13 @@ i32 __fastcall ResolveInt(Enemy *enemy, i32 operand)
                          ? ENEMY_OWNER->parentEnemy->CountParentChain()
                          : 0;
     case ECL_OPERAND_ANGLE_TO_PLAYER:
-        return (i32)g_Player.AngleToPoint(&enemy->worldPosition);
+        return (i32)MULTI_ECL_PLAYER(enemy).AngleToPoint(&enemy->worldPosition);
     case ECL_OPERAND_DISTANCE_TO_PLAYER:
     {
-        Float3 delta = g_Player.position - enemy->worldPosition;
+        Float3 delta = MULTI_ECL_PLAYER(enemy).position - enemy->worldPosition;
         return (i32)D3DXVec3Length(D3DXVECTOR3_PTR(&delta));
     }
-    case ECL_OPERAND_PLAYER_IS_YOUKAI: return g_Player.IsYoukai();
+    case ECL_OPERAND_PLAYER_IS_YOUKAI: return MULTI_ECL_PLAYER(enemy).IsYoukai();
     case ECL_OPERAND_TIME_ORB_THRESHOLD_STATE:
         return g_GameManager.GetTimeOrbs() + g_Spellcard.GetPendingTimeOrbs()
                        + g_ItemManager.GetTimeOrbCount()

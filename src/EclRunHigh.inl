@@ -414,7 +414,7 @@ C_ASSERT(TH08_ECL_ENEMY_POSITION_OFFSET == offsetof(Enemy, position));
         lhsInt = TH08_ECL_READ_I(ctx, 0);
         if (TH08_ECL_LASER(ctx, lhsInt))
             TH08_ECL_LASER(ctx, lhsInt)->angle =
-                g_Player.AngleToPoint(
+                MULTI_ECL_RUN_PLAYER(TH08_ECL_LASER(ctx, lhsInt)->position).AngleToPoint(
                     &TH08_ECL_LASER(ctx, lhsInt)->position) +
                 ((TH08_ECL_CONTEXT_INSTRUCTION(ctx)->operandFlags & (1U << 1)) ? TH08_ECL_CONTEXT_ENEMY(ctx)->ResolveFloat(*reinterpret_cast<f32 *>(&TH08_ECL_RAW_I(ctx, 1))) : *reinterpret_cast<f32 *>(&TH08_ECL_RAW_I(ctx, 1)));
         break;

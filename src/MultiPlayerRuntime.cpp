@@ -13,6 +13,29 @@ MultiPlayerSlot GetMultiPlayerSlot(const Player *player)
     return player == &g_Player2 ? MULTI_PLAYER_P2 : MULTI_PLAYER_P1;
 }
 
+Player *GetNearestPhysicalPlayer(const Float3 &target)
+{
+    MultiPlayerPosition targetPosition;
+    MultiPlayerPosition positions[MULTI_PLAYER_COUNT];
+    MultiPlayerSlot slot;
+
+    if (!g_MultiPlayerState.IsEnabled())
+        return &g_Player;
+
+    targetPosition.x = target.x;
+    targetPosition.y = target.y;
+    positions[MULTI_PLAYER_P1].x = g_Player.position.x;
+    positions[MULTI_PLAYER_P1].y = g_Player.position.y;
+    positions[MULTI_PLAYER_P2].x = g_Player2.position.x;
+    positions[MULTI_PLAYER_P2].y = g_Player2.position.y;
+    slot = g_MultiPlayerState.ResolveNearestPhysicalPlayer(targetPosition, positions);
+    if (slot == MULTI_PLAYER_P2)
+        return &g_Player2;
+    // During the terminal both-spirit frame, retain P1 as a deterministic
+    // inert fallback for legacy callers that cannot represent no target.
+    return &g_Player;
+}
+
 u32 GetMultiPlayerShotType(const Player *player)
 {
     if (GetMultiPlayerSlot(player) == MULTI_PLAYER_P2)

@@ -5,6 +5,12 @@
 #include "EclManager.hpp"
 #include "ItemManager.hpp"
 #include "Player.hpp"
+#ifdef TH08_MULTI
+#include "MultiPlayerRuntime.hpp"
+#define MULTI_NEAREST_PLAYER(position) (*GetNearestPhysicalPlayer(position))
+#else
+#define MULTI_NEAREST_PLAYER(position) (g_Player)
+#endif
 #include "ReplayManager.hpp"
 #include "SoundPlayer.hpp"
 #include "Supervisor.hpp"
@@ -693,7 +699,7 @@ i32 BulletManager::SpawnBulletPattern(BulletSpawnDescriptor *descriptor)
         return 0;
 
     descriptor->templateSprites = &this->bulletTypeSprites[descriptor->bulletType];
-    angleToPlayer = g_Player.AngleToPoint(&descriptor->position);
+    angleToPlayer = MULTI_NEAREST_PLAYER(descriptor->position).AngleToPoint(&descriptor->position);
     for (j = 0; j < descriptor->count2; j++)
     {
         for (i = 0; i < descriptor->count1; i++)
@@ -736,7 +742,7 @@ Laser *BulletManager::SpawnLaserPattern(BulletSpawnDescriptor *descriptor)
         laser->inUse = 1;
         laser->angle = descriptor->angle;
         if (descriptor->aimMode == BULLET_AIM_FAN_AIMED)
-            laser->angle = g_Player.AngleToPoint(&descriptor->position) + laser->angle;
+            laser->angle = MULTI_NEAREST_PLAYER(descriptor->position).AngleToPoint(&descriptor->position) + laser->angle;
         laser->flags = static_cast<u16>(descriptor->transformFlags);
         laser->timer = 0;
         laser->startOffset = descriptor->laserStartOffset;
@@ -1351,7 +1357,7 @@ void Bullet::UpdateAimedDirectionChange()
             this->activeTransformFlags &= ~BULLET_TRANSFORM_CHANGE_DIRECTION_AIMED;
         }
         this->angle =
-            AddNormalizeAngle(g_Player.AngleToPoint(&this->position),
+            AddNormalizeAngle(MULTI_NEAREST_PLAYER(this->position).AngleToPoint(&this->position),
                               this->exStates[BULLET_TRANSFORM_STATE_DIRECTION_CHANGE].directionChangeAngle);
         *reinterpret_cast<i32 *>(&this->speed) =
             *reinterpret_cast<i32 *>(
