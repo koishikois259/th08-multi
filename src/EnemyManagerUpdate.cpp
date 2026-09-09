@@ -284,7 +284,13 @@ i32 EnemyManager::OnUpdate()
         ++this->activeEnemyCount;
 
         if ((reinterpret_cast<EnemyFlag1Bits *>(&enemy->flags1)->pauseTimer &&
+#ifdef TH08_MULTI
+             (g_MultiPlayerState.IsEnabled()
+                  ? ShouldPauseEnemyTimerForMultiPlayers()
+                  : (g_Player.bombState.isInUse || g_Player.playerState))) ||
+#else
              (g_Player.bombState.isInUse || g_Player.playerState)) ||
+#endif
             reinterpret_cast<EnemyFlag2Bits *>(&enemy->flags2)->forcePause)
         {
             enemy->bossTimer--;
@@ -473,6 +479,8 @@ i32 EnemyManager::OnUpdate()
                 {
                     Player *player = players[playerIndex];
                     if (!IsMultiPlayerPhysical(player))
+                        continue;
+                    if (enemy->HasAttachedEnemy() && player->IsYoukai())
                         continue;
                     if (reinterpret_cast<EnemyFlag1Bits *>(&enemy->flags1)->noDamageDuringStop &&
                         player->bombState.isInUse)

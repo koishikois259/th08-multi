@@ -263,6 +263,53 @@ bool MultiPlayerShotTypeIsSoloYoukai(const Player *player)
     return shotType >= 4 && (shotType & 1) != 0;
 }
 
+bool AllPhysicalMultiPlayersAreYoukai()
+{
+    Player *players[MULTI_PLAYER_COUNT] = {&g_Player, &g_Player2};
+    bool foundPhysical = false;
+    i32 i;
+    for (i = 0; i < MULTI_PLAYER_COUNT; ++i)
+    {
+        if (!IsMultiPlayerPhysical(players[i]))
+            continue;
+        foundPhysical = true;
+        if (!players[i]->IsYoukai())
+            return false;
+    }
+    return foundPhysical;
+}
+
+bool AnyMultiPlayerBombIsActive()
+{
+    return (IsMultiPlayerPhysical(&g_Player) && g_Player.bombState.isInUse) ||
+           (IsMultiPlayerPhysical(&g_Player2) && g_Player2.bombState.isInUse);
+}
+
+bool ShouldPauseEnemyTimerForMultiPlayers()
+{
+    Player *players[MULTI_PLAYER_COUNT] = {&g_Player, &g_Player2};
+    bool foundPhysical = false;
+    i32 i;
+    if (AnyMultiPlayerBombIsActive())
+        return true;
+    for (i = 0; i < MULTI_PLAYER_COUNT; ++i)
+    {
+        if (!IsMultiPlayerPhysical(players[i]))
+            continue;
+        foundPhysical = true;
+        if (players[i]->playerState == PLAYER_STATE_ALIVE ||
+            players[i]->playerState == PLAYER_STATE_INVULNERABLE)
+            return false;
+    }
+    return foundPhysical;
+}
+
+bool AllMultiPlayersHaveFullPower()
+{
+    return GetMultiPlayerPower(&g_Player) >= 128 &&
+           GetMultiPlayerPower(&g_Player2) >= 128;
+}
+
 void SyncP1MultiPlayerResourcesFromGame()
 {
     MultiPlayerSlotState &state = g_MultiPlayerState.GetSlot(MULTI_PLAYER_P1);

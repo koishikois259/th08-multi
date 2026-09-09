@@ -271,7 +271,11 @@ void Enemy::DetachEnemyChain(i32 awardRewards)
                 else
                     dropLocals.itemCount = j >= 8 ? 26 : j * 2 + 10;
 
-                if (g_Player.bombState.isInUse != 0)
+                if (
+#ifdef TH08_MULTI
+                    g_MultiPlayerState.IsEnabled() ? AnyMultiPlayerBombIsActive() :
+#endif
+                    g_Player.bombState.isInUse != 0)
                     j /= 3;
 
                 g_AsciiManager.CreateTimePopup(
@@ -335,10 +339,31 @@ void Enemy::DetachEnemyChain(i32 awardRewards)
     if (this->HasAttachedEnemy() && awardRewards != 0)
     {
         Float3 attachedPosition;
+#ifdef TH08_MULTI
+        if (g_MultiPlayerState.IsEnabled())
+        {
+            Player *players[MULTI_PLAYER_COUNT] = {&g_Player, &g_Player2};
+            i32 playerIndex;
+            for (playerIndex = 0; playerIndex < MULTI_PLAYER_COUNT; ++playerIndex)
+            {
+                Player *player = players[playerIndex];
+                AddMultiPlayerYoukaiGauge(
+                    player, -GetMultiPlayerYoukaiGauge(player) / 12, 0);
+                player->shootingGaugeChangeRampTimer = 0;
+                player->gaugeShiftDelayTimer = 30;
+                player->timeOrbGaugeChangeSuppressionTimer = 50;
+            }
+        }
+        else
+        {
+#endif
         g_GameManager.AddToYoukaiGauge(-g_GameManager.GetYoukaiGauge() / 12, 0);
         g_Player.shootingGaugeChangeRampTimer = 0;
         g_Player.gaugeShiftDelayTimer = 30;
         g_Player.timeOrbGaugeChangeSuppressionTimer = 50;
+#ifdef TH08_MULTI
+        }
+#endif
         this->worldPosition =
             this->position +
             this->positionOffset;
@@ -796,7 +821,11 @@ void Enemy::DropItems(i32 mode)
             position = this->worldPosition;
             position.operator float *()[0] += g_Rng.GetRandomF32() * 128.0f - 64.0f;
             position.operator float *()[1] += g_Rng.GetRandomF32() * 128.0f - 64.0f;
-            if (g_GameManager.GetPower() < 128)
+            if (
+#ifdef TH08_MULTI
+                g_MultiPlayerState.IsEnabled() ? !AllMultiPlayersHaveFullPower() :
+#endif
+                g_GameManager.GetPower() < 128)
                 g_ItemManager.SpawnItem(&position, ITEM_POWER_SMALL, ITEM_STATE_DEFAULT);
             else
                 g_ItemManager.SpawnItem(&position, ITEM_POINT, ITEM_STATE_DEFAULT);
@@ -846,6 +875,8 @@ void Enemy::CheckPlayerCollision(Float3 *position, Float3 *size)
     {
         Player *player = players[playerIndex];
         if (!IsMultiPlayerPhysical(player))
+            continue;
+        if (this->HasAttachedEnemy() && player->IsYoukai())
             continue;
 
         collisionSize = *size / 0.7f;
@@ -916,9 +947,18 @@ void EnemyManager::UpdateSubrank()
 // FUNCTION: th08 0x42c420
 void Enemy::UpdateYoukaiAlignment()
 {
+#ifdef TH08_MULTI
+    bool playerIsYoukai = g_MultiPlayerState.IsEnabled()
+                              ? AllPhysicalMultiPlayersAreYoukai()
+                              : g_Player.IsYoukai() != 0;
+#endif
     if (((this->flags1 >> ENEMY_FLAG_YOUKAI_ALIGNED_SHIFT) & 1) == 0)
     {
+#ifdef TH08_MULTI
+        if (playerIsYoukai)
+#else
         if (g_Player.IsYoukai())
+#endif
         {
             g_EffectManager.SpawnEffect(EFFECT_FAMILIAR_HIDE, D3DXVECTOR3_PTR(&this->worldPosition), 1, 0x80303080);
             if (this->alignmentEffect != NULL)
@@ -935,7 +975,11 @@ void Enemy::UpdateYoukaiAlignment()
     }
     else
     {
+#ifdef TH08_MULTI
+        if (!playerIsYoukai)
+#else
         if (!g_Player.IsYoukai())
+#endif
         {
             g_EffectManager.SpawnEffect(EFFECT_FAMILIAR_UNHIDE, D3DXVECTOR3_PTR(&this->worldPosition), 1, 0x80803030);
             if (this->alignmentEffect != NULL)
@@ -945,8 +989,13 @@ void Enemy::UpdateYoukaiAlignment()
         }
     }
 
+#ifdef TH08_MULTI
+    reinterpret_cast<EnemyFlag1Bits *>(&this->flags1)->youkaiAligned = playerIsYoukai;
+    this->eclDifficultyMaskOverride = playerIsYoukai ? 64 : 32;
+#else
     reinterpret_cast<EnemyFlag1Bits *>(&this->flags1)->youkaiAligned = g_Player.IsYoukai();
     this->eclDifficultyMaskOverride = g_Player.IsYoukai() ? 64 : 32;
+#endif
 }
 
 // FUNCTION: th08 0x42c590

@@ -40,6 +40,10 @@ bool MultiPlayerGaugeIsExtremelyYoukai(const Player *player);
 bool MultiPlayerGaugeIsModeratelyYoukai(const Player *player);
 bool MultiPlayerShotTypeIsSoloHuman(const Player *player);
 bool MultiPlayerShotTypeIsSoloYoukai(const Player *player);
+bool AllPhysicalMultiPlayersAreYoukai();
+bool AnyMultiPlayerBombIsActive();
+bool ShouldPauseEnemyTimerForMultiPlayers();
+bool AllMultiPlayersHaveFullPower();
 
 void SyncP1MultiPlayerResourcesFromGame();
 u32 ComputeCurrentMultiPlayerStateHash();
