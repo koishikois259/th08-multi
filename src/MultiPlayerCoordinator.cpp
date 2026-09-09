@@ -48,6 +48,7 @@ MultiPlayerCoordinator::MultiPlayerCoordinator()
     gameplayActive = false;
     capturedSimulationFrame = MULTI_NET_INVALID_FRAME;
     networkFrame = 0;
+    displayedState = MULTI_NET_STATE_CLOSED;
 }
 
 bool MultiPlayerCoordinator::Initialize()
@@ -81,10 +82,29 @@ void MultiPlayerCoordinator::Shutdown()
 
 void MultiPlayerCoordinator::Pump(u32 nowMilliseconds)
 {
+    MultiNetSessionState sessionState;
+    char title[128];
     if (!initialized)
         Initialize();
     if (config.mode != MULTI_LAUNCH_DISABLED)
+    {
         session.Pump(nowMilliseconds);
+        sessionState = session.GetState();
+        if (sessionState != displayedState && g_Supervisor.hwndGameWindow != NULL)
+        {
+            if (sessionState == MULTI_NET_STATE_LISTENING)
+                wsprintfA(title, "th08-multi v0.1 - HOST waiting on UDP %u", config.localPort);
+            else if (sessionState == MULTI_NET_STATE_CONNECTING)
+                wsprintfA(title, "th08-multi v0.1 - connecting to %s:%u", config.hostAddress, config.hostPort);
+            else if (sessionState == MULTI_NET_STATE_CONNECTED)
+                wsprintfA(title, "th08-multi v0.1 - connected (P1 team %u / P2 team %u / delay %u)",
+                          session.GetHostTeam(), session.GetGuestTeam(), session.GetInputDelay());
+            else
+                wsprintfA(title, "th08-multi v0.1 - network error %u", session.GetError());
+            SetWindowTextA(g_Supervisor.hwndGameWindow, title);
+            displayedState = sessionState;
+        }
+    }
 }
 
 bool MultiPlayerCoordinator::IsConfigured() const

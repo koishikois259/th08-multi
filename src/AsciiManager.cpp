@@ -4,6 +4,10 @@
 #include <stdio.h>
 
 #include "Player.hpp"
+#ifdef TH08_MULTI
+#include "MultiPlayerRuntime.hpp"
+#include "MultiPlayerState.hpp"
+#endif
 #include "GameManager.hpp"
 #include "EclManager.hpp"
 #include "ScreenEffect.hpp"
@@ -1479,6 +1483,20 @@ selected_no:
             g_GameManager.globals->pointItemsCollected = 0;
 
             g_GameManager.SetPower(0);
+
+#ifdef TH08_MULTI
+            if (g_MultiPlayerState.IsEnabled())
+            {
+                u32 p1Team = g_MultiPlayerState.GetSlot(MULTI_PLAYER_P1).team;
+                u32 p2Team = g_MultiPlayerState.GetSlot(MULTI_PLAYER_P2).team;
+                g_MultiPlayerState.Reset(
+                    true, p1Team, p2Team, g_GameManager.cfg->lifeCount,
+                    g_Player.primaryShtFile->initialBombCount, 0);
+                g_MultiPlayerState.GetSlot(MULTI_PLAYER_P2).bombs =
+                    g_Player2.primaryShtFile->initialBombCount;
+                SyncP1MultiPlayerResourcesFromGame();
+            }
+#endif
 
             g_GameManager.globals->pointItemExtendsSoFar = 0;
             g_GameManager.globals->nextPointItemExtendThreshold = 100;

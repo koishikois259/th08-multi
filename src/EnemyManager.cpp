@@ -780,6 +780,10 @@ void Enemy::Despawn()
     this->ReleaseChildEclBlocks();
     if (g_Player.optionHomingTarget == this)
         g_Player.optionHomingTarget = NULL;
+#ifdef TH08_MULTI
+    if (g_MultiPlayerState.IsEnabled() && g_Player2.optionHomingTarget == this)
+        g_Player2.optionHomingTarget = NULL;
+#endif
 }
 
 // FUNCTION: th08 0x42bea0

@@ -267,6 +267,10 @@ i32 EnemyManager::OnUpdate()
         {
             if (g_Player.optionHomingTarget == enemy)
                 g_Player.optionHomingTarget = 0;
+#ifdef TH08_MULTI
+            if (g_MultiPlayerState.IsEnabled() && g_Player2.optionHomingTarget == enemy)
+                g_Player2.optionHomingTarget = 0;
+#endif
             continue;
         }
 

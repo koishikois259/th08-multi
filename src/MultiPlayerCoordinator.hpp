@@ -57,6 +57,7 @@ class MultiPlayerCoordinator
     u32 networkFrame;
     bool initialized;
     bool gameplayActive;
+    MultiNetSessionState displayedState;
 };
 
 extern MultiPlayerCoordinator g_MultiPlayerCoordinator;
