@@ -643,7 +643,14 @@ void Player::Die()
             effect->updateDuringFreeze = 1;
 
             if (g_Spellcard.IsActive())
+#ifdef TH08_MULTI
+            {
+                if (!g_MultiPlayerState.IsEnabled())
+                    g_GameManager.flags.deathbombFreezeActive = 1;
+            }
+#else
                 g_GameManager.flags.deathbombFreezeActive = 1;
+#endif
         }
         else
         {
@@ -1365,7 +1372,11 @@ acceptBomb:
             ++g_PlayerNormalBombCount;
             MULTI_PLAYER_ADD_BOMBS(this, -1);
         }
+#ifdef TH08_MULTI
+        AddMultiPlayerBombUsed(this);
+#else
         g_GameManager.AddToBombsUsed(1);
+#endif
     }
 
     this->deathbombPending = 0;
@@ -1426,7 +1437,11 @@ i32 Player::UpdateDeathAndRespawn()
             g_GameManager.character = 0;
             this->deathbombPending = 0;
             g_Spellcard.InvalidateCapture();
+#ifdef TH08_MULTI
+            AddMultiPlayerDeath(this);
+#else
             g_GameManager.AddToDeaths(1);
+#endif
             g_Gui.flags.timeDisplayUpdateFrames = 2;
             g_GameManager.AddTimeOrbs(g_GameManager.globals->currentTimeOrbs > 5000
                                            ? -500
@@ -2171,7 +2186,7 @@ i32 __fastcall UpdateHomingOption(Player *player, PlayerOptionState *option)
         case PLAYER_HOMING_OPTION_TRACKING_TARGET:
             if (player->optionHomingTarget != NULL)
                 UpdateOptionHomingToTarget(player, option);
-            if (((player->shotTimer < 0) && ((g_CurFrameInput & 1) == 0)) ||
+            if (((player->shotTimer < 0) && ((MULTI_PLAYER_INPUT_CURRENT(player) & 1) == 0)) ||
                 player->optionHomingTarget == NULL)
             {
                 player->optionHomingTarget = NULL;
@@ -2765,7 +2780,7 @@ void __fastcall Player::InitializeShot(PlayerShot *slot, PlayerShotDescriptor *e
     this->anmFile->SetAndExecuteScriptIdx(&slot->vm, entry->animationIndex + 10);
 
     slot->tintInExtremeYoukai = 0;
-    if (g_GameManager.GaugeIsExtremelyYoukai())
+    if (MULTI_PLAYER_GAUGE_EXTREME_YOUKAI(this))
     {
         if (entry->extremeGaugeBehavior > 0)
         {
@@ -3037,7 +3052,7 @@ i32 __fastcall UpdatePersistentShot(Player *player, PlayerShot *slot)
     slot->position.y /= 2.0f;
     if (player->timelines[slot->timelineIndex].timer < 100)
         player->timelines[slot->timelineIndex].timer--;
-    if (g_GameManager.GaugeIsExtremelyYoukai())
+    if (MULTI_PLAYER_GAUGE_EXTREME_YOUKAI(player))
     {
         slot->vm.color1.r = 0xFF; slot->vm.color1.g = 0xD0; slot->vm.color1.b = 0xB0;
     }
@@ -3089,7 +3104,7 @@ i32 __fastcall UpdateShotTrail(Player *player, PlayerShot *slot)
     slot->position.z = 0.44f;
     slot->hitboxSize.y = 448.0f;
     slot->position.y -= 208.0f;
-    if (g_GameManager.GaugeIsExtremelyYoukai())
+    if (MULTI_PLAYER_GAUGE_EXTREME_YOUKAI(player))
     {
         slot->vm.color1.r = 0xFF; slot->vm.color1.g = 0xD0; slot->vm.color1.b = 0xB0;
     }
@@ -3122,7 +3137,7 @@ i32 __fastcall DrawShotTrail(Player *player, PlayerShot *slot)
             slot->vm.color1.a = color - ((color / 2) * i) / slot->trailSegmentCount;
         slot->vm.pos.x += g_GameManager.arcadeRegionTopLeftPos.x;
         slot->vm.pos.y += g_GameManager.arcadeRegionTopLeftPos.y;
-        if (g_GameManager.GaugeIsExtremelyYoukai())
+        if (MULTI_PLAYER_GAUGE_EXTREME_YOUKAI(player))
         {
             slot->vm.color1.r = 0xFF;
             slot->vm.color1.g = 0x40;
@@ -3199,16 +3214,16 @@ void __fastcall Player::SpawnShots(i32 value)
                 : this->secondaryShtFile->shotPowerLevels;
 
     if (this->bombState.isInUse != 0 &&
-        ((g_GameManager.shotType == 2 &&
+        ((MULTI_PLAYER_SHOT_TYPE(this) == 2 &&
           (this->bombState.callbackVariant & 1) != 0) ||
-         g_GameManager.shotType == 9) &&
+         MULTI_PLAYER_SHOT_TYPE(this) == 9) &&
         this->bombState.timer >= 60)
     {
         table += ((this->bombState.callbackVariant & 2) ? 7 : 6);
     }
     else
     {
-        while (g_GameManager.GetPower() >= table->minimumPower)
+        while (MULTI_PLAYER_GET_POWER(this) >= table->minimumPower)
         {
             table++;
         }
@@ -3568,7 +3583,7 @@ i32 Player::CalcDamageToEnemy(Float3 *enemyPosition, Float3 *enemySize, i32 *hit
         }
     }
 
-    if (g_GameManager.GaugeIsExtremelyYoukai() && damage != 0)
+    if (MULTI_PLAYER_GAUGE_EXTREME_YOUKAI(this) && damage != 0)
         damage = damage * 106 / 100;
     return damage;
 }

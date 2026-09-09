@@ -8,6 +8,37 @@
 #ifdef TH08_MULTI
 #include "MultiPlayerRuntime.hpp"
 #define MULTI_NEAREST_PLAYER(position) (*GetNearestPhysicalPlayer(position))
+
+static u8 ResolveBulletCancelPlayer(Float3 *position, Float3 *size)
+{
+    if (IsMultiPlayerPhysical(&g_Player) &&
+        g_Player.CheckBulletCancelCollision(position, size) == 2)
+        return 1;
+    if (IsMultiPlayerPhysical(&g_Player2) &&
+        g_Player2.CheckBulletCancelCollision(position, size) == 2)
+        return 2;
+    return 0;
+}
+
+static Player *GetBulletCancelPlayer(u8 encodedSlot)
+{
+    return encodedSlot == 2 ? &g_Player2 : &g_Player;
+}
+
+static void SpawnBulletCancelItems(Player *player, Float3 *position)
+{
+    if (player->bulletCancelItemType == 9)
+    {
+        g_ItemManager.SpawnItem(position, ITEM_TIME, ITEM_STATE_AUTOCOLLECT);
+        g_ItemManager.SpawnItem(position, ITEM_TIME, ITEM_STATE_AUTOCOLLECT);
+    }
+    else if (player->bulletCancelItemType >= 0)
+    {
+        g_ItemManager.SpawnItem(position,
+                                static_cast<ItemType>(player->bulletCancelItemType),
+                                ITEM_STATE_AUTOCOLLECT);
+    }
+}
 #else
 #define MULTI_NEAREST_PLAYER(position) (g_Player)
 #endif
@@ -167,6 +198,9 @@ i32 BulletManager::SpawnSingleBullet(BulletSpawnDescriptor *descriptor, i32 inde
     bullet->state = BULLET_STATE_FIRED;
     bullet->unconsumedSpawnMarkerDBC = 1;
     bullet->isGrazed = 0;
+#ifdef TH08_MULTI
+    bullet->isGrazedP2 = 0;
+#endif
     bullet->stateTimer = 0;
     bullet->collisionDisabled = 0;
     bullet->activeTimer = 0;
@@ -903,6 +937,63 @@ updateBullet:
 
             if (bullet->collisionDisabled == 0)
             {
+#ifdef TH08_MULTI
+                u8 cancelPlayer = 0;
+                if ((bullet->transformFlags & BULLET_TRANSFORM_CANCEL_IMMUNE) == 0)
+                    cancelPlayer = ResolveBulletCancelPlayer(
+                        &bullet->position, &bullet->sprites.collisionSize);
+                if (cancelPlayer != 0)
+                {
+                    bullet->state = BULLET_STATE_DESPAWNING;
+                    SpawnBulletCancelItems(GetBulletCancelPlayer(cancelPlayer), &bullet->position);
+                    goto executeBulletScript;
+                }
+
+                if ((i32)bullet->activeTimer >= 16)
+                {
+                    if (bullet->isGrazed == 0 && IsMultiPlayerPhysical(&g_Player))
+                    {
+                        collisionResult = g_Player.CheckGrazeCollision(
+                            &bullet->position, &bullet->sprites.collisionSize);
+                        if (collisionResult == 1)
+                            bullet->isGrazed = 1;
+                    }
+                    if (bullet->isGrazedP2 == 0 && IsMultiPlayerPhysical(&g_Player2))
+                    {
+                        collisionResult = g_Player2.CheckGrazeCollision(
+                            &bullet->position, &bullet->sprites.collisionSize);
+                        if (collisionResult == 1)
+                            bullet->isGrazedP2 = 1;
+                    }
+                }
+
+                if (IsMultiPlayerPhysical(&g_Player))
+                {
+                    collisionResult = g_Player.CheckBulletCollision(
+                        &bullet->position, &bullet->sprites.collisionSize);
+                    if (collisionResult != 0 &&
+                        (collisionResult != 2 ||
+                         (bullet->transformFlags & BULLET_TRANSFORM_CANCEL_IMMUNE) == 0))
+                    {
+                        bullet->state = BULLET_STATE_DESPAWNING;
+                        if (collisionResult == 2)
+                            SpawnBulletCancelItems(&g_Player, &bullet->position);
+                    }
+                }
+                if (IsMultiPlayerPhysical(&g_Player2))
+                {
+                    collisionResult = g_Player2.CheckBulletCollision(
+                        &bullet->position, &bullet->sprites.collisionSize);
+                    if (collisionResult != 0 &&
+                        (collisionResult != 2 ||
+                         (bullet->transformFlags & BULLET_TRANSFORM_CANCEL_IMMUNE) == 0))
+                    {
+                        bullet->state = BULLET_STATE_DESPAWNING;
+                        if (collisionResult == 2)
+                            SpawnBulletCancelItems(&g_Player2, &bullet->position);
+                    }
+                }
+#else
                 if (bullet->isGrazed == 0 &&
                     (i32)bullet->activeTimer >= 16)
                 {
@@ -951,6 +1042,7 @@ lethalCollision:
                                                     ITEM_STATE_AUTOCOLLECT);
                     }
                 }
+#endif
             }
 executeBulletScript:
             if (bullet->sprites.bulletVm.currentInstruction != NULL)
@@ -959,15 +1051,25 @@ executeBulletScript:
             case BULLET_STATE_SPAWNING_FAST:
                 bullet->activeTimer--;
                 bullet->position += bullet->velocity / 2.0f;
+#ifdef TH08_MULTI
+                if ((bullet->transformFlags & BULLET_TRANSFORM_CANCEL_IMMUNE) == 0)
+                    bullet->cancelledDuringSpawn = ResolveBulletCancelPlayer(
+                        &bullet->position, &bullet->sprites.collisionSize);
+#else
                 if ((bullet->transformFlags & BULLET_TRANSFORM_CANCEL_IMMUNE) == 0 &&
                     g_Player.CheckBulletCancelCollision(&bullet->position,
                                          &bullet->sprites.collisionSize) == 2)
                     bullet->cancelledDuringSpawn = 1;
+#endif
                 if (g_AnmManager->ExecuteScript(&bullet->sprites.spawnFastVm) == 0)
                     break;
                 if (bullet->cancelledDuringSpawn != 0)
                 {
                     bullet->state = BULLET_STATE_DESPAWNING;
+#ifdef TH08_MULTI
+                    SpawnBulletCancelItems(
+                        GetBulletCancelPlayer(bullet->cancelledDuringSpawn), &bullet->position);
+#else
                     if (g_Player.bulletCancelItemType == 9)
                     {
                         g_ItemManager.SpawnItem(&bullet->position, ITEM_TIME, ITEM_STATE_AUTOCOLLECT);
@@ -977,20 +1079,31 @@ executeBulletScript:
                         g_ItemManager.SpawnItem(&bullet->position,
                                                 static_cast<ItemType>(g_Player.bulletCancelItemType),
                                                 ITEM_STATE_AUTOCOLLECT);
+#endif
                 }
                 goto activateBullet;
             case BULLET_STATE_SPAWNING_NORMAL:
                 bullet->activeTimer--;
                 bullet->position += bullet->velocity / 2.5f;
+#ifdef TH08_MULTI
+                if ((bullet->transformFlags & BULLET_TRANSFORM_CANCEL_IMMUNE) == 0)
+                    bullet->cancelledDuringSpawn = ResolveBulletCancelPlayer(
+                        &bullet->position, &bullet->sprites.collisionSize);
+#else
                 if ((bullet->transformFlags & BULLET_TRANSFORM_CANCEL_IMMUNE) == 0 &&
                     g_Player.CheckBulletCancelCollision(&bullet->position,
                                          &bullet->sprites.collisionSize) == 2)
                     bullet->cancelledDuringSpawn = 1;
+#endif
                 if (g_AnmManager->ExecuteScript(&bullet->sprites.spawnNormalVm) == 0)
                     break;
                 if (bullet->cancelledDuringSpawn != 0)
                 {
                     bullet->state = BULLET_STATE_DESPAWNING;
+#ifdef TH08_MULTI
+                    SpawnBulletCancelItems(
+                        GetBulletCancelPlayer(bullet->cancelledDuringSpawn), &bullet->position);
+#else
                     if (g_Player.bulletCancelItemType == 9)
                     {
                         g_ItemManager.SpawnItem(&bullet->position, ITEM_TIME, ITEM_STATE_AUTOCOLLECT);
@@ -1000,20 +1113,31 @@ executeBulletScript:
                         g_ItemManager.SpawnItem(&bullet->position,
                                                 static_cast<ItemType>(g_Player.bulletCancelItemType),
                                                 ITEM_STATE_AUTOCOLLECT);
+#endif
                 }
                 goto activateBullet;
             case BULLET_STATE_SPAWNING_SLOW:
                 bullet->activeTimer--;
                 bullet->position += bullet->velocity / 3.0f;
+#ifdef TH08_MULTI
+                if ((bullet->transformFlags & BULLET_TRANSFORM_CANCEL_IMMUNE) == 0)
+                    bullet->cancelledDuringSpawn = ResolveBulletCancelPlayer(
+                        &bullet->position, &bullet->sprites.collisionSize);
+#else
                 if ((bullet->transformFlags & BULLET_TRANSFORM_CANCEL_IMMUNE) == 0 &&
                     g_Player.CheckBulletCancelCollision(&bullet->position,
                                          &bullet->sprites.collisionSize) == 2)
                     bullet->cancelledDuringSpawn = 1;
+#endif
                 if (g_AnmManager->ExecuteScript(&bullet->sprites.spawnSlowVm) == 0)
                     break;
                 if (bullet->cancelledDuringSpawn != 0)
                 {
                     bullet->state = BULLET_STATE_DESPAWNING;
+#ifdef TH08_MULTI
+                    SpawnBulletCancelItems(
+                        GetBulletCancelPlayer(bullet->cancelledDuringSpawn), &bullet->position);
+#else
                     if (g_Player.bulletCancelItemType == 9)
                     {
                         g_ItemManager.SpawnItem(&bullet->position, ITEM_TIME, ITEM_STATE_AUTOCOLLECT);
@@ -1023,6 +1147,7 @@ executeBulletScript:
                         g_ItemManager.SpawnItem(&bullet->position,
                                                 static_cast<ItemType>(g_Player.bulletCancelItemType),
                                                 ITEM_STATE_AUTOCOLLECT);
+#endif
                 }
                 goto activateBullet;
             case BULLET_STATE_DESPAWNING:
@@ -1105,17 +1230,39 @@ nextBullet:
                     laserSize[0] = currentWidth / 2.0f;
                 }
                 if (laser->timer >= laser->hitboxStartTime)
+#ifdef TH08_MULTI
+                {
+                    if (IsMultiPlayerPhysical(&g_Player))
+                        g_Player.CalcLaserHitbox(FLOAT3_PTR(laserCenter), FLOAT3_PTR(laserSize),
+                                                 &laser->position, laser->angle, 0);
+                    if (IsMultiPlayerPhysical(&g_Player2))
+                        g_Player2.CalcLaserHitbox(FLOAT3_PTR(laserCenter), FLOAT3_PTR(laserSize),
+                                                  &laser->position, laser->angle, 0);
+                }
+#else
                     g_Player.CalcLaserHitbox(FLOAT3_PTR(laserCenter), FLOAT3_PTR(laserSize),
                                              &laser->position, laser->angle, 0);
+#endif
                 if (laser->timer < laser->startTime)
                     break;
                 laser->timer = 0;
                 ++laser->state;
                 laser->currentWidth = laser->width;
             case LASER_STATE_ACTIVE:
+#ifdef TH08_MULTI
+                if (IsMultiPlayerPhysical(&g_Player))
+                    g_Player.CalcLaserHitbox(FLOAT3_PTR(laserCenter), FLOAT3_PTR(laserSize),
+                                             &laser->position, laser->angle,
+                                             ((i32)laser->timer) % 20 == 0);
+                if (IsMultiPlayerPhysical(&g_Player2))
+                    g_Player2.CalcLaserHitbox(FLOAT3_PTR(laserCenter), FLOAT3_PTR(laserSize),
+                                              &laser->position, laser->angle,
+                                              ((i32)laser->timer) % 20 == 0);
+#else
                 g_Player.CalcLaserHitbox(FLOAT3_PTR(laserCenter), FLOAT3_PTR(laserSize),
                                          &laser->position, laser->angle,
                                          ((i32)laser->timer) % 20 == 0);
+#endif
                 if (laser->timer < laser->duration)
                     break;
                 laser->timer = 0;
@@ -1141,8 +1288,19 @@ nextBullet:
                     laserSize[0] = currentWidth / 2.0f;
                 }
                 if (laser->timer < laser->hitboxEndDelay)
+#ifdef TH08_MULTI
+                {
+                    if (IsMultiPlayerPhysical(&g_Player))
+                        g_Player.CalcLaserHitbox(FLOAT3_PTR(laserCenter), FLOAT3_PTR(laserSize),
+                                                 &laser->position, laser->angle, 0);
+                    if (IsMultiPlayerPhysical(&g_Player2))
+                        g_Player2.CalcLaserHitbox(FLOAT3_PTR(laserCenter), FLOAT3_PTR(laserSize),
+                                                  &laser->position, laser->angle, 0);
+                }
+#else
                     g_Player.CalcLaserHitbox(FLOAT3_PTR(laserCenter), FLOAT3_PTR(laserSize),
                                              &laser->position, laser->angle, 0);
+#endif
                 if (laser->timer < laser->despawnDuration)
                     break;
                 laser->inUse = 0;

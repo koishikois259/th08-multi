@@ -11,6 +11,9 @@
 #include "Gui.hpp"
 #include "ItemManager.hpp"
 #include "Player.hpp"
+#ifdef TH08_MULTI
+#include "MultiPlayerRuntime.hpp"
+#endif
 #include "ReplayManager.hpp"
 #include "SoundPlayer.hpp"
 
@@ -33,6 +36,126 @@ class SoundPlayer;
 struct AsciiManager;
 struct ReplayManager;
 class ZunMemory;
+
+#ifdef TH08_MULTI
+static i32 ApplyPlayerDamageToEnemy(Enemy *enemy, Player *player, i32 *bombHitAny)
+{
+    i32 damage;
+    i32 extraDamage;
+    i32 playerBombHit = player->bombState.isInUse;
+
+    if (!g_Spellcard.IsActive() || !enemy->HasAttachedEnemy() ||
+        !player->bombState.isInUse)
+    {
+        damage = player->CalcDamageToEnemy(
+            &enemy->worldPosition,
+            &enemy->hitboxDimensions,
+            &enemy->playerShotHitAccumulator,
+            &playerBombHit);
+    }
+    else
+    {
+        damage = 0;
+    }
+
+    if (enemy->secondaryHitboxDimensions.x > 0.0f)
+    {
+        extraDamage = player->CalcDamageToEnemy(
+            &enemy->worldPosition,
+            &enemy->secondaryHitboxDimensions,
+            &enemy->playerShotHitAccumulator,
+            &playerBombHit);
+        if (!playerBombHit)
+        {
+            if (GetMultiPlayerShotType(player) == 3 ||
+                GetMultiPlayerShotType(player) == 11)
+                damage = (i32)((f32)damage + (f32)extraDamage / 6.5f);
+            else
+                damage = (i32)((f32)damage + (f32)extraDamage / 1.7f);
+        }
+    }
+
+    if (playerBombHit)
+        *bombHitAny = 1;
+    if (damage <= 0)
+        return 0;
+
+    if (damage >= 70)
+        damage = 70;
+    g_GameManager.AddScore(10 * (damage / 5));
+
+    if (!reinterpret_cast<EnemyFlag1Bits *>(&enemy->flags1)->damageable)
+        return damage;
+
+    if (g_Spellcard.IsActive())
+    {
+        if (!playerBombHit)
+        {
+            if (damage > 7)
+                damage /= 7;
+            else if (damage != 0)
+                damage = 1;
+        }
+        else if (g_Spellcard.IsBombDamageEnabled() && !enemy->HasAttachedEnemy())
+        {
+            if (damage > 2)
+                damage = (i32)((f32)damage / 2.5f);
+            else if (damage != 0)
+                damage = 1;
+        }
+        else
+        {
+            damage = 0;
+        }
+    }
+
+    if (enemy->damageReductionTimer > 0)
+    {
+        if (reinterpret_cast<EnemyFlag1Bits *>(&enemy->flags1)->boss)
+            damage /= 9;
+        else
+            damage = 0;
+    }
+    return damage;
+}
+
+static void UpdatePlayerEnemyTracking(Player *player, Enemy *enemy)
+{
+    D3DXVECTOR3 previousTargetDelta;
+    D3DXVECTOR3 currentTargetDelta;
+
+    if (reinterpret_cast<EnemyFlag1Bits *>(&enemy->flags1)->boss)
+    {
+        previousTargetDelta =
+            *D3DXVECTOR3_PTR(&player->tailPosition0) -
+            *D3DXVECTOR3_PTR(&player->position);
+        currentTargetDelta =
+            *D3DXVECTOR3_PTR(&enemy->worldPosition) -
+            *D3DXVECTOR3_PTR(&player->position);
+        if (!player->enemyTrackedPositionValid ||
+            fabsf(previousTargetDelta.x) > fabsf(currentTargetDelta.x))
+        {
+            player->tailPosition0 = enemy->worldPosition;
+        }
+        player->enemyTrackedPositionValid = 1;
+    }
+
+    if (!player->enemyTrackedPositionValid &&
+        player->tailPosition0[1] < enemy->worldPosition.y)
+    {
+        player->tailPosition0 = enemy->worldPosition;
+    }
+
+    if (fabsf(enemy->worldPosition.x - player->position.x) < 64.0f &&
+        !enemy->HasAttachedEnemy() &&
+        (player->optionHomingTarget == 0 ||
+         reinterpret_cast<Enemy *>(player->optionHomingTarget)->position.y >
+             enemy->worldPosition.y))
+    {
+        player->optionHomingTarget = enemy;
+    }
+}
+#endif
 struct EnemyManager;
 struct Enemy;
 
@@ -78,9 +201,21 @@ i32 EnemyManager::OnUpdate()
         ++g_GameManager.stagePlayTimeAll;
         if ((i32)this->timer >= 16)
         {
+#ifdef TH08_MULTI
+            Player *players[MULTI_PLAYER_COUNT] = {&g_Player, &g_Player2};
+            for (i32 playerIndex = 0; playerIndex < MULTI_PLAYER_COUNT; playerIndex++)
+            {
+                if (!IsMultiPlayerPhysical(players[playerIndex]))
+                    continue;
+                ++g_GameManager.humanityRateDenominator;
+                if (!players[playerIndex]->focusMode)
+                    ++g_GameManager.humanityRateNumerator;
+            }
+#else
             ++g_GameManager.humanityRateDenominator;
             if (!g_Player.focusMode)
                 ++g_GameManager.humanityRateNumerator;
+#endif
         }
     }
 
@@ -99,6 +234,13 @@ i32 EnemyManager::OnUpdate()
             FLOAT3_PTR(&upperBounds), FLOAT3_PTR(&lowerBounds),
             &this->bosses[0]->playerShotHitAccumulator,
             &bombHit);
+#ifdef TH08_MULTI
+        if (IsMultiPlayerPhysical(&g_Player2))
+            g_Player2.CalcDamageToEnemy(
+                FLOAT3_PTR(&upperBounds), FLOAT3_PTR(&lowerBounds),
+                &this->bosses[0]->playerShotHitAccumulator,
+                &bombHit);
+#endif
     }
 
     this->UpdateSubrank();
@@ -283,11 +425,18 @@ i32 EnemyManager::OnUpdate()
             }
         }
 
+#ifdef TH08_MULTI
+        bombHit = 0;
+#else
         bombHit = g_Player.bombState.isInUse;
+#endif
         if (!reinterpret_cast<EnemyFlag1Bits *>(&enemy->flags1)->noSprite &&
             !reinterpret_cast<EnemyFlag1Bits *>(&enemy->flags1)->hidePrimaryAnm &&
-            !reinterpret_cast<EnemyFlag1Bits *>(&enemy->flags1)->youkaiAligned &&
+            !reinterpret_cast<EnemyFlag1Bits *>(&enemy->flags1)->youkaiAligned
+#ifndef TH08_MULTI
+            &&
             (!reinterpret_cast<EnemyFlag1Bits *>(&enemy->flags1)->noDamageDuringStop || !g_Player.bombState.isInUse))
+#endif
         {
             if (reinterpret_cast<EnemyFlag1Bits *>(&enemy->flags1)->collision)
             {
@@ -318,6 +467,31 @@ i32 EnemyManager::OnUpdate()
             enemy->lastDamage = 0;
             if (reinterpret_cast<EnemyFlag1Bits *>(&enemy->flags1)->acceptsDamage)
             {
+#ifdef TH08_MULTI
+                Player *players[MULTI_PLAYER_COUNT] = {&g_Player, &g_Player2};
+                for (i32 playerIndex = 0; playerIndex < MULTI_PLAYER_COUNT; playerIndex++)
+                {
+                    Player *player = players[playerIndex];
+                    if (!IsMultiPlayerPhysical(player))
+                        continue;
+                    if (reinterpret_cast<EnemyFlag1Bits *>(&enemy->flags1)->noDamageDuringStop &&
+                        player->bombState.isInUse)
+                        continue;
+
+                    damage = ApplyPlayerDamageToEnemy(enemy, player, &bombHit);
+                    if (damage > 0)
+                    {
+                        if (reinterpret_cast<EnemyFlag1Bits *>(&enemy->flags1)->damageable)
+                        {
+                            enemy->life -= damage;
+                            enemy->lastDamage += damage;
+                            enemy->ApplyDamageToParent(damage);
+                        }
+                        damageOccurred = 1;
+                    }
+                    UpdatePlayerEnemyTracking(player, enemy);
+                }
+#else
                 if (!g_Spellcard.IsActive() || !enemy->HasAttachedEnemy() ||
                     !g_Player.bombState.isInUse)
                 {
@@ -439,6 +613,7 @@ i32 EnemyManager::OnUpdate()
                 {
                     g_Player.optionHomingTarget = enemy;
                 }
+#endif
             }
         }
 

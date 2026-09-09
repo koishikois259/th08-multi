@@ -408,7 +408,11 @@ struct Bullet
     u8 unconsumedSpawnMarkerDBC;
     u8 isGrazed;
     u8 cancelledDuringSpawn;
+#ifdef TH08_MULTI
+    u8 isGrazedP2;
+#else
     u8 pointerAlignmentDBF;
+#endif
     Bullet *nextInDrawBucket;
     i32 zoneTransitionCooldownFrames;
     i32 transformSound;
@@ -439,7 +443,11 @@ C_ASSERT(offsetof(Bullet, offscreenFrames) == 0xdba);
 C_ASSERT(offsetof(Bullet, unconsumedSpawnMarkerDBC) == 0xdbc);
 C_ASSERT(offsetof(Bullet, isGrazed) == 0xdbd);
 C_ASSERT(offsetof(Bullet, cancelledDuringSpawn) == 0xdbe);
+#ifdef TH08_MULTI
+C_ASSERT(offsetof(Bullet, isGrazedP2) == 0xdbf);
+#else
 C_ASSERT(offsetof(Bullet, pointerAlignmentDBF) == 0xdbf);
+#endif
 C_ASSERT(offsetof(Bullet, nextInDrawBucket) == 0xdc0);
 C_ASSERT(offsetof(Bullet, zoneTransitionCooldownFrames) == 0xdc4);
 C_ASSERT(offsetof(Bullet, transformSound) == 0xdc8);

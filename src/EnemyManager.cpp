@@ -11,6 +11,9 @@
 #include "Gui.hpp"
 #include "GameManager.hpp"
 #include "Player.hpp"
+#ifdef TH08_MULTI
+#include "MultiPlayerRuntime.hpp"
+#endif
 #include "ReplayManager.hpp"
 
 namespace th08
@@ -823,6 +826,34 @@ void Enemy::CheckPlayerCollision(Float3 *position, Float3 *size)
 {
     Float3 collisionSize;
 
+#ifdef TH08_MULTI
+    Player *players[MULTI_PLAYER_COUNT] = {&g_Player, &g_Player2};
+    for (i32 playerIndex = 0; playerIndex < MULTI_PLAYER_COUNT; playerIndex++)
+    {
+        Player *player = players[playerIndex];
+        if (!IsMultiPlayerPhysical(player))
+            continue;
+
+        collisionSize = *size / 0.7f;
+        if (((this->flags1 >> ENEMY_FLAG_SPECIAL_INTERACTION_SHIFT) & 1) != 0 &&
+            this->bossTimer.HasTicked() && this->bossTimer % 6 == 0)
+        {
+            player->CheckGrazeCollision(position, &collisionSize);
+        }
+
+        if ((GetMultiPlayerShotType(player) == 0 || GetMultiPlayerShotType(player) == 4) &&
+            this->HasAttachedEnemy())
+            continue;
+
+        collisionSize = *size / 1.5f;
+        if (player->CheckLethalCollision(position, &collisionSize) == 1 &&
+            ((this->flags1 >> ENEMY_FLAG_BOSS_SHIFT) & 1) == 0 &&
+            ((this->flags1 >> ENEMY_FLAG_SPECIAL_INTERACTION_SHIFT) & 1) == 0)
+        {
+            this->life -= 10;
+        }
+    }
+#else
     collisionSize = *size / 0.7f;
     if (((this->flags1 >> ENEMY_FLAG_SPECIAL_INTERACTION_SHIFT) & 1) != 0 &&
         this->bossTimer.HasTicked() && this->bossTimer % 6 == 0)
@@ -847,6 +878,7 @@ void Enemy::CheckPlayerCollision(Float3 *position, Float3 *size)
             }
         }
     }
+#endif
 }
 
 // FUNCTION: th08 0x42c3b0

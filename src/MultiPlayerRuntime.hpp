@@ -9,6 +9,7 @@ struct Player;
 struct Float3;
 
 MultiPlayerSlot GetMultiPlayerSlot(const Player *player);
+bool IsMultiPlayerPhysical(const Player *player);
 Player *GetNearestPhysicalPlayer(const Float3 &target);
 u32 GetMultiPlayerShotType(const Player *player);
 u16 GetMultiPlayerInputCurrent(const Player *player);
@@ -29,6 +30,8 @@ void AddMultiPlayerYoukaiGauge(Player *player, i32 amount, i32 forceUpdate);
 i32 GetMultiPlayerGraze(const Player *player);
 i32 GetMultiPlayerGrazeInStage(const Player *player);
 void AddMultiPlayerGraze(Player *player, i32 runAmount, i32 stageAmount);
+void AddMultiPlayerDeath(Player *player);
+void AddMultiPlayerBombUsed(Player *player);
 
 bool MultiPlayerGaugeIsExtremelyHuman(const Player *player);
 bool MultiPlayerGaugeIsModeratelyHuman(const Player *player);

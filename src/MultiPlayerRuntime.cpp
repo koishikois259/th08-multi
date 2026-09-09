@@ -13,6 +13,13 @@ MultiPlayerSlot GetMultiPlayerSlot(const Player *player)
     return player == &g_Player2 ? MULTI_PLAYER_P2 : MULTI_PLAYER_P1;
 }
 
+bool IsMultiPlayerPhysical(const Player *player)
+{
+    if (!g_MultiPlayerState.IsEnabled())
+        return player == &g_Player;
+    return g_MultiPlayerState.IsPhysical(GetMultiPlayerSlot(player));
+}
+
 Player *GetNearestPhysicalPlayer(const Float3 &target)
 {
     MultiPlayerPosition targetPosition;
@@ -186,6 +193,18 @@ void AddMultiPlayerGraze(Player *player, i32 runAmount, i32 stageAmount)
         g_GameManager.globals->graze = state.graze;
         g_GameManager.globals->grazeInStage = state.grazeInStage;
     }
+}
+
+void AddMultiPlayerDeath(Player *player)
+{
+    g_MultiPlayerState.GetSlot(GetMultiPlayerSlot(player)).deaths++;
+    g_GameManager.AddToDeaths(1);
+}
+
+void AddMultiPlayerBombUsed(Player *player)
+{
+    g_MultiPlayerState.GetSlot(GetMultiPlayerSlot(player)).bombsUsed++;
+    g_GameManager.AddToBombsUsed(1);
 }
 
 bool MultiPlayerGaugeIsExtremelyHuman(const Player *player)
