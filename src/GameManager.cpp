@@ -1032,11 +1032,10 @@ void __fastcall GameManager::GameplaySetupThread(void *unused)
         goto setup_error;
     }
 
-    if (!g_GameManager.flags.isReplay
-#ifdef TH08_MULTI
-        && !g_MultiPlayerState.IsEnabled()
-#endif
-    )
+    // ReplayManager also owns frame-event bookkeeping used directly by enemy
+    // code. Keep its internal recorder alive in multiplayer; v0.1 suppresses
+    // exposing save/playback rather than removing this runtime dependency.
+    if (!g_GameManager.flags.isReplay)
         ReplayManager::RegisterChain(0, "replay/th8_00.rpy");
 
     if (g_GameManager.flags.isSpellPractice)
@@ -1321,11 +1320,7 @@ ZunResult GameManager::DeletedCallback(GameManager *gameManager)
     EffectManager::CutChain();
     Gui::CutChain();
 
-    if (!g_GameManager.flags.isReplay
-#ifdef TH08_MULTI
-        && !g_MultiPlayerState.IsEnabled()
-#endif
-    )
+    if (!g_GameManager.flags.isReplay)
     {
         ReplayManager::StopRecording();
     }

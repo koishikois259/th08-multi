@@ -47,6 +47,7 @@ MultiPlayerCoordinator::MultiPlayerCoordinator()
     initialized = false;
     gameplayActive = false;
     capturedSimulationFrame = MULTI_NET_INVALID_FRAME;
+    networkFrame = 0;
 }
 
 bool MultiPlayerCoordinator::Initialize()
@@ -75,6 +76,7 @@ void MultiPlayerCoordinator::Shutdown()
     initialized = false;
     gameplayActive = false;
     capturedSimulationFrame = MULTI_NET_INVALID_FRAME;
+    networkFrame = 0;
 }
 
 void MultiPlayerCoordinator::Pump(u32 nowMilliseconds)
@@ -96,6 +98,17 @@ bool MultiPlayerCoordinator::IsConnected() const
 }
 
 bool MultiPlayerCoordinator::IsGameplayActive() const { return gameplayActive; }
+
+bool MultiPlayerCoordinator::IsSessionFailed() const
+{
+    return session.GetState() == MULTI_NET_STATE_DISCONNECTED ||
+           session.GetState() == MULTI_NET_STATE_ERROR;
+}
+
+bool MultiPlayerCoordinator::ShouldSynchronizeInputs() const
+{
+    return IsConfigured() && IsConnected();
+}
 
 MultiNetSessionState MultiPlayerCoordinator::GetSessionState() const { return session.GetState(); }
 MultiNetSessionError MultiPlayerCoordinator::GetSessionError() const { return session.GetError(); }
@@ -127,14 +140,14 @@ bool MultiPlayerCoordinator::AcquireGameplayInputs(u16 localButtons, u16 *p1Butt
     u32 frame;
     u32 hashFrame;
     u32 hash;
-    if (!gameplayActive || !IsConnected())
+    if (!IsConnected())
         return false;
-    frame = g_MultiPlayerState.frameNumber;
+    frame = networkFrame;
     if (capturedSimulationFrame != frame)
     {
-        if (frame % 30 == 0)
+        if (gameplayActive && g_MultiPlayerState.frameNumber % 30 == 0)
         {
-            hashFrame = frame;
+            hashFrame = g_MultiPlayerState.frameNumber;
             hash = ComputeCurrentMultiPlayerStateHash();
         }
         else
@@ -148,9 +161,13 @@ bool MultiPlayerCoordinator::AcquireGameplayInputs(u16 localButtons, u16 *p1Butt
     }
     if (!session.TryGetFrameInputs(frame, p1Buttons, p2Buttons))
         return false;
-    g_MultiPlayerState.GetInput(MULTI_PLAYER_P1).Advance(*p1Buttons);
-    g_MultiPlayerState.GetInput(MULTI_PLAYER_P2).Advance(*p2Buttons);
-    g_MultiPlayerState.frameNumber++;
+    networkFrame++;
+    if (gameplayActive)
+    {
+        g_MultiPlayerState.GetInput(MULTI_PLAYER_P1).Advance(*p1Buttons);
+        g_MultiPlayerState.GetInput(MULTI_PLAYER_P2).Advance(*p2Buttons);
+        g_MultiPlayerState.frameNumber++;
+    }
     capturedSimulationFrame = MULTI_NET_INVALID_FRAME;
     return true;
 }

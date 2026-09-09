@@ -7,6 +7,9 @@
 #include "ItemManager.hpp"
 #include "AnmManager.hpp"
 #include "Player.hpp"
+#ifdef TH08_MULTI
+#include "MultiPlayerRuntime.hpp"
+#endif
 #include "SoundPlayer.hpp"
 #include "ReplayManager.hpp"
 #include "EnemyManager.hpp"
@@ -21,6 +24,23 @@
 // cluster; it does not claim the original source filename.
 namespace th08
 {
+#ifdef TH08_MULTI
+Effect *SpawnOwnedBarrierEffect(Player *player, i32 effectId, Float3 *position,
+                                Float3 *velocity, i32 slotIndex)
+{
+    Effect *effect = g_EffectManager.SpawnEffectInFixedSlotWithVelocity(
+        effectId, D3DXVECTOR3_PTR(position), D3DXVECTOR3_PTR(velocity),
+        slotIndex, 1, -1);
+    if (effect != NULL)
+        effect->unconsumedDword344 = GetMultiPlayerSlot(player) + 1;
+    return effect;
+}
+
+Player *GetBarrierEffectOwner(Effect *effect)
+{
+    return effect->unconsumedDword344 == MULTI_PLAYER_P2 + 1 ? &g_Player2 : &g_Player;
+}
+#endif
 // FUNCTION: th08 0x40bc20
 i32 Player::IsHuman()
 {
@@ -1706,8 +1726,12 @@ void __fastcall UpdateQuadrupleBarrierBomb(Player *player)
         slot = player->CreateCircleDamageRegion(&player->position, 100.0f, 1.0f, 70, 40);
         slot->collisionInterval = 5;
         Float3 velocity(ZUN_PI / 4.0f, 1.0f, 4.0f);
+#ifdef TH08_MULTI
+        SpawnOwnedBarrierEffect(player, EFFECT_QUADRUPLE_BARRIER, &workItem->position, &velocity, 4);
+#else
         g_EffectManager.SpawnEffectInFixedSlotWithVelocity(EFFECT_QUADRUPLE_BARRIER, D3DXVECTOR3_PTR(&workItem->position),
                                      D3DXVECTOR3_PTR(&velocity), 4, 1, -1);
+#endif
     }
 
     if (bomb->timer.JustReached(10))
@@ -1721,6 +1745,9 @@ void __fastcall UpdateQuadrupleBarrierBomb(Player *player)
         Float3 velocity(ZUN_PI * 3.0f / 8.0f, 1.0f, 4.0f);
         effect = g_EffectManager.SpawnEffectInFixedSlotWithVelocity(EFFECT_QUADRUPLE_BARRIER, D3DXVECTOR3_PTR(&player->position),
                                               D3DXVECTOR3_PTR(&velocity), 5, 1, -1);
+#ifdef TH08_MULTI
+        effect->unconsumedDword344 = GetMultiPlayerSlot(player) + 1;
+#endif
         g_EffectManager.effectAnm->SetAndExecuteScriptIdx(&effect->vm, 89);
         bomb->workItems[1].position = player->position;
     }
@@ -1736,6 +1763,9 @@ void __fastcall UpdateQuadrupleBarrierBomb(Player *player)
         Float3 velocity(ZUN_PI / 2.0f, 1.0f, 4.0f);
         effect = g_EffectManager.SpawnEffectInFixedSlotWithVelocity(EFFECT_QUADRUPLE_BARRIER, D3DXVECTOR3_PTR(&player->position),
                                               D3DXVECTOR3_PTR(&velocity), 6, 1, -1);
+#ifdef TH08_MULTI
+        effect->unconsumedDword344 = GetMultiPlayerSlot(player) + 1;
+#endif
         g_EffectManager.effectAnm->SetAndExecuteScriptIdx(&effect->vm, 90);
         bomb->workItems[2].position = player->position;
     }
@@ -1751,6 +1781,9 @@ void __fastcall UpdateQuadrupleBarrierBomb(Player *player)
         Float3 velocity(1.9634954929351807f, 1.0f, 4.0f);
         effect = g_EffectManager.SpawnEffectInFixedSlotWithVelocity(EFFECT_QUADRUPLE_BARRIER, D3DXVECTOR3_PTR(&player->position),
                                               D3DXVECTOR3_PTR(&velocity), 7, 1, -1);
+#ifdef TH08_MULTI
+        effect->unconsumedDword344 = GetMultiPlayerSlot(player) + 1;
+#endif
         g_EffectManager.effectAnm->SetAndExecuteScriptIdx(&effect->vm, 91);
         bomb->workItems[3].position = player->position;
     }
@@ -1766,6 +1799,9 @@ i32 __fastcall UpdateBarrierRadialEffect(Effect *effect)
     i32 i;
     PlayerCollisionRegion *slot;
     f32 angle;
+#ifdef TH08_MULTI
+    Player *owner = GetBarrierEffectOwner(effect);
+#endif
 
     if (effect->timer < 40)
     {
@@ -1794,12 +1830,20 @@ i32 __fastcall UpdateBarrierRadialEffect(Effect *effect)
                     angle -= ZUN_2PI;
                 position.FromAngleMagnitude(angle, radius);
                 position += effect->vector5;
+#ifdef TH08_MULTI
+                slot = owner->CreateRectDamageRegion(
+#else
                 slot = g_Player.CreateRectDamageRegion(
+#endif
                     &position, radius * 8.0f, effect->shapeThickness * 4.0f, 60, 70);
                 slot->collisionInterval = 4;
                 slot->angle = AddNormalizeAngle(angle, ZUN_PI / 2.0f);
                 angle = slot->angle;
+#ifdef TH08_MULTI
+                slot = owner->CreateRectCancelRegion(
+#else
                 slot = g_Player.CreateRectCancelRegion(
+#endif
                     &position, radius * 4.0f, effect->shapeThickness * 4.0f, 6, 100);
                 slot->angle = angle;
             }
@@ -2132,6 +2176,9 @@ i32 __fastcall UpdateRotatingBarrierRadialEffect(Effect *effect)
     i32 i;
     PlayerCollisionRegion *slot;
     f32 angle;
+#ifdef TH08_MULTI
+    Player *owner = GetBarrierEffectOwner(effect);
+#endif
 
     effect->angle =
         AddNormalizeAngle(effect->angle,
@@ -2170,12 +2217,20 @@ i32 __fastcall UpdateRotatingBarrierRadialEffect(Effect *effect)
                     angle -= ZUN_2PI;
                 position.FromAngleMagnitude(angle, radius);
                 position += effect->vector5;
+#ifdef TH08_MULTI
+                slot = owner->CreateRectDamageRegion(
+#else
                 slot = g_Player.CreateRectDamageRegion(
+#endif
                     &position, radius * 8.0f, effect->shapeThickness * 4.0f, 60, 100);
                 slot->collisionInterval = 2;
                 slot->angle = AddNormalizeAngle(angle, ZUN_PI / 2.0f);
                 angle = slot->angle;
+#ifdef TH08_MULTI
+                slot = owner->CreateRectCancelRegion(
+#else
                 slot = g_Player.CreateRectCancelRegion(
+#endif
                     &position, radius * 4.0f, effect->shapeThickness * 4.0f, 6, 150);
                 slot->angle = angle;
             }
@@ -2243,8 +2298,13 @@ void __fastcall UpdateEternalNightQuadrupleBarrierDeathbomb(Player *player)
         slot = player->CreateCircleDamageRegion(&player->position, 100.0f, 1.0f, 70, 40);
         slot->collisionInterval = 5;
         Float3 velocity(ZUN_PI / 4.0f, 1.0f, 4.0f);
+#ifdef TH08_MULTI
+        SpawnOwnedBarrierEffect(player, EFFECT_QUADRUPLE_BARRIER_ROTATING,
+                                &workItem->position, &velocity, 4);
+#else
         g_EffectManager.SpawnEffectInFixedSlotWithVelocity(EFFECT_QUADRUPLE_BARRIER_ROTATING, D3DXVECTOR3_PTR(&workItem->position),
                                      D3DXVECTOR3_PTR(&velocity), 4, 1, -1);
+#endif
     }
 
     if (bomb->timer.JustReached(10))
@@ -2258,6 +2318,9 @@ void __fastcall UpdateEternalNightQuadrupleBarrierDeathbomb(Player *player)
         Float3 velocity(ZUN_PI * 3.0f / 8.0f, 1.0f, 4.0f);
         effect = g_EffectManager.SpawnEffectInFixedSlotWithVelocity(EFFECT_QUADRUPLE_BARRIER_ROTATING, D3DXVECTOR3_PTR(&bomb->workItems[0].position),
                                               D3DXVECTOR3_PTR(&velocity), 5, 1, -1);
+#ifdef TH08_MULTI
+        effect->unconsumedDword344 = GetMultiPlayerSlot(player) + 1;
+#endif
         g_EffectManager.effectAnm->SetAndExecuteScriptIdx(&effect->vm, 93);
         bomb->workItems[1].position = player->position;
     }
@@ -2273,6 +2336,9 @@ void __fastcall UpdateEternalNightQuadrupleBarrierDeathbomb(Player *player)
         Float3 velocity(ZUN_PI / 2.0f, 1.0f, 4.0f);
         effect = g_EffectManager.SpawnEffectInFixedSlotWithVelocity(EFFECT_QUADRUPLE_BARRIER_ROTATING, D3DXVECTOR3_PTR(&bomb->workItems[0].position),
                                               D3DXVECTOR3_PTR(&velocity), 6, 1, -1);
+#ifdef TH08_MULTI
+        effect->unconsumedDword344 = GetMultiPlayerSlot(player) + 1;
+#endif
         g_EffectManager.effectAnm->SetAndExecuteScriptIdx(&effect->vm, 94);
         bomb->workItems[2].position = player->position;
     }
@@ -2288,6 +2354,9 @@ void __fastcall UpdateEternalNightQuadrupleBarrierDeathbomb(Player *player)
         Float3 velocity(1.9634954929351807f, 1.0f, 4.0f);
         effect = g_EffectManager.SpawnEffectInFixedSlotWithVelocity(EFFECT_QUADRUPLE_BARRIER_ROTATING, D3DXVECTOR3_PTR(&bomb->workItems[0].position),
                                               D3DXVECTOR3_PTR(&velocity), 7, 1, -1);
+#ifdef TH08_MULTI
+        effect->unconsumedDword344 = GetMultiPlayerSlot(player) + 1;
+#endif
         g_EffectManager.effectAnm->SetAndExecuteScriptIdx(&effect->vm, 95);
         bomb->workItems[3].position = player->position;
     }

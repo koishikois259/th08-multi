@@ -121,12 +121,20 @@ ChainCallbackResult Supervisor::OnUpdate(Supervisor *s)
 
 #ifdef TH08_MULTI
     g_MultiPlayerCoordinator.Pump(timeGetTime());
+    if (g_MultiPlayerCoordinator.IsGameplayActive() &&
+        g_MultiPlayerCoordinator.IsSessionFailed())
+    {
+        g_GameErrorContext.Log(
+            "multiplayer session stopped, error=%d\n",
+            g_MultiPlayerCoordinator.GetSessionError());
+        return CHAIN_CALLBACK_RESULT_EXIT_GAME_ERROR;
+    }
 #endif
 
     if (!g_GameManager.ShouldSkipCurrentFrame())
     {
 #ifdef TH08_MULTI
-        if (g_MultiPlayerCoordinator.IsGameplayActive())
+        if (g_MultiPlayerCoordinator.ShouldSynchronizeInputs())
         {
             u16 localInput = Controller::GetInput();
             u16 p1Input;
@@ -135,6 +143,8 @@ ChainCallbackResult Supervisor::OnUpdate(Supervisor *s)
                 return CHAIN_CALLBACK_RESULT_BREAK;
             g_LastFrameInput = g_CurFrameInput;
             g_CurFrameInput = p1Input;
+            if (g_MultiPlayerCoordinator.IsGameplayActive())
+                g_CurFrameInput |= p2Input & (TH_BUTTON_MENU | TH_BUTTON_SKIP);
         }
         else
         {
@@ -171,8 +181,18 @@ ChainCallbackResult Supervisor::OnUpdate(Supervisor *s)
     else
     {
 #ifdef TH08_MULTI
-        if (g_MultiPlayerCoordinator.IsGameplayActive())
-            g_CurFrameInput |= Controller::GetInput();
+        if (g_MultiPlayerCoordinator.ShouldSynchronizeInputs())
+        {
+            u16 p1Input;
+            u16 p2Input;
+            if (!g_MultiPlayerCoordinator.AcquireGameplayInputs(
+                    Controller::GetInput(), &p1Input, &p2Input))
+                return CHAIN_CALLBACK_RESULT_BREAK;
+            g_LastFrameInput = g_CurFrameInput;
+            g_CurFrameInput = p1Input;
+            if (g_MultiPlayerCoordinator.IsGameplayActive())
+                g_CurFrameInput |= p2Input & (TH_BUTTON_MENU | TH_BUTTON_SKIP);
+        }
         else
             g_CurFrameInput |= Controller::GetInput();
 #else

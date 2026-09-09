@@ -214,6 +214,23 @@ void AddMultiPlayerBombUsed(Player *player)
     g_GameManager.AddToBombsUsed(1);
 }
 
+void SetPhysicalMultiPlayersInvulnerable(i32 frames, i32 bombInputLockFrames)
+{
+    Player *players[MULTI_PLAYER_COUNT] = {&g_Player, &g_Player2};
+    i32 i;
+    for (i = 0; i < MULTI_PLAYER_COUNT; ++i)
+    {
+        if (!g_MultiPlayerState.IsPhysical(static_cast<MultiPlayerSlot>(i)))
+            continue;
+        players[i]->bombInputLockFrames = bombInputLockFrames;
+        if (players[i]->playerState == PLAYER_STATE_ALIVE)
+        {
+            players[i]->timer = frames;
+            players[i]->playerState = PLAYER_STATE_INVULNERABLE;
+        }
+    }
+}
+
 bool MultiPlayerGaugeIsExtremelyHuman(const Player *player)
 {
     return GetMultiPlayerYoukaiGauge(player) <= g_GameManager.youkaiGaugeHumanEffectsThreshold;

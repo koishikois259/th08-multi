@@ -35,6 +35,8 @@ class MultiPlayerCoordinator
     bool IsConfigured() const;
     bool IsConnected() const;
     bool IsGameplayActive() const;
+    bool IsSessionFailed() const;
+    bool ShouldSynchronizeInputs() const;
     MultiNetSessionState GetSessionState() const;
     MultiNetSessionError GetSessionError() const;
 
@@ -52,6 +54,7 @@ class MultiPlayerCoordinator
     MultiPlayerLaunchConfig config;
     MultiNetSession session;
     u32 capturedSimulationFrame;
+    u32 networkFrame;
     bool initialized;
     bool gameplayActive;
 };

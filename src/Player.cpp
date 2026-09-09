@@ -1496,6 +1496,11 @@ i32 Player::UpdateDeathAndRespawn()
     {
         this->playerState = PLAYER_STATE_SPAWNING;
         this->position.operator float *()[0] = g_GameManager.arcadeRegionSize.x / 2.0f;
+#ifdef TH08_MULTI
+        if (g_MultiPlayerState.IsEnabled())
+            this->position.operator float *()[0] +=
+                GetMultiPlayerSlot(this) == MULTI_PLAYER_P1 ? -12.0f : 12.0f;
+#endif
         this->position.operator float *()[1] = g_GameManager.arcadeRegionSize.y - 64.0f;
         this->position.operator float *()[2] = 0.2f;
         this->timer = 0;
@@ -1717,6 +1722,11 @@ ZunResult Player::AddedCallback(Player *player)
         player->anmFile->SetAndExecuteScriptIdx(&player->mainVm, PLAYER_MAIN_ANM_IDLE_FOCUSED);
 
     player->position.operator float *()[0] = g_GameManager.arcadeRegionSize.x / 2.0f;
+#ifdef TH08_MULTI
+    if (g_MultiPlayerState.IsEnabled())
+        player->position.operator float *()[0] +=
+            GetMultiPlayerSlot(player) == MULTI_PLAYER_P1 ? -12.0f : 12.0f;
+#endif
     player->position.operator float *()[1] = g_GameManager.arcadeRegionSize.y - 64.0f;
     player->position.operator float *()[2] = 0.49f;
 

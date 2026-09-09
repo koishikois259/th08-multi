@@ -656,11 +656,29 @@ i32 EnemyManager::OnUpdate()
             }
 
             enemy->DetachEnemyChain(1);
-            if (!g_Player.focusMode)
-                deathPosition = -200;
+#ifdef TH08_MULTI
+            if (g_MultiPlayerState.IsEnabled())
+            {
+                Player *players[MULTI_PLAYER_COUNT] = {&g_Player, &g_Player2};
+                i32 playerIndex;
+                for (playerIndex = 0; playerIndex < MULTI_PLAYER_COUNT; ++playerIndex)
+                {
+                    if (IsMultiPlayerPhysical(players[playerIndex]))
+                    {
+                        deathPosition = players[playerIndex]->focusMode ? 200 : -200;
+                        AddMultiPlayerYoukaiGauge(players[playerIndex], deathPosition, 0);
+                    }
+                }
+            }
             else
-                deathPosition = 200;
-            g_GameManager.AddToYoukaiGauge(deathPosition, 0);
+#endif
+            {
+                if (!g_Player.focusMode)
+                    deathPosition = -200;
+                else
+                    deathPosition = 200;
+                g_GameManager.AddToYoukaiGauge(deathPosition, 0);
+            }
 
             switch ((enemy->flags1 >> ENEMY_FLAG_DEATH_MODE_SHIFT) &
                     (ENEMY_FLAG_DEATH_MODE_MASK >> ENEMY_FLAG_DEATH_MODE_SHIFT))
@@ -682,6 +700,11 @@ i32 EnemyManager::OnUpdate()
                     enemy->alignmentEffect->vm.SetInterrupt(3);
                     enemy->alignmentEffect = 0;
                 }
+#ifdef TH08_MULTI
+                if (g_MultiPlayerState.IsEnabled())
+                    SetPhysicalMultiPlayersInvulnerable(90, 0);
+                else
+#endif
                 if (!g_Player.playerState)
                 {
                     g_Player.timer = 90;

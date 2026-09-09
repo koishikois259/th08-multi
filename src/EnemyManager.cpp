@@ -488,11 +488,18 @@ i32 Enemy::HandleLifeCallback()
                 }
             }
 
-            if (((this->flags1 >> ENEMY_FLAG_BOSS_SHIFT) & 1) != 0 &&
-                g_Player.playerState == 0)
+            if (((this->flags1 >> ENEMY_FLAG_BOSS_SHIFT) & 1) != 0)
             {
+#ifdef TH08_MULTI
+                if (g_MultiPlayerState.IsEnabled())
+                    SetPhysicalMultiPlayersInvulnerable(70, 0);
+                else
+#endif
+                if (g_Player.playerState == 0)
+                {
                 g_Player.timer = 70;
                 g_Player.playerState = 3;
+                }
             }
             return 1;
         }
@@ -630,11 +637,18 @@ i32 Enemy::HandleTimerCallback()
         g_BulletManager.RemoveAllBullets(4);
     }
 
-    if (((this->flags1 >> ENEMY_FLAG_BOSS_SHIFT) & 1) != 0 &&
-        g_Player.playerState == 0)
+    if (((this->flags1 >> ENEMY_FLAG_BOSS_SHIFT) & 1) != 0)
     {
+#ifdef TH08_MULTI
+        if (g_MultiPlayerState.IsEnabled())
+            SetPhysicalMultiPlayersInvulnerable(70, 0);
+        else
+#endif
+        if (g_Player.playerState == 0)
+        {
         g_Player.timer = 70;
         g_Player.playerState = 3;
+        }
     }
 
     this->DetachEnemyChain(0);

@@ -7,8 +7,8 @@
 mode=disabled
 host=127.0.0.1
 host_port=17708
-; Host normally uses 17708; guest normally uses 0 (automatic local port).
-local_port=0
+; Host uses 17708. Guest should change this to 0 (automatic local port).
+local_port=17708
 input_delay=3
 
 [player]

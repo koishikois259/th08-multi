@@ -32,6 +32,7 @@ i32 GetMultiPlayerGrazeInStage(const Player *player);
 void AddMultiPlayerGraze(Player *player, i32 runAmount, i32 stageAmount);
 void AddMultiPlayerDeath(Player *player);
 void AddMultiPlayerBombUsed(Player *player);
+void SetPhysicalMultiPlayersInvulnerable(i32 frames, i32 bombInputLockFrames);
 
 bool MultiPlayerGaugeIsExtremelyHuman(const Player *player);
 bool MultiPlayerGaugeIsModeratelyHuman(const Player *player);

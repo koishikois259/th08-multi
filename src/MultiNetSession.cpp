@@ -287,6 +287,8 @@ void MultiNetSession::Pump(u32 nowMilliseconds)
     if (socketHandle == MULTI_NET_INVALID_SOCKET_HANDLE)
         return;
     currentTime = nowMilliseconds;
+    if (state == MULTI_NET_STATE_CONNECTING && lastReceiveTime == 0)
+        lastReceiveTime = nowMilliseconds;
     ReceivePackets(nowMilliseconds);
     if (role == MULTI_NET_ROLE_GUEST && state == MULTI_NET_STATE_CONNECTING &&
         nowMilliseconds - lastSendTime >= MULTI_NET_RESEND_INTERVAL_MS)
@@ -357,7 +359,10 @@ void MultiNetSession::HandleHello(const u8 *data, u32 size, u32 address, u16 por
         return;
     if (packet.buildFingerprint != buildFingerprint)
     {
+        remoteAddress = address;
+        remotePort = port;
         error = MULTI_NET_ERROR_BUILD_MISMATCH;
+        SendDisconnect(MULTI_NET_DISCONNECT_BUILD_MISMATCH);
         return;
     }
     remoteAddress = address;
@@ -422,7 +427,12 @@ void MultiNetSession::HandleDisconnect(const u8 *data, u32 size, u32 address, u1
     if (!IsRemoteEndpoint(address, port) || !DecodeMultiNetDisconnectPacket(data, size, &packet) ||
         packet.sessionId != sessionId || packet.senderSlot == localSlot)
         return;
-    error = MULTI_NET_ERROR_REMOTE_CLOSED;
+    if (packet.reason == MULTI_NET_DISCONNECT_BUILD_MISMATCH)
+        error = MULTI_NET_ERROR_BUILD_MISMATCH;
+    else if (packet.reason == MULTI_NET_DISCONNECT_PROTOCOL)
+        error = MULTI_NET_ERROR_PROTOCOL;
+    else
+        error = MULTI_NET_ERROR_REMOTE_CLOSED;
     state = MULTI_NET_STATE_DISCONNECTED;
 }
 

@@ -2,6 +2,9 @@
 
 #include "AsciiManager.hpp"
 #include "GameManager.hpp"
+#ifdef TH08_MULTI
+#include "MultiPlayerCoordinator.hpp"
+#endif
 #include "ResultScreen.hpp"
 #include "ScoreDat.hpp"
 #include "ScreenEffect.hpp"
@@ -557,6 +560,13 @@ ChainCallbackResult TitleScreen::OnUpdateStartMenu()
                     return CHAIN_CALLBACK_RESULT_CONTINUE;
                 }
             case TITLE_MENU_ITEM_START_REPLAY:
+#ifdef TH08_MULTI
+                if (g_MultiPlayerCoordinator.IsConfigured())
+                {
+                    g_SoundPlayer.PlaySoundByIdx(SOUND_BACK, 0);
+                    return CHAIN_CALLBACK_RESULT_CONTINUE;
+                }
+#endif
                 g_GameManager.flags.isPracticeMode = FALSE;
                 g_GameManager.flags.isSpellPractice = FALSE;
 

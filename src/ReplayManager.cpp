@@ -4,6 +4,9 @@
 #include "EnemyManager.hpp"
 #include "Gui.hpp"
 #include "ReplayManager.hpp"
+#ifdef TH08_MULTI
+#include "MultiPlayerState.hpp"
+#endif
 #include "ResultScreen.hpp"
 #include "i18n.hpp"
 
@@ -677,6 +680,10 @@ void ReplayManager::StopRecording()
                   dateBuffer, checksum, checksumCursor, obfuscateOffset, obfuscateCursor)
 void ReplayManager::SaveReplay(const char *replayPath, const char *replayName)
 {
+#ifdef TH08_MULTI
+    if (g_MultiPlayerState.IsEnabled())
+        return;
+#endif
     ReplayManager *mgr;
     u8 *tempBuffer;
     ReplayData replayCopy;

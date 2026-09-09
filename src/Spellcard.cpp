@@ -8,6 +8,9 @@
 #include "EnemyManager.hpp"
 #include "Gui.hpp"
 #include "ItemManager.hpp"
+#ifdef TH08_MULTI
+#include "MultiPlayerRuntime.hpp"
+#endif
 #include "Player.hpp"
 #include "Spellcard.hpp"
 #include "Global.hpp"
@@ -1218,12 +1221,21 @@ void Spellcard::EndSpell()
             }
         }
 
+#ifdef TH08_MULTI
+        if (g_MultiPlayerState.IsEnabled())
+            SetPhysicalMultiPlayersInvulnerable(70, 16);
+        else
+        {
+#endif
         g_Player.bombInputLockFrames = 16;
         if (g_Player.playerState == PLAYER_STATE_ALIVE)
         {
             g_Player.timer = 70;
             g_Player.playerState = PLAYER_STATE_INVULNERABLE;
         }
+#ifdef TH08_MULTI
+        }
+#endif
         g_Gui.flags.bombDisplayUpdateFrames = 3;
         g_Gui.flags.lifeDisplayUpdateFrames = 3;
         g_SoundPlayer.PlaySoundByIdx(SOUND_BULLET_0_LOUD, 0);

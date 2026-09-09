@@ -9,6 +9,10 @@
 #include "EclOperands.hpp"
 #include "GameManager.hpp"
 #include "ItemManager.hpp"
+#ifdef TH08_MULTI
+#include "MultiPlayerRuntime.hpp"
+#include "MultiPlayerState.hpp"
+#endif
 #include "ReplayManager.hpp"
 #include "Player.hpp"
 #include "ScreenEffect.hpp"
@@ -1308,6 +1312,34 @@ void Gui::DrawGameScene()
             g_AsciiManager.AddFormatText(&elemPos, "%d", g_GameManager.GetLastSpellTimeOrbThreshold());
             g_AsciiManager.SetColor(0xffffffff);
         }
+#ifdef TH08_MULTI
+        if (g_MultiPlayerState.IsEnabled())
+        {
+            const MultiPlayerSlotState &p1 = g_MultiPlayerState.GetSlot(MULTI_PLAYER_P1);
+            const MultiPlayerSlotState &p2 = g_MultiPlayerState.GetSlot(MULTI_PLAYER_P2);
+            elemPos = Float3(464.0f, 216.0f, 0.0f);
+            g_AsciiManager.SetColor(0xffa0d8ff);
+            g_AsciiManager.AddFormatText(&elemPos, "1 L%d B%d P%d G%d", p1.lives, p1.bombs, p1.power, p1.graze);
+            elemPos = Float3(464.0f, 232.0f, 0.0f);
+            g_AsciiManager.SetColor(0xffffb0d0);
+            g_AsciiManager.AddFormatText(&elemPos, "2 L%d B%d P%d G%d", p2.lives, p2.bombs, p2.power, p2.graze);
+            elemPos = Float3(464.0f, 248.0f, 0.0f);
+            g_AsciiManager.SetColor(0xffffffff);
+            g_AsciiManager.AddFormatText(&elemPos, "H/Y %d  %d", p1.youkaiGauge, p2.youkaiGauge);
+            if (p1.presence == MULTI_PLAYER_SPIRIT || p2.presence == MULTI_PLAYER_SPIRIT)
+            {
+                const MultiPlayerSlotState &rescuer =
+                    p1.presence == MULTI_PLAYER_SPIRIT ? p2 : p1;
+                elemPos = Float3(464.0f, 264.0f, 0.0f);
+                g_AsciiManager.SetColor(0xffffff80);
+                g_AsciiManager.AddFormatText(
+                    &elemPos, "P%d SPIRIT %d/90",
+                    p1.presence == MULTI_PLAYER_SPIRIT ? 1 : 2,
+                    rescuer.reviveProgressFrames);
+            }
+            g_AsciiManager.SetColor(0xffffffff);
+        }
+#endif
     }
 
     g_AnmManager->FlushVertexBuffer();
