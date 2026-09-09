@@ -5,6 +5,8 @@
 
 namespace th08
 {
+struct Player;
+
 enum ItemType
 {
     ITEM_POWER_SMALL,
@@ -59,11 +61,19 @@ struct Item
     Item *next;
     Item *prev;
 
+#ifdef TH08_MULTI
+    void CollectPowerSmall(Player *collector);
+    void CollectPoint(Player *collector);
+    void CollectPointSmall(Player *collector);
+    void CollectPowerBig(Player *collector);
+    void CollectTimeOrb(Player *collector);
+#else
     void CollectPowerSmall();
     void CollectPoint();
     void CollectPointSmall();
     void CollectPowerBig();
     void CollectTimeOrb();
+#endif
 
     void Delete();
 };

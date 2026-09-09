@@ -6,6 +6,9 @@
 #include "Gui.hpp"
 #include "ItemManager.hpp"
 #include "Player.hpp"
+#ifdef TH08_MULTI
+#include "MultiPlayerRuntime.hpp"
+#endif
 #include "ReplayManager.hpp"
 #include "Spellcard.hpp"
 
@@ -15,6 +18,110 @@ namespace th08
 DIFFABLE_STATIC(ItemManager, g_ItemManager);
 DIFFABLE_STATIC(i32, g_MaxValuePointItemsCollected);
 DIFFABLE_STATIC_ARRAY_ASSIGN(i32, 6, g_PowerUpThresholds) = {8, 24, 48, 80, 128, 999};
+
+#ifdef TH08_MULTI
+static bool IsPhysicalItemCollector(Player *player)
+{
+    return player->primaryShtFile != NULL &&
+           g_MultiPlayerState.IsPhysical(GetMultiPlayerSlot(player)) &&
+           player->playerState != PLAYER_STATE_DYING &&
+           player->playerState != PLAYER_STATE_SPAWNING;
+}
+
+static f32 ItemDistanceSquared(const Float3 &itemPosition, const Player *player)
+{
+    f32 x = itemPosition.x - player->position.x;
+    f32 y = itemPosition.y - player->position.y;
+    return x * x + y * y;
+}
+
+static Player *ResolveNearestItemPlayer(const Float3 &itemPosition,
+                                        Player *p1, Player *p2)
+{
+    if (p1 == NULL)
+        return p2;
+    if (p2 == NULL)
+        return p1;
+    if (ItemDistanceSquared(itemPosition, p2) < ItemDistanceSquared(itemPosition, p1))
+        return p2;
+    return p1;
+}
+
+static Player *ResolveNearestPhysicalItemPlayer(const Float3 &itemPosition)
+{
+    Player *p1 = IsPhysicalItemCollector(&g_Player) ? &g_Player : NULL;
+    Player *p2 = IsPhysicalItemCollector(&g_Player2) ? &g_Player2 : NULL;
+    return ResolveNearestItemPlayer(itemPosition, p1, p2);
+}
+
+static bool IsPointOfCollectionActive(Player *player)
+{
+    u32 shotType;
+
+    if (!IsPhysicalItemCollector(player))
+        return false;
+    shotType = GetMultiPlayerShotType(player);
+    return player->position.y < player->primaryShtFile->pointItemValueLine &&
+           (GetMultiPlayerPower(player) >= 128 ||
+            player->focusMode != PLAYER_FOCUS_MODE_UNFOCUSED ||
+            shotType == 1 || shotType == 6);
+}
+
+static Player *ResolvePointOfCollectionPlayer(const Float3 &itemPosition)
+{
+    Player *p1 = IsPointOfCollectionActive(&g_Player) ? &g_Player : NULL;
+    Player *p2 = IsPointOfCollectionActive(&g_Player2) ? &g_Player2 : NULL;
+    return ResolveNearestItemPlayer(itemPosition, p1, p2);
+}
+
+static Player *ResolveCollidingItemPlayer(const Float3 &itemPosition)
+{
+    Player *p1 = NULL;
+    Player *p2 = NULL;
+
+    if (IsPhysicalItemCollector(&g_Player))
+    {
+        Float3 itemBox(g_Player.primaryShtFile->itemCollectionBoxSize,
+                       g_Player.primaryShtFile->itemCollectionBoxSize, 16.0f);
+        if (g_Player.CalcItemBoxCollision(const_cast<Float3 *>(&itemPosition), &itemBox))
+            p1 = &g_Player;
+    }
+    if (IsPhysicalItemCollector(&g_Player2))
+    {
+        Float3 itemBox(g_Player2.primaryShtFile->itemCollectionBoxSize,
+                       g_Player2.primaryShtFile->itemCollectionBoxSize, 16.0f);
+        if (g_Player2.CalcItemBoxCollision(const_cast<Float3 *>(&itemPosition), &itemBox))
+            p2 = &g_Player2;
+    }
+    return ResolveNearestItemPlayer(itemPosition, p1, p2);
+}
+
+static bool AllPlayersHaveFullPower()
+{
+    if (!g_MultiPlayerState.IsEnabled())
+        return GetMultiPlayerPower(&g_Player) >= 128;
+    return GetMultiPlayerPower(&g_Player) >= 128 &&
+           GetMultiPlayerPower(&g_Player2) >= 128;
+}
+
+static void CollectExtendForPlayer(Player *collector)
+{
+    if (GetMultiPlayerLives(collector) < 8)
+    {
+        AddMultiPlayerLives(collector, 1);
+        g_SoundPlayer.PlaySoundByIdx(SOUND_1UP, 0);
+        g_GameManager.IncreaseSubrank(200);
+        g_Gui.flags.lifeDisplayUpdateFrames = 2;
+    }
+    else if (GetMultiPlayerBombs(collector) < 8)
+    {
+        AddMultiPlayerBombs(collector, 1);
+        g_SoundPlayer.PlaySoundByIdx(SOUND_1UP, 0);
+        g_GameManager.IncreaseSubrank(200);
+        g_Gui.flags.bombDisplayUpdateFrames = 2;
+    }
+}
+#endif
 
 // FUNCTION: th08 0x441830
 ZunBool ZunTimer::operator!=(int value)
@@ -50,7 +157,12 @@ Item *ItemManager::SpawnItem(Float3 *position, ItemType itemType, i32 state)
         return &this->items[MAX_ITEMS];
     }
 
+#ifdef TH08_MULTI
+    if (AllPlayersHaveFullPower() &&
+        (itemType == ITEM_POWER_SMALL || itemType == ITEM_POWER_BIG))
+#else
     if (g_GameManager.GetPower() >= 128 && (itemType == ITEM_POWER_SMALL || itemType == ITEM_POWER_BIG))
+#endif
     {
         itemType = ITEM_POINT_SMALL;
     }
@@ -196,8 +308,13 @@ void ItemManager::OnUpdate()
     f32 angle;
     i32 soundIndex = 0;
     Item *item = this->itemListHead.next;
+#ifdef TH08_MULTI
+    Player *autoCollectPlayer;
+    Player *collector;
+#else
     Float3 itemBox(g_Player.primaryShtFile->itemCollectionBoxSize,
                    g_Player.primaryShtFile->itemCollectionBoxSize, 16.0f);
+#endif
 
     this->itemCount = 0;
     speed = g_Player.focusMode ? g_Player.secondaryShtFile->itemMovementSpeed
@@ -264,6 +381,32 @@ void ItemManager::OnUpdate()
         }
         else
         {
+#ifdef TH08_MULTI
+            autoCollectPlayer = item->state == ITEM_STATE_AUTOCOLLECT
+                                    ? ResolveNearestPhysicalItemPlayer(item->currentPosition)
+                                    : ResolvePointOfCollectionPlayer(item->currentPosition);
+            if (autoCollectPlayer != NULL)
+            {
+                angle = autoCollectPlayer->AngleToPoint(&item->currentPosition);
+                item->startPositionOrVelocity.FromAngleMagnitude(
+                    angle, autoCollectPlayer->primaryShtFile->itemAutoCollectSpeed);
+                item->state = ITEM_STATE_AUTOCOLLECT;
+                item->currentPosition += item->startPositionOrVelocity * g_Supervisor.framerateMultiplier;
+                goto pickup;
+            }
+            if (item->state == ITEM_STATE_AUTOCOLLECT)
+            {
+                item->startPositionOrVelocity.y = -0.7f;
+                item->state = ITEM_STATE_DEFAULT;
+            }
+            else
+            {
+                item->startPositionOrVelocity.x = 0.0f;
+                item->startPositionOrVelocity.z = 0.0f;
+                if (item->startPositionOrVelocity.y < -2.2f)
+                    item->startPositionOrVelocity.y = -2.2f;
+            }
+#else
             if (item->state == ITEM_STATE_AUTOCOLLECT ||
                 (g_Player.position.y < g_Player.primaryShtFile->pointItemValueLine &&
                  (g_GameManager.GetPower() >= 128.0 ||
@@ -289,6 +432,7 @@ void ItemManager::OnUpdate()
                 if (item->startPositionOrVelocity.y < -2.2f)
                     item->startPositionOrVelocity.y = -2.2f;
             }
+#endif
         }
 
 moveItem:
@@ -307,36 +451,89 @@ moveItem:
             item->startPositionOrVelocity.y = 3.0f;
 
 pickup:
+#ifdef TH08_MULTI
+        collector = item->state != ITEM_STATE_TIME_RISING
+                        ? ResolveCollidingItemPlayer(item->currentPosition)
+                        : NULL;
+        if (collector != NULL)
+#else
         if (item->state != ITEM_STATE_TIME_RISING &&
             g_Player.CalcItemBoxCollision(&item->currentPosition, &itemBox))
+#endif
         {
             g_ReplayManager->frameEventFlags |= REPLAY_FRAME_EVENT_ITEM_COLLECTED;
             switch (item->itemType)
             {
             case ITEM_POWER_SMALL:
+#ifdef TH08_MULTI
+                if (GetMultiPlayerPower(collector) >= 128)
+                    item->CollectPointSmall(collector);
+                else
+                    item->CollectPowerSmall(collector);
+#else
                 item->CollectPowerSmall();
+#endif
                 break;
             case ITEM_POINT:
+#ifdef TH08_MULTI
+                item->CollectPoint(collector);
+#else
                 item->CollectPoint();
+#endif
                 break;
             case ITEM_POINT_SMALL:
+#ifdef TH08_MULTI
+                item->CollectPointSmall(collector);
+#else
                 item->CollectPointSmall();
+#endif
                 break;
             case ITEM_POWER_BIG:
+#ifdef TH08_MULTI
+                if (GetMultiPlayerPower(collector) >= 128)
+                    item->CollectPointSmall(collector);
+                else
+                    item->CollectPowerBig(collector);
+#else
                 item->CollectPowerBig();
+#endif
                 break;
             case ITEM_BOMB:
+#ifdef TH08_MULTI
+                if (GetMultiPlayerBombs(collector) < 8)
+                {
+                    AddMultiPlayerBombs(collector, 1);
+                    g_Gui.flags.bombDisplayUpdateFrames = 2;
+                }
+#else
                 if (g_GameManager.GetBombsRemaining() < 8)
                 {
                     g_GameManager.AddToBombCount(1);
                     g_Gui.flags.bombDisplayUpdateFrames = 2;
                 }
+#endif
                 g_GameManager.IncreaseSubrank(5);
                 break;
             case ITEM_EXTEND:
+#ifdef TH08_MULTI
+                CollectExtendForPlayer(collector);
+#else
                 g_GameManager.CollectExtend();
+#endif
                 break;
             case ITEM_POWER_FULL:
+#ifdef TH08_MULTI
+                if (GetMultiPlayerPower(collector) < 128)
+                {
+                    g_BulletManager.ClearBulletsForTransition();
+                    g_Gui.ShowPopupText(0, 1);
+                    g_SoundPlayer.PlaySoundByIdx(SOUND_POWERUP, 0);
+                    g_AsciiManager.CreatePlayerPointPopup(&item->currentPosition, -1, 0xffffc0a0);
+                }
+                SetMultiPlayerPower(collector, 128);
+                if (AllPlayersHaveFullPower())
+                    this->ConvertAllPowerItemsToTimeOrbs(item);
+#else
                 if (g_GameManager.GetPower() < 128)
                 {
                     g_BulletManager.ClearBulletsForTransition();
@@ -346,11 +543,24 @@ pickup:
                     this->ConvertAllPowerItemsToTimeOrbs(item);
                 }
                 g_GameManager.SetPower(128);
+#endif
                 g_GameManager.AddScore(1000);
                 g_AsciiManager.CreatePlayerPointPopup(&item->currentPosition, 1000, 0xffffffff);
                 g_Gui.flags.powerDisplayUpdateFrames = 2;
                 break;
             case ITEM_POINT_STAR:
+#ifdef TH08_MULTI
+                if (collector->itemTimeOrbMode == 0)
+                {
+                    pickupScore = (GetMultiPlayerGraze(collector) / 40) * 10 + 300;
+                    if (pickupScore <= 0)
+                        pickupScore = 10;
+                }
+                else
+                {
+                    pickupScore = 100;
+                }
+#else
                 if (g_Player.itemTimeOrbMode == 0)
                 {
                     pickupScore = (g_GameManager.globals->graze / 40) * 10 + 300;
@@ -361,11 +571,16 @@ pickup:
                 {
                     pickupScore = 100;
                 }
+#endif
                 g_AsciiManager.CreateScorePopup(&item->currentPosition, pickupScore, 0xffffffff);
                 g_GameManager.AddScore(pickupScore);
                 break;
             case ITEM_TIME:
+#ifdef TH08_MULTI
+                item->CollectTimeOrb(collector);
+#else
                 item->CollectTimeOrb();
+#endif
                 break;
             default:
                 break;
@@ -388,51 +603,98 @@ executeOnly:
     if (soundIndex != 0)
         g_SoundPlayer.PlaySoundByIdx((SoundIdx)soundIndex, 0);
 
+#ifdef TH08_MULTI
+    Player *players[MULTI_PLAYER_COUNT] = {&g_Player, &g_Player2};
+    for (i32 playerIndex = 0; playerIndex < MULTI_PLAYER_COUNT; playerIndex++)
+    {
+        Player *player = players[playerIndex];
+        if (player->timeOrbGaugeChangeSuppressionTimer != 0)
+        {
+            player->timeOrbGaugeChangeSuppressionTimer--;
+            if (player->timeOrbGaugeChangeSuppressionTimer <= 0)
+                player->timeOrbGaugeChangeSuppressionTimer = 0;
+        }
+    }
+#else
     if (g_Player.timeOrbGaugeChangeSuppressionTimer != 0)
     {
         g_Player.timeOrbGaugeChangeSuppressionTimer--;
         if (g_Player.timeOrbGaugeChangeSuppressionTimer <= 0)
             g_Player.timeOrbGaugeChangeSuppressionTimer = 0;
     }
+#endif
 }
 
 // FUNCTION: th08 0x440cf0
 #pragma var_order(powerLevel, oldPowerLevel)
+#ifdef TH08_MULTI
+void Item::CollectPowerSmall(Player *collector)
+#else
 void Item::CollectPowerSmall()
+#endif
 {
     i32 powerLevel;
     i32 oldPowerLevel;
 
+#ifdef TH08_MULTI
+    if (GetMultiPlayerPower(collector) >= 0x80)
+#else
     if (g_GameManager.GetPower() >= 0x80)
+#endif
     {
         goto increaseSubrank;
     }
 
     powerLevel = 0;
+#ifdef TH08_MULTI
+    while (GetMultiPlayerPower(collector) >= g_PowerUpThresholds[powerLevel])
+#else
     while (g_GameManager.GetPower() >= g_PowerUpThresholds[powerLevel])
+#endif
     {
         powerLevel++;
     }
     oldPowerLevel = powerLevel;
 
     g_GameManager.character = 0;
+#ifdef TH08_MULTI
+    AddMultiPlayerPower(collector, 1);
+#else
     g_GameManager.AddPower(1);
+#endif
 
+#ifdef TH08_MULTI
+    if (GetMultiPlayerPower(collector) >= 0x80)
+#else
     if (g_GameManager.GetPower() >= 0x80)
+#endif
     {
+#ifdef TH08_MULTI
+        SetMultiPlayerPower(collector, 0x80);
+#else
         g_GameManager.SetPower(0x80);
+#endif
         if (!g_Spellcard.IsActive())
         {
             g_BulletManager.ClearBulletsForTransition();
         }
         g_Gui.ShowPopupText(0, 1);
+#ifdef TH08_MULTI
+        if (AllPlayersHaveFullPower())
+            g_ItemManager.ConvertAllPowerItemsToTimeOrbs(this);
+#else
         g_ItemManager.ConvertAllPowerItemsToTimeOrbs(this);
+#endif
     }
 
     g_GameManager.AddScore(10);
     g_Gui.flags.powerDisplayUpdateFrames = 2;
 
+#ifdef TH08_MULTI
+    while (GetMultiPlayerPower(collector) >= g_PowerUpThresholds[powerLevel])
+#else
     while (g_GameManager.GetPower() >= g_PowerUpThresholds[powerLevel])
+#endif
     {
         powerLevel++;
     }
@@ -453,23 +715,39 @@ increaseSubrank:
 
 // FUNCTION: th08 0x440e40
 #pragma var_order(pointItemValueBase, currentPointItemValue)
+#ifdef TH08_MULTI
+void Item::CollectPoint(Player *collector)
+#else
 void Item::CollectPoint()
+#endif
 {
     i32 pointItemValueBase = g_GameManager.globals->pointItemValue;
     i32 currentPointItemValue;
 
+#ifdef TH08_MULTI
+    currentPointItemValue = static_cast<ZunBool>(this->currentPosition.y < collector->primaryShtFile->pointItemValueLine)
+                                ? pointItemValueBase
+                                : pointItemValueBase / 2 -
+                                      (i32)(this->currentPosition.y - collector->primaryShtFile->pointItemValueLine) *
+                                          (g_GameManager.globals->pointItemValue / 1000);
+#else
     currentPointItemValue = static_cast<ZunBool>(this->currentPosition.y < g_Player.primaryShtFile->pointItemValueLine)
                                 ? pointItemValueBase
                                 : pointItemValueBase / 2 -
                                       (i32)(this->currentPosition.y - g_Player.primaryShtFile->pointItemValueLine) *
                                           (g_GameManager.globals->pointItemValue / 1000);
+#endif
     if (this->isMaxValue == 1)
     {
         currentPointItemValue = pointItemValueBase;
     }
 
     currentPointItemValue -= currentPointItemValue % 10;
+#ifdef TH08_MULTI
+    if (MultiPlayerGaugeIsExtremelyHuman(collector))
+#else
     if (g_GameManager.GaugeIsExtremelyHuman())
+#endif
     {
         currentPointItemValue += currentPointItemValue;
     }
@@ -500,7 +778,11 @@ void Item::CollectPoint()
         while ((ItemManager::UpdatePointItemExtendThreshold(),
                 g_GameManager.globals->pointItemsCollected >= g_GameManager.globals->nextPointItemExtendThreshold))
         {
+#ifdef TH08_MULTI
+            CollectExtendForPlayer(collector);
+#else
             g_GameManager.CollectExtend();
+#endif
             g_GameManager.globals->pointItemExtendsSoFar++;
         }
     }
@@ -511,16 +793,28 @@ void Item::CollectPoint()
 
 // FUNCTION: th08 0x441020
 #pragma var_order(pointItemValueBase, currentPointItemValue)
+#ifdef TH08_MULTI
+void Item::CollectPointSmall(Player *collector)
+#else
 void Item::CollectPointSmall()
+#endif
 {
     i32 pointItemValueBase = g_GameManager.globals->pointItemValue;
     i32 currentPointItemValue;
 
+#ifdef TH08_MULTI
+    currentPointItemValue = static_cast<ZunBool>(this->currentPosition.y < collector->primaryShtFile->pointItemValueLine)
+                                ? pointItemValueBase
+                                : pointItemValueBase / 2 -
+                                      (i32)(this->currentPosition.y - collector->primaryShtFile->pointItemValueLine) *
+                                          (g_GameManager.globals->pointItemValue / 1000);
+#else
     currentPointItemValue = static_cast<ZunBool>(this->currentPosition.y < g_Player.primaryShtFile->pointItemValueLine)
                                 ? pointItemValueBase
                                 : pointItemValueBase / 2 -
                                       (i32)(this->currentPosition.y - g_Player.primaryShtFile->pointItemValueLine) *
                                           (g_GameManager.globals->pointItemValue / 1000);
+#endif
     if (this->isMaxValue == 1)
     {
         currentPointItemValue = pointItemValueBase;
@@ -530,7 +824,11 @@ void Item::CollectPointSmall()
     pointItemValueBase -= pointItemValueBase % 10;
     currentPointItemValue /= 10;
     currentPointItemValue -= currentPointItemValue % 10;
+#ifdef TH08_MULTI
+    if (MultiPlayerGaugeIsExtremelyHuman(collector))
+#else
     if (g_GameManager.GaugeIsExtremelyHuman())
+#endif
     {
         currentPointItemValue += currentPointItemValue;
     }
@@ -546,40 +844,73 @@ void Item::CollectPointSmall()
 
 // FUNCTION: th08 0x441170
 #pragma var_order(powerLevel, oldPowerLevel)
+#ifdef TH08_MULTI
+void Item::CollectPowerBig(Player *collector)
+#else
 void Item::CollectPowerBig()
+#endif
 {
     i32 powerLevel;
     i32 oldPowerLevel;
 
+#ifdef TH08_MULTI
+    if (GetMultiPlayerPower(collector) >= 0x80)
+#else
     if (g_GameManager.GetPower() >= 0x80)
+#endif
     {
         return;
     }
 
     powerLevel = 0;
+#ifdef TH08_MULTI
+    while (GetMultiPlayerPower(collector) >= g_PowerUpThresholds[powerLevel])
+#else
     while (g_GameManager.GetPower() >= g_PowerUpThresholds[powerLevel])
+#endif
     {
         powerLevel++;
     }
     oldPowerLevel = powerLevel;
 
+#ifdef TH08_MULTI
+    AddMultiPlayerPower(collector, 8);
+#else
     g_GameManager.AddPower(8);
+#endif
 
+#ifdef TH08_MULTI
+    if (GetMultiPlayerPower(collector) >= 0x80)
+#else
     if (g_GameManager.GetPower() >= 0x80)
+#endif
     {
+#ifdef TH08_MULTI
+        SetMultiPlayerPower(collector, 0x80);
+#else
         g_GameManager.SetPower(0x80);
+#endif
         if (!g_Spellcard.IsActive())
         {
             g_BulletManager.ClearBulletsForTransition();
         }
         g_Gui.ShowPopupText(0, 1);
+#ifdef TH08_MULTI
+        if (AllPlayersHaveFullPower())
+            g_ItemManager.ConvertAllPowerItemsToTimeOrbs(this);
+#else
         g_ItemManager.ConvertAllPowerItemsToTimeOrbs(this);
+#endif
     }
 
     g_Gui.flags.powerDisplayUpdateFrames = 2;
     g_GameManager.AddScore(10);
 
+#ifdef TH08_MULTI
+    while (GetMultiPlayerPower(collector) >= g_PowerUpThresholds[powerLevel])
+#else
     while (g_GameManager.GetPower() >= g_PowerUpThresholds[powerLevel])
+#endif
     {
         powerLevel++;
     }
@@ -597,11 +928,19 @@ void Item::CollectPowerBig()
 
 // FUNCTION: th08 0x4412b0
 #pragma var_order(score)
+#ifdef TH08_MULTI
+void Item::CollectTimeOrb(Player *collector)
+#else
 void Item::CollectTimeOrb()
+#endif
 {
     i32 score;
 
+#ifdef TH08_MULTI
+    if (collector->itemTimeOrbMode == 0)
+#else
     if (g_Player.itemTimeOrbMode == 0)
+#endif
     {
         if (g_GameManager.globals->pointItemsCollectedInStage >= 2000)
         {
@@ -631,11 +970,20 @@ void Item::CollectTimeOrb()
     g_GameManager.AddTimeOrbs(1);
     g_Spellcard.AddBonusProgress(8000);
 
+#ifdef TH08_MULTI
+    if (collector->timeOrbGaugeChangeSuppressionTimer == 0)
+#else
     if (g_Player.timeOrbGaugeChangeSuppressionTimer == 0)
+#endif
     {
         score = 111;
+#ifdef TH08_MULTI
+        AddMultiPlayerYoukaiGauge(
+            collector, collector->focusMode ? score : -score, 0);
+#else
         g_GameManager.AddToYoukaiGauge(
             g_Player.focusMode ? score : -score, 0);
+#endif
     }
 }
 

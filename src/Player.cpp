@@ -652,7 +652,10 @@ void Player::Die()
         }
     }
 
-    g_ItemManager.CancelAutoCollect();
+#ifdef TH08_MULTI
+    if (!g_MultiPlayerState.IsEnabled())
+#endif
+        g_ItemManager.CancelAutoCollect();
 }
 
 // FUNCTION: th08 0x44aec0
@@ -1445,7 +1448,10 @@ i32 Player::UpdateDeathAndRespawn()
                     (MULTI_PLAYER_SHOT_TYPE(this) == 2 || MULTI_PLAYER_SHOT_TYPE(this) == 8 || MULTI_PLAYER_SHOT_TYPE(this) == 9))
                     g_ItemManager.SpawnItem(&this->position, ITEM_BOMB, ITEM_STATE_DEATH_DROP_SPREAD);
                 g_Gui.flags.powerDisplayUpdateFrames = 2;
-                g_ItemManager.CancelAutoCollect();
+#ifdef TH08_MULTI
+                if (!g_MultiPlayerState.IsEnabled())
+#endif
+                    g_ItemManager.CancelAutoCollect();
             }
             else
             {
