@@ -7,6 +7,9 @@
 #include "ItemManager.hpp"
 #include "AnmManager.hpp"
 #include "Player.hpp"
+#ifdef TH08_MULTI
+#include "MultiPlayerRuntime.hpp"
+#endif
 #include "SoundPlayer.hpp"
 #include "ReplayManager.hpp"
 #include "EnemyManager.hpp"
@@ -23,6 +26,60 @@ namespace th08
 // far before the main Player implementation that begins at 0x00449CA0. Its
 // production definitions live in PlayerBomb.cpp.
 DIFFABLE_STATIC(Player, g_Player);
+#ifdef TH08_MULTI
+Player g_Player2;
+#define MULTI_PLAYER_SHOT_TYPE(player) GetMultiPlayerShotType(player)
+#define MULTI_PLAYER_ANM_SLOT(player) ((player) == &g_Player2 ? ANM_FILE_SLOT_PLAYER_P2 : ANM_FILE_SLOT_PLAYER)
+#define MULTI_PLAYER_PRIMARY_SHT(player) ((player)->primaryShtFile)
+#define MULTI_PLAYER_SECONDARY_SHT(player) ((player)->secondaryShtFile)
+#define MULTI_PLAYER_IS_SOLO_HUMAN(player) MultiPlayerShotTypeIsSoloHuman(player)
+#define MULTI_PLAYER_IS_SOLO_YOUKAI(player) MultiPlayerShotTypeIsSoloYoukai(player)
+#define MULTI_PLAYER_INPUT_CURRENT(player) GetMultiPlayerInputCurrent(player)
+#define MULTI_PLAYER_INPUT_PREVIOUS(player) GetMultiPlayerInputPrevious(player)
+#define MULTI_PLAYER_GET_LIVES(player) GetMultiPlayerLives(player)
+#define MULTI_PLAYER_ADD_LIVES(player, amount) AddMultiPlayerLives(player, amount)
+#define MULTI_PLAYER_GET_BOMBS(player) GetMultiPlayerBombs(player)
+#define MULTI_PLAYER_SET_BOMBS(player, value) SetMultiPlayerBombs(player, value)
+#define MULTI_PLAYER_ADD_BOMBS(player, amount) AddMultiPlayerBombs(player, amount)
+#define MULTI_PLAYER_GET_POWER(player) GetMultiPlayerPower(player)
+#define MULTI_PLAYER_SET_POWER(player, value) SetMultiPlayerPower(player, value)
+#define MULTI_PLAYER_ADD_POWER(player, amount) AddMultiPlayerPower(player, amount)
+#define MULTI_PLAYER_GET_GAUGE(player) GetMultiPlayerYoukaiGauge(player)
+#define MULTI_PLAYER_SET_GAUGE(player, value) SetMultiPlayerYoukaiGauge(player, value)
+#define MULTI_PLAYER_ADD_GAUGE(player, amount, force) AddMultiPlayerYoukaiGauge(player, amount, force)
+#define MULTI_PLAYER_GAUGE_EXTREME_HUMAN(player) MultiPlayerGaugeIsExtremelyHuman(player)
+#define MULTI_PLAYER_GAUGE_MODERATE_HUMAN(player) MultiPlayerGaugeIsModeratelyHuman(player)
+#define MULTI_PLAYER_GAUGE_EXTREME_YOUKAI(player) MultiPlayerGaugeIsExtremelyYoukai(player)
+#define MULTI_PLAYER_GAUGE_MODERATE_YOUKAI(player) MultiPlayerGaugeIsModeratelyYoukai(player)
+#define MULTI_PLAYER_BOMB_IS_IN_USE(player) ((player)->bombState.isInUse)
+#define MULTI_PLAYER_DAMAGE_THRESHOLD(player) ((player)->damageAccumulatorThreshold)
+#else
+#define MULTI_PLAYER_SHOT_TYPE(player) (g_GameManager.shotType)
+#define MULTI_PLAYER_ANM_SLOT(player) (ANM_FILE_SLOT_PLAYER)
+#define MULTI_PLAYER_PRIMARY_SHT(player) (g_Player.primaryShtFile)
+#define MULTI_PLAYER_SECONDARY_SHT(player) (g_Player.secondaryShtFile)
+#define MULTI_PLAYER_IS_SOLO_HUMAN(player) (g_GameManager.IsSoloHuman())
+#define MULTI_PLAYER_IS_SOLO_YOUKAI(player) (g_GameManager.IsSoloYoukai())
+#define MULTI_PLAYER_INPUT_CURRENT(player) (g_GuiMessageInputCurrent)
+#define MULTI_PLAYER_INPUT_PREVIOUS(player) (g_GuiMessageInputPrevious)
+#define MULTI_PLAYER_GET_LIVES(player) (g_GameManager.GetLives())
+#define MULTI_PLAYER_ADD_LIVES(player, amount) (g_GameManager.AddLives(amount))
+#define MULTI_PLAYER_GET_BOMBS(player) (g_GameManager.GetBombsRemaining())
+#define MULTI_PLAYER_SET_BOMBS(player, value) (g_GameManager.SetBombCount(value))
+#define MULTI_PLAYER_ADD_BOMBS(player, amount) (g_GameManager.AddToBombCount(amount))
+#define MULTI_PLAYER_GET_POWER(player) (g_GameManager.GetPower())
+#define MULTI_PLAYER_SET_POWER(player, value) (g_GameManager.SetPower(value))
+#define MULTI_PLAYER_ADD_POWER(player, amount) (g_GameManager.AddPower(amount))
+#define MULTI_PLAYER_GET_GAUGE(player) (g_GameManager.GetYoukaiGauge())
+#define MULTI_PLAYER_SET_GAUGE(player, value) (g_GameManager.SetYoukaiGauge(value))
+#define MULTI_PLAYER_ADD_GAUGE(player, amount, force) (g_GameManager.AddToYoukaiGauge(amount, force))
+#define MULTI_PLAYER_GAUGE_EXTREME_HUMAN(player) (g_GameManager.GaugeIsExtremelyHuman())
+#define MULTI_PLAYER_GAUGE_MODERATE_HUMAN(player) (g_GameManager.GaugeIsModeratelyHuman())
+#define MULTI_PLAYER_GAUGE_EXTREME_YOUKAI(player) (g_GameManager.GaugeIsExtremelyYoukai())
+#define MULTI_PLAYER_GAUGE_MODERATE_YOUKAI(player) (g_GameManager.GaugeIsModeratelyYoukai())
+#define MULTI_PLAYER_BOMB_IS_IN_USE(player) (g_Player.bombState.isInUse)
+#define MULTI_PLAYER_DAMAGE_THRESHOLD(player) (g_Player.damageAccumulatorThreshold)
+#endif
 DIFFABLE_STATIC(i32, g_PlayerNormalBombCount);
 DIFFABLE_STATIC(i32, g_PlayerDeathbombCount);
 DIFFABLE_STATIC_ARRAY(i16, 6, g_PlayerGaugeBounds);
@@ -460,16 +517,20 @@ void Player::AwardGraze(Float3 *position, i32 suppressExtraItems)
     i32 gaugeGain;
     i32 score;
 
-    if (g_Player.bombState.isInUse == 0)
+    if (MULTI_PLAYER_BOMB_IS_IN_USE(this) == 0)
     {
-        gaugeGain = g_GameManager.GaugeIsExtremelyHuman()
+        gaugeGain = MULTI_PLAYER_GAUGE_EXTREME_HUMAN(this)
                         ? 3
-                        : (g_GameManager.GaugeIsModeratelyHuman() ? 2 : 1);
+                        : (MULTI_PLAYER_GAUGE_MODERATE_HUMAN(this) ? 2 : 1);
 
+#ifdef TH08_MULTI
+        AddMultiPlayerGraze(this, gaugeGain, gaugeGain);
+#else
         if (g_GameManager.globals->grazeInStage < 99999)
             g_GameManager.globals->grazeInStage += gaugeGain;
         if (g_GameManager.globals->graze < 999999)
             g_GameManager.globals->graze += gaugeGain;
+#endif
     }
 
     midpoint = (this->position + *position) / 2.0f;
@@ -478,14 +539,14 @@ void Player::AwardGraze(Float3 *position, i32 suppressExtraItems)
     g_Gui.flags.grazeDisplayUpdateFrames = 2;
     g_SoundPlayer.PlaySoundPositionedByIdx(SOUND_GRAZE, position->x);
 
-    score = g_GameManager.GaugeIsModeratelyYoukai() ? 4000 : 2000;
+    score = MULTI_PLAYER_GAUGE_MODERATE_YOUKAI(this) ? 4000 : 2000;
     g_GameManager.AddScore(score);
     if (this->IsYoukai())
-        g_GameManager.AddToYoukaiGauge(100, 0);
+        MULTI_PLAYER_ADD_GAUGE(this, 100, 0);
 
-    if (!g_GameManager.IsSoloHuman() || g_GameManager.shotType == 10)
+    if (!MULTI_PLAYER_IS_SOLO_HUMAN(this) || MULTI_PLAYER_SHOT_TYPE(this) == 10)
     {
-        if (g_EnemyManager.HasBoss() && g_GameManager.GaugeIsExtremelyYoukai())
+        if (g_EnemyManager.HasBoss() && MULTI_PLAYER_GAUGE_EXTREME_YOUKAI(this))
         {
             g_ItemManager.SpawnItem(position, ITEM_TIME_APEX_AUTOCOLLECT_REQUEST,
                                     ITEM_STATE_AUTOCOLLECT);
@@ -493,7 +554,7 @@ void Player::AwardGraze(Float3 *position, i32 suppressExtraItems)
             {
                 g_ItemManager.SpawnItem(position, ITEM_TIME_APEX_AUTOCOLLECT_REQUEST,
                                         ITEM_STATE_AUTOCOLLECT);
-                if (!g_GameManager.IsSoloYoukai())
+                if (!MULTI_PLAYER_IS_SOLO_YOUKAI(this))
                     g_ItemManager.SpawnItem(position, ITEM_TIME_APEX_AUTOCOLLECT_REQUEST,
                                             ITEM_STATE_AUTOCOLLECT);
             }
@@ -531,10 +592,10 @@ void Player::Die()
     }
     else
     {
-        g_GameManager.SetYoukaiGauge(0);
-        if (g_GameManager.GetBombsRemaining() >= 1)
+        MULTI_PLAYER_SET_GAUGE(this, 0);
+        if (MULTI_PLAYER_GET_BOMBS(this) >= 1)
         {
-            this->deathbombWindowFrames = g_GameManager.GetBombsRemaining() * 6;
+            this->deathbombWindowFrames = MULTI_PLAYER_GET_BOMBS(this) * 6;
             if (g_GameManager.GetTimeOrbs() >= g_GameManager.GetLastSpellTimeOrbThreshold())
                 this->deathbombWindowFrames += 7;
             if (this->deathbombWindowFrames > 15)
@@ -547,8 +608,8 @@ void Player::Die()
                     this->deathbombWindowFrames = 30;
             }
 
-            if (g_GameManager.shotType == 0 || g_GameManager.shotType == 4 ||
-                g_GameManager.shotType == 5)
+            if (MULTI_PLAYER_SHOT_TYPE(this) == 0 || MULTI_PLAYER_SHOT_TYPE(this) == 4 ||
+                MULTI_PLAYER_SHOT_TYPE(this) == 5)
             {
                 this->deathbombWindowFrames *= 9;
                 this->deathbombWindowFrames /= 5;
@@ -616,43 +677,43 @@ i32 Player::UpdateMovementAndOptions()
     verticalSpeed = 0.0f;
     oldDirection = this->movementDirection;
 
-    if ((g_GuiMessageInputCurrent & 0x50) == 0x50)
+    if ((MULTI_PLAYER_INPUT_CURRENT(this) & 0x50) == 0x50)
         this->movementDirection = PLAYER_DIRECTION_UP_LEFT;
-    else if ((g_GuiMessageInputCurrent & 0x60) == 0x60)
+    else if ((MULTI_PLAYER_INPUT_CURRENT(this) & 0x60) == 0x60)
         this->movementDirection = PLAYER_DIRECTION_DOWN_LEFT;
-    else if ((g_GuiMessageInputCurrent & 0x90) == 0x90)
+    else if ((MULTI_PLAYER_INPUT_CURRENT(this) & 0x90) == 0x90)
         this->movementDirection = PLAYER_DIRECTION_UP_RIGHT;
-    else if ((g_GuiMessageInputCurrent & 0xA0) == 0xA0)
+    else if ((MULTI_PLAYER_INPUT_CURRENT(this) & 0xA0) == 0xA0)
         this->movementDirection = PLAYER_DIRECTION_DOWN_RIGHT;
-    else if ((g_GuiMessageInputCurrent & 0x20) != 0)
+    else if ((MULTI_PLAYER_INPUT_CURRENT(this) & 0x20) != 0)
         this->movementDirection = PLAYER_DIRECTION_DOWN;
-    else if ((g_GuiMessageInputCurrent & 0x10) != 0)
+    else if ((MULTI_PLAYER_INPUT_CURRENT(this) & 0x10) != 0)
         this->movementDirection = PLAYER_DIRECTION_UP;
-    else if ((g_GuiMessageInputCurrent & 0x40) != 0)
+    else if ((MULTI_PLAYER_INPUT_CURRENT(this) & 0x40) != 0)
         this->movementDirection = PLAYER_DIRECTION_LEFT;
-    else if ((g_GuiMessageInputCurrent & 0x80) != 0)
+    else if ((MULTI_PLAYER_INPUT_CURRENT(this) & 0x80) != 0)
         this->movementDirection = PLAYER_DIRECTION_RIGHT;
     else
         this->movementDirection = PLAYER_DIRECTION_NONE;
 
     focus = this->bombState.isInUse
                 ? (this->bombState.callbackVariant & 1)
-                : (g_GuiMessageInputCurrent & 4);
+                : (MULTI_PLAYER_INPUT_CURRENT(this) & 4);
 
     if (focus)
     {
         if (this->focusMode != PLAYER_FOCUS_MODE_FOCUSED)
         {
-            if (g_GameManager.shotType <= 3)
+            if (MULTI_PLAYER_SHOT_TYPE(this) <= 3)
             {
                 option = this->optionStates;
                 for (optionIndex = 0; optionIndex < 4; optionIndex++, option++)
                 {
                     memset(option, 0, 0x2F4);
                     option->updateCallback =
-                        g_PlayerOptionUpdateCallbacks[g_GameManager.shotType].callbacks[optionIndex];
+                        g_PlayerOptionUpdateCallbacks[MULTI_PLAYER_SHOT_TYPE(this)].callbacks[optionIndex];
                     option->renderCallback =
-                        g_PlayerOptionRenderCallbacks[g_GameManager.shotType].callbacks[optionIndex];
+                        g_PlayerOptionRenderCallbacks[MULTI_PLAYER_SHOT_TYPE(this)].callbacks[optionIndex];
                     if (option->updateCallback != NULL)
                     {
                         option->lifecycleState = PLAYER_OPTION_INITIALIZING;
@@ -666,7 +727,7 @@ i32 Player::UpdateMovementAndOptions()
                 }
             }
 
-            if (g_GameManager.shotType < 4)
+            if (MULTI_PLAYER_SHOT_TYPE(this) < 4)
             {
                 this->anmFile->SetAndExecuteScriptIdx(&this->mainVm, PLAYER_MAIN_ANM_IDLE_FOCUSED);
                 this->currentHorizontalSpeed = 0.0f;
@@ -695,7 +756,7 @@ i32 Player::UpdateMovementAndOptions()
         if (this->focusMode != PLAYER_FOCUS_MODE_UNFOCUSED)
         {
             option2 = this->optionStates;
-            if (g_GameManager.shotType < 3)
+            if (MULTI_PLAYER_SHOT_TYPE(this) < 3)
             {
                 for (optionExitIndex = 0; optionExitIndex < 4; optionExitIndex++, option2++)
                 {
@@ -707,7 +768,7 @@ i32 Player::UpdateMovementAndOptions()
                     }
                 }
             }
-            else if (g_GameManager.shotType == 3)
+            else if (MULTI_PLAYER_SHOT_TYPE(this) == 3)
             {
                 for (route3Index = 0; route3Index < 2; route3Index++, option2++)
                 {
@@ -730,7 +791,7 @@ i32 Player::UpdateMovementAndOptions()
                     this->positionHistory[historyInitIndex] = this->position;
             }
 
-            if (g_GameManager.shotType < 4)
+            if (MULTI_PLAYER_SHOT_TYPE(this) < 4)
             {
                 this->anmFile->SetAndExecuteScriptIdx(&this->mainVm, PLAYER_MAIN_ANM_IDLE_UNFOCUSED);
                 this->currentHorizontalSpeed = 0.0f;
@@ -752,9 +813,9 @@ i32 Player::UpdateMovementAndOptions()
         this->focusMode = PLAYER_FOCUS_MODE_UNFOCUSED;
     }
 
-    if (g_GameManager.shotType >= 4)
+    if (MULTI_PLAYER_SHOT_TYPE(this) >= 4)
     {
-        if ((g_GameManager.shotType & 1) != 0)
+        if ((MULTI_PLAYER_SHOT_TYPE(this) & 1) != 0)
             this->isYoukai = 1;
         else
             this->isYoukai = 0;
@@ -795,7 +856,7 @@ i32 Player::UpdateMovementAndOptions()
     verticalSpeed *= this->verticalSpeedMultiplier;
 
 #define SET_PLAYER_SCRIPT(idx) (this->anmFile->SetAndExecuteScriptIdx(&this->mainVm, (idx)))
-    if (g_GameManager.shotType < 4)
+    if (MULTI_PLAYER_SHOT_TYPE(this) < 4)
     {
         if (this->focusMode == PLAYER_FOCUS_MODE_UNFOCUSED)
         {
@@ -822,7 +883,7 @@ i32 Player::UpdateMovementAndOptions()
     }
     else
     {
-        if ((g_GameManager.shotType & 1) != 0)
+        if ((MULTI_PLAYER_SHOT_TYPE(this) & 1) != 0)
         {
             if (horizontalSpeed < 0.0f && this->currentHorizontalSpeed >= 0.0f)
                 SET_PLAYER_SCRIPT(PLAYER_MAIN_ANM_MOVE_LEFT_FOCUSED);
@@ -889,7 +950,7 @@ i32 Player::UpdateMovementAndOptions()
         }
     }
 
-    if ((g_GuiMessageInputCurrent & 1) != 0 && !g_Gui.IsDialoguePresent() && !g_GameManager.IsTampered())
+    if ((MULTI_PLAYER_INPUT_CURRENT(this) & 1) != 0 && !g_Gui.IsDialoguePresent() && !g_GameManager.IsTampered())
         this->StartShooting();
 
     if (!g_Gui.IsDialoguePresent() && this->focusTransitionFrames >= 30 &&
@@ -907,7 +968,7 @@ i32 Player::UpdateMovementAndOptions()
                                        : (f32)this->shootingGaugeChangeRampTimer / 15.0f);
                 if (this->focusMode == PLAYER_FOCUS_MODE_UNFOCUSED)
                     gaugeDelta = -gaugeDelta;
-                g_GameManager.AddToYoukaiGauge((i32)((f32)gaugeDelta * g_Supervisor.framerateMultiplier), 0);
+                MULTI_PLAYER_ADD_GAUGE(this, (i32)((f32)gaugeDelta * g_Supervisor.framerateMultiplier), 0);
                 this->shootingGaugeChangeRampTimer++;
             }
         }
@@ -917,19 +978,19 @@ i32 Player::UpdateMovementAndOptions()
                 this->shootingGaugeChangeRampTimer = 0;
             if (this->gaugeShiftDelayTimer >= 30)
             {
-                if (fabs((double)g_GameManager.GetYoukaiGauge()) <= 9.0)
+                if (fabs((double)MULTI_PLAYER_GET_GAUGE(this)) <= 9.0)
                 {
-                    g_GameManager.SetYoukaiGauge(0);
+                    MULTI_PLAYER_SET_GAUGE(this, 0);
                 }
                 else
                 {
-                    if (g_GameManager.GaugeIsExtremelyYoukai()) gaugeDelta = -5;
-                    else if (g_GameManager.GaugeIsModeratelyYoukai()) gaugeDelta = -3;
-                    else if (g_GameManager.GetYoukaiGauge() > 0) gaugeDelta = -2;
-                    else if (!g_GameManager.GaugeIsModeratelyHuman()) gaugeDelta = 2;
-                    else if (!g_GameManager.GaugeIsExtremelyHuman()) gaugeDelta = 3;
+                    if (MULTI_PLAYER_GAUGE_EXTREME_YOUKAI(this)) gaugeDelta = -5;
+                    else if (MULTI_PLAYER_GAUGE_MODERATE_YOUKAI(this)) gaugeDelta = -3;
+                    else if (MULTI_PLAYER_GET_GAUGE(this) > 0) gaugeDelta = -2;
+                    else if (!MULTI_PLAYER_GAUGE_MODERATE_HUMAN(this)) gaugeDelta = 2;
+                    else if (!MULTI_PLAYER_GAUGE_EXTREME_HUMAN(this)) gaugeDelta = 3;
                     else gaugeDelta = 5;
-                    g_GameManager.AddToYoukaiGauge((i32)((f32)gaugeDelta * g_Supervisor.framerateMultiplier), 0);
+                    MULTI_PLAYER_ADD_GAUGE(this, (i32)((f32)gaugeDelta * g_Supervisor.framerateMultiplier), 0);
                 }
             }
             else
@@ -937,7 +998,7 @@ i32 Player::UpdateMovementAndOptions()
         }
     }
 
-    if ((g_GameManager.GaugeIsExtremelyHuman() || g_GameManager.GaugeIsExtremelyYoukai()) &&
+    if ((MULTI_PLAYER_GAUGE_EXTREME_HUMAN(this) || MULTI_PLAYER_GAUGE_EXTREME_YOUKAI(this)) &&
         this->extremeGaugeEffect == NULL)
     {
         this->extremeGaugeEffect =
@@ -947,7 +1008,7 @@ i32 Player::UpdateMovementAndOptions()
     if (this->extremeGaugeEffect != NULL)
     {
         this->extremeGaugeEffect->position = this->position;
-        if (!g_GameManager.GaugeIsExtremelyHuman() && !g_GameManager.GaugeIsExtremelyYoukai())
+        if (!MULTI_PLAYER_GAUGE_EXTREME_HUMAN(this) && !MULTI_PLAYER_GAUGE_EXTREME_YOUKAI(this))
         {
             this->extremeGaugeEffect->active = 0;
             this->extremeGaugeEffect = NULL;
@@ -1023,6 +1084,48 @@ ZunResult Player::RegisterChain(u32 playerType)
     return ZUN_SUCCESS;
 }
 
+#ifdef TH08_MULTI
+ZunResult Player::RegisterSecondPlayerChain(u32 playerType)
+{
+    Player *player = &g_Player2;
+    PlayerRawShtFile *secondaryShtFile;
+    PlayerRawShtFile *primaryShtFile;
+
+    if (IsResourceReloadDisabled())
+    {
+        primaryShtFile = player->primaryShtFile;
+        secondaryShtFile = player->secondaryShtFile;
+    }
+
+    memset(player, 0, sizeof(*player));
+
+    if (IsResourceReloadDisabled())
+    {
+        player->primaryShtFile = primaryShtFile;
+        player->secondaryShtFile = secondaryShtFile;
+    }
+
+    player->timer = 0;
+    player->playerType = playerType;
+
+    player->calcChain = g_Chain.CreateElem((ChainCallback)Player::OnUpdate);
+    player->calcChain->arg = player;
+    player->calcChain->addedCallback = (ChainLifetimeCallback)Player::AddedCallback;
+    player->calcChain->deletedCallback = (ChainLifetimeCallback)Player::DeletedCallback;
+    if (g_Chain.AddToCalcChain(player->calcChain, CHAIN_PRIO_CALC_PLAYER))
+        return ZUN_ERROR;
+
+    player->drawChainHighPrio = g_Chain.CreateElem((ChainCallback)Player::OnDrawHighPrio);
+    player->drawChainLowPrio = g_Chain.CreateElem((ChainCallback)Player::OnDrawLowPrio);
+    player->drawChainHighPrio->arg = player;
+    player->drawChainLowPrio->arg = player;
+    g_Chain.AddToDrawChain(player->drawChainHighPrio, CHAIN_PRIO_DRAW_PLAYER_HIGH_PRIO);
+    g_Chain.AddToDrawChain(player->drawChainLowPrio, CHAIN_PRIO_DRAW_PLAYER_LOW_PRIO);
+
+    return ZUN_SUCCESS;
+}
+#endif
+
 
 // FUNCTION: th08 0x44c390
 ChainCallbackResult Player::OnUpdate(Player *player)
@@ -1047,6 +1150,14 @@ ChainCallbackResult Player::OnUpdate(Player *player)
     {
         player->extremeGaugeEffect->vm.flagsWord &= 0xfff7ffff;
     }
+#ifdef TH08_MULTI
+    if (g_MultiPlayerState.IsEnabled() && player->playerState == PLAYER_STATE_SPIRIT)
+    {
+        player->mainVm.color1.a = 80;
+        g_AnmManager->ExecuteScript(&player->mainVm);
+        return CHAIN_CALLBACK_RESULT_CONTINUE;
+    }
+#endif
     player->UpdateCollisionRegions();
     player->UpdateBombState();
     if (player->playerState == PLAYER_STATE_DYING)
@@ -1070,17 +1181,21 @@ updateD180:
     player->UpdateShots();
     player->UpdateShooting();
     player->UpdateGaugePosition();
+#ifdef TH08_MULTI
+    if (g_MultiPlayerState.IsEnabled())
+        UpdateMultiPlayerRevival(player);
+#endif
     if (!g_Gui.IsDialoguePresent())
     {
         g_GameManager.runActiveFrames += 1;
         g_GameManager.stageActiveFrames += 1;
-        if (g_GameManager.GaugeIsExtremelyHuman())
+        if (MULTI_PLAYER_GAUGE_EXTREME_HUMAN(player))
         {
             g_GameManager.runExtremeHumanFrames += 1;
             g_GameManager.stageExtremeHumanFrames += 1;
             g_GameManager.AddScore(100);
         }
-        else if (g_GameManager.GaugeIsExtremelyYoukai())
+        else if (MULTI_PLAYER_GAUGE_EXTREME_YOUKAI(player))
         {
             g_GameManager.runExtremeYoukaiFrames += 1;
             g_GameManager.stageExtremeYoukaiFrames += 1;
@@ -1168,16 +1283,16 @@ void Player::UpdateBombState()
         if (this->bombState.callbackVariant < PLAYER_BOMB_CALLBACK_SPECIAL)
         {
             if ((this->bombState.callbackVariant & 1) != 0)
-                g_GameManager.AddToYoukaiGauge(26000 / this->bombState.duration, 1);
+                MULTI_PLAYER_ADD_GAUGE(this, 26000 / this->bombState.duration, 1);
             else
-                g_GameManager.AddToYoukaiGauge(-26000 / this->bombState.duration, 1);
+                MULTI_PLAYER_ADD_GAUGE(this, -26000 / this->bombState.duration, 1);
         }
         return;
     }
 
-    if ((g_GuiMessageInputCurrent & 2) != 0 && !g_GameManager.IsTampered() && !g_Gui.IsDialoguePresent() &&
+    if ((MULTI_PLAYER_INPUT_CURRENT(this) & 2) != 0 && !g_GameManager.IsTampered() && !g_Gui.IsDialoguePresent() &&
         this->deathbombWindowFrames != 0 &&
-        g_GameManager.GetBombsRemaining() > 0 &&
+        MULTI_PLAYER_GET_BOMBS(this) > 0 &&
         this->bombInputLockFrames == 0)
     {
         if ((((*reinterpret_cast<u32 *>(&g_GameManager.flags) >>
@@ -1186,9 +1301,9 @@ void Player::UpdateBombState()
             (((*reinterpret_cast<u32 *>(&g_GameManager.flags) >>
                GameManagerFlags::SPELL_PRACTICE_SHIFT) & 1) != 0))
         {
-            if ((g_GuiMessageInputCurrent & 2) != 0)
+            if ((MULTI_PLAYER_INPUT_CURRENT(this) & 2) != 0)
             {
-                if ((g_GuiMessageInputCurrent & 2) != (g_GuiMessageInputPrevious & 2))
+                if ((MULTI_PLAYER_INPUT_CURRENT(this) & 2) != (MULTI_PLAYER_INPUT_PREVIOUS(this) & 2))
                     g_SoundPlayer.PlaySoundByIdx(SOUND_INVALID_ACTION, 0);
             }
             goto done;
@@ -1224,20 +1339,20 @@ acceptBomb:
             this->bombState.callbackVariant += 2;
             if (isForced)
             {
-                this->bombState.bombsConsumed = g_GameManager.GetBombsRemaining();
-                g_GameManager.SetBombCount(0);
+                this->bombState.bombsConsumed = MULTI_PLAYER_GET_BOMBS(this);
+                MULTI_PLAYER_SET_BOMBS(this, 0);
             }
             else
             {
-                if (g_GameManager.GetBombsRemaining() < 2)
+                if (MULTI_PLAYER_GET_BOMBS(this) < 2)
                 {
-                    this->bombState.bombsConsumed = g_GameManager.GetBombsRemaining();
-                    g_GameManager.SetBombCount(0);
+                    this->bombState.bombsConsumed = MULTI_PLAYER_GET_BOMBS(this);
+                    MULTI_PLAYER_SET_BOMBS(this, 0);
                 }
                 else
                 {
                     this->bombState.bombsConsumed = 2;
-                    g_GameManager.AddToBombCount(-2);
+                    MULTI_PLAYER_ADD_BOMBS(this, -2);
                 }
             }
             ++g_PlayerDeathbombCount;
@@ -1245,7 +1360,7 @@ acceptBomb:
         else
         {
             ++g_PlayerNormalBombCount;
-            g_GameManager.AddToBombCount(-1);
+            MULTI_PLAYER_ADD_BOMBS(this, -1);
         }
         g_GameManager.AddToBombsUsed(1);
     }
@@ -1265,9 +1380,9 @@ acceptBomb:
     g_Spellcard.InvalidateCaptureAndEnableBombDamage();
 
     this->deathbombWindowFrames += 6;
-    if (this->deathbombWindowFrames > g_Player.primaryShtFile->deathbombWindowFrames)
+    if (this->deathbombWindowFrames > MULTI_PLAYER_PRIMARY_SHT(this)->deathbombWindowFrames)
     {
-        this->deathbombWindowFrames = g_Player.primaryShtFile->deathbombWindowFrames;
+        this->deathbombWindowFrames = MULTI_PLAYER_PRIMARY_SHT(this)->deathbombWindowFrames;
     }
         goto done;
     }
@@ -1314,27 +1429,27 @@ i32 Player::UpdateDeathAndRespawn()
                                            ? -500
                                            : -g_GameManager.globals->currentTimeOrbs / 10);
 
-            if (g_GameManager.GetLives() > 0)
+            if (MULTI_PLAYER_GET_LIVES(this) > 0)
             {
-                if (g_GameManager.GetPower() <= 16)
-                    g_GameManager.SetPower(0);
+                if (MULTI_PLAYER_GET_POWER(this) <= 16)
+                    MULTI_PLAYER_SET_POWER(this, 0);
                 else
-                    g_GameManager.AddPower(-16);
+                    MULTI_PLAYER_ADD_POWER(this, -16);
                 g_ItemManager.SpawnItem(&this->position, ITEM_POWER_BIG, ITEM_STATE_DEATH_DROP_SPREAD);
                 g_ItemManager.SpawnItem(&this->position, ITEM_POWER_SMALL, ITEM_STATE_DEATH_DROP_SPREAD);
                 g_ItemManager.SpawnItem(&this->position, ITEM_POWER_SMALL, ITEM_STATE_DEATH_DROP_SPREAD);
                 g_ItemManager.SpawnItem(&this->position, ITEM_POWER_SMALL, ITEM_STATE_DEATH_DROP_SPREAD);
                 g_ItemManager.SpawnItem(&this->position, ITEM_POWER_SMALL, ITEM_STATE_DEATH_DROP_SPREAD);
                 g_ItemManager.SpawnItem(&this->position, ITEM_POWER_SMALL, ITEM_STATE_DEATH_DROP_SPREAD);
-                if (g_GameManager.GetBombsRemaining() > 0 &&
-                    (g_GameManager.shotType == 2 || g_GameManager.shotType == 8 || g_GameManager.shotType == 9))
+                if (MULTI_PLAYER_GET_BOMBS(this) > 0 &&
+                    (MULTI_PLAYER_SHOT_TYPE(this) == 2 || MULTI_PLAYER_SHOT_TYPE(this) == 8 || MULTI_PLAYER_SHOT_TYPE(this) == 9))
                     g_ItemManager.SpawnItem(&this->position, ITEM_BOMB, ITEM_STATE_DEATH_DROP_SPREAD);
                 g_Gui.flags.powerDisplayUpdateFrames = 2;
                 g_ItemManager.CancelAutoCollect();
             }
             else
             {
-                g_GameManager.SetPower(0);
+                MULTI_PLAYER_SET_POWER(this, 0);
                 g_ItemManager.SpawnItem(&this->position, ITEM_POWER_FULL, ITEM_STATE_DEATH_DROP_SPREAD);
                 g_ItemManager.SpawnItem(&this->position, ITEM_POWER_FULL, ITEM_STATE_DEATH_DROP_SPREAD);
                 g_ItemManager.SpawnItem(&this->position, ITEM_POWER_FULL, ITEM_STATE_DEATH_DROP_SPREAD);
@@ -1365,21 +1480,34 @@ i32 Player::UpdateDeathAndRespawn()
         this->timer = 0;
         this->mainVm.scale.x = 3.0f;
         this->mainVm.scale.y = 3.0f;
-        if ((g_GameManager.shotType < 4 && this->focusMode == PLAYER_FOCUS_MODE_UNFOCUSED) ||
-            (g_GameManager.shotType & 1) == 0)
+        if ((MULTI_PLAYER_SHOT_TYPE(this) < 4 && this->focusMode == PLAYER_FOCUS_MODE_UNFOCUSED) ||
+            (MULTI_PLAYER_SHOT_TYPE(this) & 1) == 0)
             this->anmFile->SetAndExecuteScriptIdx(&this->mainVm, PLAYER_MAIN_ANM_IDLE_UNFOCUSED);
         else
             this->anmFile->SetAndExecuteScriptIdx(&this->mainVm, PLAYER_MAIN_ANM_IDLE_FOCUSED);
 
-        if (g_GameManager.GetLives() <= 0)
+        if (MULTI_PLAYER_GET_LIVES(this) <= 0)
         {
+#ifdef TH08_MULTI
+            if (g_MultiPlayerState.IsEnabled())
+            {
+                MultiPlayerSlot slot = GetMultiPlayerSlot(this);
+                g_MultiPlayerState.EnterSpirit(slot);
+                this->playerState = PLAYER_STATE_SPIRIT;
+                MULTI_PLAYER_SET_BOMBS(this, (i32)MULTI_PLAYER_PRIMARY_SHT(this)->initialBombCount);
+                this->mainVm.color1.a = 80;
+                if (g_MultiPlayerState.BothPlayersUnableToContinue())
+                    g_GameManager.showRetryMenu = 1;
+                return 0;
+            }
+#endif
             g_GameManager.showRetryMenu = 1;
         }
         else
         {
-            g_GameManager.AddLives(-1);
+            MULTI_PLAYER_ADD_LIVES(this, -1);
             g_Gui.flags.lifeDisplayUpdateFrames = 2;
-            g_GameManager.SetBombCount((i32)g_Player.primaryShtFile->initialBombCount);
+            MULTI_PLAYER_SET_BOMBS(this, (i32)MULTI_PLAYER_PRIMARY_SHT(this)->initialBombCount);
             g_Gui.flags.bombDisplayUpdateFrames = 2;
             return 1;
         }
@@ -1415,7 +1543,7 @@ void Player::UpdateRespawnAnimation()
         {
             this->timer = 240;
         }
-        this->deathbombWindowFrames = g_Player.primaryShtFile->deathbombWindowFrames;
+        this->deathbombWindowFrames = MULTI_PLAYER_PRIMARY_SHT(this)->deathbombWindowFrames;
     }
 }
 // FUNCTION: th08 0x44d2c0
@@ -1549,20 +1677,20 @@ ZunResult Player::AddedCallback(Player *player)
 
     if (IsResourceReloadEnabled())
     {
-        if (Player::LoadShtFile(&player->primaryShtFile, g_Player1ShtFiles[g_GameManager.shotType]) != ZUN_SUCCESS)
+        if (Player::LoadShtFile(&player->primaryShtFile, g_Player1ShtFiles[MULTI_PLAYER_SHOT_TYPE(player)]) != ZUN_SUCCESS)
             return ZUN_ERROR;
-        if (Player::LoadShtFile(&player->secondaryShtFile, g_Player2ShtFile[g_GameManager.shotType]) != ZUN_SUCCESS)
+        if (Player::LoadShtFile(&player->secondaryShtFile, g_Player2ShtFile[MULTI_PLAYER_SHOT_TYPE(player)]) != ZUN_SUCCESS)
             return ZUN_ERROR;
-        player->anmFile = g_AnmManager->PreloadAnm(ANM_FILE_SLOT_PLAYER, g_PlayerAnmFilenames[g_GameManager.shotType]);
+        player->anmFile = g_AnmManager->PreloadAnm(MULTI_PLAYER_ANM_SLOT(player), g_PlayerAnmFilenames[MULTI_PLAYER_SHOT_TYPE(player)]);
         if (player->anmFile == NULL)
             return ZUN_ERROR;
     }
     else
     {
-        player->anmFile = g_AnmManager->GetAnm(ANM_FILE_SLOT_PLAYER);
+        player->anmFile = g_AnmManager->GetAnm(MULTI_PLAYER_ANM_SLOT(player));
     }
 
-    if (g_GameManager.shotType < 4 || (g_GameManager.shotType & 1) == 0)
+    if (MULTI_PLAYER_SHOT_TYPE(player) < 4 || (MULTI_PLAYER_SHOT_TYPE(player) & 1) == 0)
         player->anmFile->SetAndExecuteScriptIdx(&player->mainVm, PLAYER_MAIN_ANM_IDLE_UNFOCUSED);
     else
         player->anmFile->SetAndExecuteScriptIdx(&player->mainVm, PLAYER_MAIN_ANM_IDLE_FOCUSED);
@@ -1574,13 +1702,13 @@ ZunResult Player::AddedCallback(Player *player)
     for (i = 0; i < 0x180; ++i)
         reinterpret_cast<PlayerCollisionRegion *>(player->damageRegions)[i].Reset();
 
-    player->hurtboxHalfSize.y = g_Player.primaryShtFile->hurtboxSize / 2.0f;
+    player->hurtboxHalfSize.y = MULTI_PLAYER_PRIMARY_SHT(player)->hurtboxSize / 2.0f;
     player->hurtboxHalfSize.x = player->hurtboxHalfSize.y;
     player->hurtboxHalfSize.z = 5.0f;
-    player->grazeHalfSize.y = g_Player.primaryShtFile->grazeBoxSize / 2.0f;
+    player->grazeHalfSize.y = MULTI_PLAYER_PRIMARY_SHT(player)->grazeBoxSize / 2.0f;
     player->grazeHalfSize.x = player->grazeHalfSize.y;
     player->grazeHalfSize.z = 5.0f;
-    player->itemCollectionHalfSize.y = g_Player.primaryShtFile->itemCollectionBoxSize / 2.0f;
+    player->itemCollectionHalfSize.y = MULTI_PLAYER_PRIMARY_SHT(player)->itemCollectionBoxSize / 2.0f;
     player->itemCollectionHalfSize.x = player->itemCollectionHalfSize.y;
     player->itemCollectionHalfSize.z = 5.0f;
 
@@ -1597,14 +1725,14 @@ ZunResult Player::AddedCallback(Player *player)
     player->gaugeShiftDelayTimer = 0;
     player->shootingGaugeChangeRampTimer = 0;
 
-    player->bombState.updateCallbacks = g_PlayerBombCallbacksByShotType[g_GameManager.shotType * 2];
-    player->bombState.drawCallbacks = g_PlayerBombCallbacksByShotType[g_GameManager.shotType * 2 + 1];
+    player->bombState.updateCallbacks = g_PlayerBombCallbacksByShotType[MULTI_PLAYER_SHOT_TYPE(player) * 2];
+    player->bombState.drawCallbacks = g_PlayerBombCallbacksByShotType[MULTI_PLAYER_SHOT_TYPE(player) * 2 + 1];
 
     player->bombState.isInUse = 0;
     player->baseShotAngle = -ZUN_PI / 2.0f;
     player->verticalSpeedMultiplier = 1.0f;
     player->horizontalSpeedMultiplier = 1.0f;
-    player->deathbombWindowFrames = g_Player.primaryShtFile->deathbombWindowFrames;
+    player->deathbombWindowFrames = MULTI_PLAYER_PRIMARY_SHT(player)->deathbombWindowFrames;
 
     if (IsResourceReloadEnabled())
         g_AsciiManager.SetGaugeInterrupt(1);
@@ -1618,13 +1746,13 @@ ZunResult Player::AddedCallback(Player *player)
     g_PlayerGaugeBounds[1] = 10000;
     g_PlayerGaugeBounds[3] = 8000;
     g_PlayerGaugeBounds[5] = 2000;
-    if (g_GameManager.shotType == 3)
+    if (MULTI_PLAYER_SHOT_TYPE(player) == 3)
     {
         g_PlayerGaugeBounds[0] = -5000;
         g_PlayerGaugeBounds[2] = -3000;
         g_PlayerGaugeBounds[4] = -2000;
     }
-    else if (g_GameManager.shotType == 10)
+    else if (MULTI_PLAYER_SHOT_TYPE(player) == 10)
     {
         g_PlayerGaugeBounds[0] = -5000;
         g_PlayerGaugeBounds[2] = -3000;
@@ -1633,13 +1761,13 @@ ZunResult Player::AddedCallback(Player *player)
         g_PlayerGaugeBounds[3] = 3000;
         g_PlayerGaugeBounds[5] = 2000;
     }
-    else if (g_GameManager.IsSoloHuman())
+    else if (MULTI_PLAYER_IS_SOLO_HUMAN(player))
     {
         g_PlayerGaugeBounds[1] = 2000;
         g_PlayerGaugeBounds[3] = 8000;
         g_PlayerGaugeBounds[5] = 2001;
     }
-    else if (g_GameManager.IsSoloYoukai())
+    else if (MULTI_PLAYER_IS_SOLO_YOUKAI(player))
     {
         g_PlayerGaugeBounds[0] = -2000;
         g_PlayerGaugeBounds[2] = -8000;
@@ -1651,16 +1779,16 @@ ZunResult Player::AddedCallback(Player *player)
         player->positionHistory[i] = player->position;
     player->focusMode = PLAYER_FOCUS_MODE_UNINITIALIZED;
 
-    if (g_GameManager.shotType > 3)
+    if (MULTI_PLAYER_SHOT_TYPE(player) > 3)
     {
         option = player->optionStates;
         for (m = 0; m < 4; ++m, option++)
         {
             memset(option, 0, 0x2F4);
             option->updateCallback =
-                g_PlayerOptionUpdateCallbacks[g_GameManager.shotType].callbacks[m];
+                g_PlayerOptionUpdateCallbacks[MULTI_PLAYER_SHOT_TYPE(player)].callbacks[m];
             option->renderCallback =
-                g_PlayerOptionRenderCallbacks[g_GameManager.shotType].callbacks[m];
+                g_PlayerOptionRenderCallbacks[MULTI_PLAYER_SHOT_TYPE(player)].callbacks[m];
             if (option->updateCallback != NULL)
             {
                 option->lifecycleState = PLAYER_OPTION_INITIALIZING;
@@ -1674,12 +1802,18 @@ ZunResult Player::AddedCallback(Player *player)
         }
     }
 
-    if (g_GameManager.IsSoloHuman())
+    if (MULTI_PLAYER_IS_SOLO_HUMAN(player))
         player->damageAccumulatorThreshold = 27;
     else
         player->damageAccumulatorThreshold = 40;
+#ifdef TH08_MULTI
+    if (player == &g_Player)
+        g_EnemyManager.spawnTemplate.playerShotHitAccumulator =
+            player->damageAccumulatorThreshold;
+#else
     g_EnemyManager.spawnTemplate.playerShotHitAccumulator =
         player->damageAccumulatorThreshold;
+#endif
     return ZUN_SUCCESS;
 }
 
@@ -1688,22 +1822,22 @@ ZunResult Player::DeletedCallback(Player *player)
 {
     if (IsBulletManagerAnmReleaseRequired())
     {
-        g_AnmManager->ReleaseAnm(ANM_FILE_SLOT_PLAYER);
+        g_AnmManager->ReleaseAnm(MULTI_PLAYER_ANM_SLOT(player));
         g_AsciiManager.SetGaugeInterrupt(99);
         g_AsciiManager.SetBossMarkerInterrupt(0, 99);
         g_AsciiManager.SetBossMarkerInterrupt(1, 99);
         g_AsciiManager.SetBossMarkerInterrupt(2, 99);
 
-        if (g_Player.primaryShtFile != NULL)
+        if (MULTI_PLAYER_PRIMARY_SHT(player) != NULL)
         {
-            g_ZunMemory.Free(g_Player.primaryShtFile);
-            g_Player.primaryShtFile = NULL;
+            g_ZunMemory.Free(MULTI_PLAYER_PRIMARY_SHT(player));
+            MULTI_PLAYER_PRIMARY_SHT(player) = NULL;
         }
 
-        if (g_Player.secondaryShtFile != NULL)
+        if (MULTI_PLAYER_SECONDARY_SHT(player) != NULL)
         {
-            g_ZunMemory.Free(g_Player.secondaryShtFile);
-            g_Player.secondaryShtFile = NULL;
+            g_ZunMemory.Free(MULTI_PLAYER_SECONDARY_SHT(player));
+            MULTI_PLAYER_SECONDARY_SHT(player) = NULL;
         }
     }
 
@@ -1720,6 +1854,18 @@ void Player::CutChain()
     g_Chain.Cut(g_Player.drawChainLowPrio);
     g_Player.drawChainLowPrio = NULL;
 }
+
+#ifdef TH08_MULTI
+void Player::CutSecondPlayerChain()
+{
+    g_Chain.Cut(g_Player2.calcChain);
+    g_Player2.calcChain = NULL;
+    g_Chain.Cut(g_Player2.drawChainHighPrio);
+    g_Player2.drawChainHighPrio = NULL;
+    g_Chain.Cut(g_Player2.drawChainLowPrio);
+    g_Player2.drawChainLowPrio = NULL;
+}
+#endif
 
 // FUNCTION: th08 0x44dd70
 #pragma var_order(i, descriptor, header, path)
@@ -3241,9 +3387,9 @@ i32 Player::UpdateShooting()
 
     if (this->shotTimer.HasTicked())
     {
-        if (g_Player.bombState.isInUse == 0 ||
-            (g_GameManager.shotType != 1 && g_GameManager.shotType != 7 &&
-             g_GameManager.shotType != 6))
+        if (MULTI_PLAYER_BOMB_IS_IN_USE(this) == 0 ||
+            (MULTI_PLAYER_SHOT_TYPE(this) != 1 && MULTI_PLAYER_SHOT_TYPE(this) != 7 &&
+             MULTI_PLAYER_SHOT_TYPE(this) != 6))
         {
             this->SpawnShots((i32)this->shotTimer);
         }
@@ -3256,7 +3402,7 @@ i32 Player::UpdateShooting()
         this->shotTimer = -1;
     }
 
-    if ((g_GuiMessageInputCurrent & TH_BUTTON_SHOOT) != 0)
+    if ((MULTI_PLAYER_INPUT_CURRENT(this) & TH_BUTTON_SHOOT) != 0)
     {
         if ((i32)this->shotTimer < 0)
         {
@@ -3327,14 +3473,14 @@ i32 Player::CalcDamageToEnemy(Float3 *enemyPosition, Float3 *enemySize, i32 *hit
         else
             damage += bullet->damage / 5 ? bullet->damage / 5 : 1;
 
-        while (*hitAccumulator >= g_Player.damageAccumulatorThreshold)
+        while (*hitAccumulator >= MULTI_PLAYER_DAMAGE_THRESHOLD(this))
         {
-            if (g_GameManager.GaugeIsExtremelyHuman())
+            if (MULTI_PLAYER_GAUGE_EXTREME_HUMAN(this))
             {
                 if (bullet->descriptor->extremeGaugeBehavior < 0)
                     g_ItemManager.SpawnItem(&bullet->position, ITEM_TIME, ITEM_STATE_TIME_RISING);
             }
-            *hitAccumulator -= g_Player.damageAccumulatorThreshold;
+            *hitAccumulator -= MULTI_PLAYER_DAMAGE_THRESHOLD(this);
         }
 
         if (bullet->shotType != 4 && bullet->shotType != 5 && bullet->shotType != 6)

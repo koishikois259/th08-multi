@@ -42,6 +42,8 @@ def build(build_type, verbose=False, jobs=1, targets=None, fresh=False):
         ninja_args += ["build/th08e.dll"]
     elif build_type == BuildType.OBJDIFFBUILD:
         ninja_args += ["objdiff"]
+    elif build_type == BuildType.MULTI:
+        ninja_args += ["build/th08-multi.exe"]
     else:
         ninja_args += ["build/th08.exe"]
 
@@ -73,7 +75,7 @@ def main():
     )
     parser.add_argument(
         "--build-type",
-        choices=["normal", "bugfix", "diffbuild", "dllbuild", "objdiffbuild"],
+        choices=["normal", "bugfix", "diffbuild", "dllbuild", "objdiffbuild", "multi"],
         default="normal",
         help=textwrap.dedent(
             """Note: the bugfix build contains bugfixes that would otherwise make the build non-functional."""
@@ -107,6 +109,7 @@ def main():
           - Normal, bugfix and diff builds will build th08.exe
           - dll builds will build th08e.dll
           - objdiff builds will build all the object files necessary for objdiff.
+          - multi builds will build th08-multi.exe with TH08_MULTI enabled.
     """),
     )
     args = parser.parse_args()
@@ -123,6 +126,8 @@ def main():
         build_type = BuildType.DLLBUILD
     elif args.build_type == "objdiffbuild":
         build_type = BuildType.OBJDIFFBUILD
+    elif args.build_type == "multi":
+        build_type = BuildType.MULTI
 
     if args.object_name is not None:
         if args.targets:

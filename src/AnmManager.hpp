@@ -160,6 +160,11 @@ enum AnmFileSlot
     ANM_FILE_SLOT_RESULT_TEXT = 22,
     ANM_FILE_SLOT_MUSIC_ROOM = 23,
     ANM_FILE_SLOT_ENDING = 24,
+#ifdef TH08_MULTI
+    // Multiplayer-only resource owner. The retail table has 256 entries, so
+    // this does not change AnmManager's layout.
+    ANM_FILE_SLOT_PLAYER_P2 = 25,
+#endif
 };
 
 enum AnmOpcode

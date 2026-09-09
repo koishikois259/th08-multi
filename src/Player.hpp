@@ -85,6 +85,9 @@ enum PlayerState
     PLAYER_STATE_SPAWNING,
     PLAYER_STATE_DYING = 2,
     PLAYER_STATE_INVULNERABLE = 3,
+#ifdef TH08_MULTI
+    PLAYER_STATE_SPIRIT = 4,
+#endif
 };
 
 enum PlayerFocusMode
@@ -424,12 +427,18 @@ struct Player
     i32 damageAccumulatorThreshold;
 
     static ZunResult RegisterChain(u32 playerType);
+#ifdef TH08_MULTI
+    static ZunResult RegisterSecondPlayerChain(u32 playerType);
+#endif
     static ChainCallbackResult OnUpdate(Player *player);
     static ChainCallbackResult OnDrawHighPrio(Player *player);
     static ChainCallbackResult OnDrawLowPrio(Player *player);
     static ZunResult AddedCallback(Player *player);
     static ZunResult DeletedCallback(Player *player);
     static void CutChain();
+#ifdef TH08_MULTI
+    static void CutSecondPlayerChain();
+#endif
 
     PlayerCollisionRegion *CreateRectCancelRegion(const Float3 *center, f32 width, f32 height,
                                                   i32 collisionValue, i32 lifetime);
@@ -539,5 +548,8 @@ C_ASSERT(offsetof(Player, deathbombEffect) == 0xE2B28);
 C_ASSERT(offsetof(Player, damageAccumulatorThreshold) == 0xE2B2C);
 
 DIFFABLE_EXTERN(Player, g_Player);
+#ifdef TH08_MULTI
+extern Player g_Player2;
+#endif
 
 } /* namespace th08 */

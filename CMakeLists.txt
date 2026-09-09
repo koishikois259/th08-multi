@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.20)
 
 project(th08-modern LANGUAGES CXX)
 
+option(TH08_ENABLE_MULTIPLAYER "Build the th08-multi cooperative fork" ON)
+
 if(NOT CMAKE_SIZEOF_VOID_P EQUAL 4)
     message(FATAL_ERROR "TH08 currently requires a 32-bit toolchain.")
 endif()
@@ -76,6 +78,14 @@ set(TH08_GAME_SOURCES
     src/pbg/PbgFile.cpp
 )
 
+if(TH08_ENABLE_MULTIPLAYER)
+    list(APPEND TH08_GAME_SOURCES
+        src/MultiPlayerState.cpp
+        src/MultiNetProtocol.cpp
+        src/MultiPlayerRuntime.cpp
+    )
+endif()
+
 if(WIN32)
     list(APPEND TH08_GAME_SOURCES src/modern/windows_runtime.cpp)
     add_executable(th08-modern WIN32 ${TH08_GAME_SOURCES})
@@ -96,6 +106,9 @@ target_compile_definitions(th08-modern PRIVATE
     TH08_MODERN_PORT
     WIN32_LEAN_AND_MEAN
 )
+if(TH08_ENABLE_MULTIPLAYER)
+    target_compile_definitions(th08-modern PRIVATE TH08_MULTI)
+endif()
 target_include_directories(th08-modern PRIVATE
     "${CMAKE_SOURCE_DIR}/src"
     "${TH08_GENERATED_DIR}"
@@ -220,4 +233,95 @@ else()
     message(FATAL_ERROR "The modern Windows target currently supports MSVC and MinGW.")
 endif()
 
-set_target_properties(th08-modern PROPERTIES OUTPUT_NAME "th08-modern")
+if(TH08_ENABLE_MULTIPLAYER)
+    set_target_properties(th08-modern PROPERTIES OUTPUT_NAME "th08-multi")
+else()
+    set_target_properties(th08-modern PROPERTIES OUTPUT_NAME "th08-modern")
+endif()
+
+include(CTest)
+if(BUILD_TESTING AND TH08_ENABLE_MULTIPLAYER)
+    add_executable(multiplayer-state-tests
+        tests/MultiplayerStateTests.cpp
+        src/MultiPlayerState.cpp
+    )
+    target_compile_features(multiplayer-state-tests PRIVATE cxx_std_98)
+    target_compile_definitions(multiplayer-state-tests PRIVATE TH08_MULTI_STANDALONE_TEST)
+    target_include_directories(multiplayer-state-tests PRIVATE "${CMAKE_SOURCE_DIR}/src")
+    if(WIN32)
+        target_compile_definitions(multiplayer-state-tests PRIVATE
+            TH08_MODERN_PORT
+            TH08_MULTI
+            WIN32_LEAN_AND_MEAN
+        )
+        if(MINGW)
+            target_compile_options(multiplayer-state-tests PRIVATE
+                -O0
+                -fpermissive
+                -mms-bitfields
+                -Wno-write-strings
+                "-include${CMAKE_SOURCE_DIR}/src/modern/windows_compat.hpp"
+                "-idirafter${TH08_DX8_SANITIZED_INCLUDE}"
+            )
+        elseif(MSVC)
+            target_include_directories(multiplayer-state-tests SYSTEM PRIVATE "${TH08_DX8_SDK_ROOT}/include")
+        endif()
+    elseif(UNIX AND NOT APPLE)
+        target_compile_definitions(multiplayer-state-tests PRIVATE
+            TH08_MODERN_PORT
+            TH08_MODERN_LINUX
+            TH08_MULTI
+        )
+        target_compile_options(multiplayer-state-tests PRIVATE
+            -O0
+            -fpermissive
+            "-include${CMAKE_SOURCE_DIR}/src/modern/linux/linux_compat.hpp"
+        )
+        target_include_directories(multiplayer-state-tests BEFORE PRIVATE
+            "${CMAKE_SOURCE_DIR}/src/modern/linux/include"
+        )
+    endif()
+    add_test(NAME multiplayer-state COMMAND multiplayer-state-tests)
+
+    add_executable(multiplayer-net-tests
+        tests/MultiNetProtocolTests.cpp
+        src/MultiNetProtocol.cpp
+    )
+    target_compile_features(multiplayer-net-tests PRIVATE cxx_std_98)
+    target_compile_definitions(multiplayer-net-tests PRIVATE TH08_MULTI_STANDALONE_TEST)
+    target_include_directories(multiplayer-net-tests PRIVATE "${CMAKE_SOURCE_DIR}/src")
+    if(WIN32)
+        target_compile_definitions(multiplayer-net-tests PRIVATE
+            TH08_MODERN_PORT
+            TH08_MULTI
+            WIN32_LEAN_AND_MEAN
+        )
+        if(MINGW)
+            target_compile_options(multiplayer-net-tests PRIVATE
+                -O0
+                -fpermissive
+                -mms-bitfields
+                -Wno-write-strings
+                "-include${CMAKE_SOURCE_DIR}/src/modern/windows_compat.hpp"
+                "-idirafter${TH08_DX8_SANITIZED_INCLUDE}"
+            )
+        elseif(MSVC)
+            target_include_directories(multiplayer-net-tests SYSTEM PRIVATE "${TH08_DX8_SDK_ROOT}/include")
+        endif()
+    elseif(UNIX AND NOT APPLE)
+        target_compile_definitions(multiplayer-net-tests PRIVATE
+            TH08_MODERN_PORT
+            TH08_MODERN_LINUX
+            TH08_MULTI
+        )
+        target_compile_options(multiplayer-net-tests PRIVATE
+            -O0
+            -fpermissive
+            "-include${CMAKE_SOURCE_DIR}/src/modern/linux/linux_compat.hpp"
+        )
+        target_include_directories(multiplayer-net-tests BEFORE PRIVATE
+            "${CMAKE_SOURCE_DIR}/src/modern/linux/include"
+        )
+    endif()
+    add_test(NAME multiplayer-net COMMAND multiplayer-net-tests)
+endif()

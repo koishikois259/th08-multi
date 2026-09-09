@@ -14,6 +14,7 @@ class BuildType(Enum):
     DIFFBUILD = 3
     DLLBUILD = 4
     OBJDIFFBUILD = 5
+    MULTI = 6
 
 
 def configure(build_type):
@@ -42,6 +43,9 @@ def configure(build_type):
         if build_type in [BuildType.DIFFBUILD, BuildType.DLLBUILD]:
             writer.variable("cl_flags", "$cl_flags /DDIFFBUILD")
             writer.variable("cl_flags_pbg", "$cl_flags_pbg /DDIFFBUILD")
+        if build_type == BuildType.MULTI:
+            writer.variable("cl_flags", "$cl_flags /DTH08_MULTI")
+            writer.variable("cl_flags_pbg", "$cl_flags_pbg /DTH08_MULTI")
         writer.variable("rc", "rc.exe")
         writer.variable("link", "link.exe")
         writer.variable(
@@ -124,6 +128,9 @@ def configure(build_type):
             "Supervisor": small_codegen + " /Ob1",
             "MusicRoom": small_codegen,
             "Player": debug_codegen,
+            "MultiPlayerState": debug_codegen,
+            "MultiNetProtocol": debug_codegen,
+            "MultiPlayerRuntime": debug_codegen,
             "ReplayManager": debug_codegen,
             "ResultScreen": small_codegen + " /Oi-",
             "ScoreDat": debug_codegen,
@@ -176,6 +183,8 @@ def configure(build_type):
             "TitleScreen",
             "zwave",
         ]
+        if build_type == BuildType.MULTI:
+            cxx_sources.extend(["MultiPlayerState", "MultiNetProtocol", "MultiPlayerRuntime"])
 
         # These ECL translation units have a closed natural production-link
         # contract and keep the exact generic /Oi /Gr compile profile used by
@@ -399,8 +408,9 @@ def configure(build_type):
         # KERNEL32, USER32, GDI32, ADVAPI32, ole32.  Static DX libraries remain
         # first and libraries that contribute no descriptor may remain listed.
         th08_link_libs = "dxguid.lib d3dx8.lib dinput8.lib dsound.lib d3d8.lib winmm.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib"
+        executable_path = "$builddir/th08-multi.exe" if build_type == BuildType.MULTI else "$builddir/th08.exe"
         writer.build(
-            "$builddir/th08.exe",
+            executable_path,
             "link",
             inputs=objfiles,
             implicit=re_probe_objects,
@@ -423,6 +433,50 @@ def configure(build_type):
                 "link_flags": "/DLL /debug /pdb:$builddir/th08e.pdb /export:DetourFinishHelperProcess,@1,NONAME /def:$builddir/th08.def /export:Direct3DCreate8 /export:malloc /export:calloc /export:realloc /export:??2@YAPAXI@Z /export:free /export:_msize",
             },
         )
+
+        if build_type == BuildType.MULTI:
+            writer.build(
+                "$builddir/tests/MultiplayerStateTests.obj",
+                "cc",
+                "tests/MultiplayerStateTests.cpp",
+            )
+            writer.build(
+                "$builddir/multiplayer-state-tests.exe",
+                "link",
+                inputs=[
+                    "$builddir/MultiPlayerState.obj",
+                    "$builddir/tests/MultiplayerStateTests.obj",
+                ],
+                variables={
+                    "link_libs": "kernel32.lib",
+                    "link_flags": "/subsystem:console /machine:X86 /incremental:no",
+                },
+            )
+            writer.build(
+                "$builddir/tests/MultiNetProtocolTests.obj",
+                "cc",
+                "tests/MultiNetProtocolTests.cpp",
+            )
+            writer.build(
+                "$builddir/multiplayer-net-tests.exe",
+                "link",
+                inputs=[
+                    "$builddir/MultiNetProtocol.obj",
+                    "$builddir/tests/MultiNetProtocolTests.obj",
+                ],
+                variables={
+                    "link_libs": "kernel32.lib",
+                    "link_flags": "/subsystem:console /machine:X86 /incremental:no",
+                },
+            )
+            writer.build(
+                "multiplayer-tests",
+                "phony",
+                [
+                    "$builddir/multiplayer-state-tests.exe",
+                    "$builddir/multiplayer-net-tests.exe",
+                ],
+            )
 
         writer.build(
             "$builddir/detours.lib",

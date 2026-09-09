@@ -89,8 +89,10 @@ The revival interaction follows the TH06 multiplayer patch:
 1. The living player overlaps the spirit.
 2. The living player is not shooting and holds Focus for 90 simulation frames
    (1.5 seconds at 60 FPS).
-3. The living player transfers one life to the spirit player.
-4. The revived player returns with one life and normal respawn invulnerability.
+3. The living player spends one reserve life.
+4. The spirit returns to its current physical life with normal respawn
+   invulnerability; no additional reserve life is added. This matches the TH06
+   patch's life-counter semantics.
 
 The transfer is not allowed if it would leave no valid living player. Progress
 is cancelled when overlap, Focus, or the no-shoot condition is broken.
