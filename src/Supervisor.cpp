@@ -130,7 +130,11 @@ ChainCallbackResult Supervisor::OnUpdate(Supervisor *s)
             g_MultiPlayerCoordinator.GetDesyncFrame(),
             g_MultiPlayerCoordinator.GetLatestRemoteFrame(),
             g_MultiPlayerCoordinator.GetLatestAcknowledgedFrame());
-        return CHAIN_CALLBACK_RESULT_EXIT_GAME_ERROR;
+        // A failed lockstep session cannot be resumed by rebuilding the D3D
+        // device: the peer and input timeline are already invalid. Exit
+        // cleanly after recording diagnostics instead of entering the
+        // original option-change restart path with released ANM resources.
+        return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
     }
 #endif
 
