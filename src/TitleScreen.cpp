@@ -4,6 +4,7 @@
 #include "GameManager.hpp"
 #ifdef TH08_MULTI
 #include "MultiPlayerCoordinator.hpp"
+#include "MultiPlayerState.hpp"
 #endif
 #include "ResultScreen.hpp"
 #include "ScoreDat.hpp"
@@ -516,6 +517,13 @@ ChainCallbackResult TitleScreen::OnUpdateStartMenu()
 
                 return CHAIN_CALLBACK_RESULT_CONTINUE;
             case TITLE_MENU_ITEM_START_PRACTICE_START:
+#ifdef TH08_MULTI
+                if (g_MultiPlayerCoordinator.IsConfigured())
+                {
+                    g_SoundPlayer.PlaySoundByIdx(SOUND_BACK, 0);
+                    return CHAIN_CALLBACK_RESULT_CONTINUE;
+                }
+#endif
                 g_GameManager.flags.isPracticeMode = TRUE;
                 g_GameManager.flags.isSpellPractice = FALSE;
 
@@ -546,6 +554,13 @@ ChainCallbackResult TitleScreen::OnUpdateStartMenu()
                     return CHAIN_CALLBACK_RESULT_CONTINUE;
                 }
             case TITLE_MENU_ITEM_START_SPELL_PRACTICE:
+#ifdef TH08_MULTI
+                if (g_MultiPlayerCoordinator.IsConfigured())
+                {
+                    g_SoundPlayer.PlaySoundByIdx(SOUND_BACK, 0);
+                    return CHAIN_CALLBACK_RESULT_CONTINUE;
+                }
+#endif
                 if (g_GameManager.IsSpellPracticeUnlocked())
                 {
                     g_GameManager.flags.isPracticeMode = TRUE;
@@ -1618,6 +1633,13 @@ ChainCallbackResult TitleScreen::OnUpdateCharacterSelect()
     i32 cursorMovement;
     TitleCurrentScreen oldScreen;
 
+#ifdef TH08_MULTI
+    if (g_MultiPlayerCoordinator.IsConnected() &&
+        (this->currentScreen == TitleCurrentScreen_CharacterSelect ||
+         this->currentScreen == TitleCurrentScreen_CharacterSelectExtra))
+        return this->OnUpdateMultiPlayerCharacterSelect();
+#endif
+
     switch (this->currentScreenState)
     {
     case TitleCurrentScreenState_Init:
@@ -1862,6 +1884,139 @@ ChainCallbackResult TitleScreen::OnUpdateCharacterSelect()
 
     return CHAIN_CALLBACK_RESULT_CONTINUE;
 }
+
+#ifdef TH08_MULTI
+static bool MultiTitleWasPressed(MultiPlayerSlot slot, u16 buttons)
+{
+    const MultiPlayerInputFrame &input = g_MultiPlayerState.GetInput(slot);
+    return (input.current & buttons) != 0 && (input.previous & buttons) == 0;
+}
+
+static i32 MoveMultiTeamCursor(MultiPlayerSlot slot, i32 *cursor)
+{
+    i32 movement = 0;
+    if (MultiTitleWasPressed(slot, TH_BUTTON_LEFT | TH_BUTTON_UP))
+        movement = -1;
+    else if (MultiTitleWasPressed(slot, TH_BUTTON_RIGHT | TH_BUTTON_DOWN))
+        movement = 1;
+    if (movement != 0)
+    {
+        *cursor += movement;
+        if (*cursor < 0)
+            *cursor = 3;
+        else if (*cursor >= 4)
+            *cursor = 0;
+    }
+    return movement;
+}
+
+static void HighlightMultiTeamCursor(TitleScreen *titleScreen)
+{
+    i32 vmIdx;
+    i32 spriteIdx;
+    for (vmIdx = TITLE_SPRITE_CHARACTER_START; vmIdx <= TITLE_SPRITE_CHARACTER_END; ++vmIdx)
+    {
+        titleScreen->vms[vmIdx].flag1 = TRUE;
+        titleScreen->vms[vmIdx].SetInterrupt(8);
+        for (spriteIdx = 0; spriteIdx < ARRAY_SIZE(g_TitleCharacterSpriteIndices[0]) - 1;
+             ++spriteIdx)
+        {
+            if (g_TitleCharacterSpriteIndices[titleScreen->cursor][spriteIdx] == vmIdx)
+                titleScreen->vms[vmIdx].SetInterrupt(9);
+        }
+        if (g_TitleCharacterSpriteIndices[titleScreen->cursor][spriteIdx] == vmIdx)
+            titleScreen->vms[vmIdx].SetInterrupt(23);
+    }
+}
+
+ChainCallbackResult TitleScreen::OnUpdateMultiPlayerCharacterSelect()
+{
+    MultiPlayerSlot slot;
+    i32 *cursor;
+    u8 readyBit;
+    u8 readyMaskBeforeInput;
+
+    if (this->currentScreenState == TitleCurrentScreenState_Init)
+    {
+        if (this->stateTimer2 == 0)
+        {
+            this->cursor = 0;
+            this->cursor2 = 0;
+            this->multiTeamReadyMask = 0;
+            g_AnmManager->SetInterruptArray(this->vms, this->vmCount, 8);
+            this->vms[TITLE_SPRITE_DIFFICULTY_START +
+                      g_Supervisor.cfg.defaultDifficulty].SetInterrupt(9);
+            HighlightMultiTeamCursor(this);
+            this->stateTimer = 0;
+        }
+        if (this->stateTimer2 == 8)
+            this->currentScreenState = TitleCurrentScreenState_Ready;
+    }
+    else if (this->currentScreenState == TitleCurrentScreenState_Ready)
+    {
+        readyMaskBeforeInput = this->multiTeamReadyMask;
+        for (slot = MULTI_PLAYER_P1; slot < MULTI_PLAYER_COUNT;
+             slot = static_cast<MultiPlayerSlot>(slot + 1))
+        {
+            cursor = slot == MULTI_PLAYER_P1 ? &this->cursor : &this->cursor2;
+            readyBit = static_cast<u8>(1 << slot);
+            if ((this->multiTeamReadyMask & readyBit) == 0)
+            {
+                if (MoveMultiTeamCursor(slot, cursor) != 0 && slot == MULTI_PLAYER_P1)
+                {
+                    HighlightMultiTeamCursor(this);
+                    g_SoundPlayer.PlaySoundByIdx(SOUND_MOVE_MENU, 0);
+                }
+                if (MultiTitleWasPressed(slot, TH_BUTTON_SHOOT | TH_BUTTON_ENTER))
+                {
+                    this->multiTeamReadyMask |= readyBit;
+                    g_SoundPlayer.PlaySoundByIdx(SOUND_SELECT, 0);
+                }
+            }
+            else if (MultiTitleWasPressed(slot, TH_BUTTON_BOMB | TH_BUTTON_MENU))
+            {
+                this->multiTeamReadyMask &= static_cast<u8>(~readyBit);
+                g_SoundPlayer.PlaySoundByIdx(SOUND_BACK, 0);
+            }
+        }
+
+        if (readyMaskBeforeInput == 0 && this->multiTeamReadyMask == 0 &&
+            MultiTitleWasPressed(MULTI_PLAYER_P1, TH_BUTTON_BOMB | TH_BUTTON_MENU))
+        {
+            g_SoundPlayer.ProcessQueues();
+            if (this->currentScreen == TitleCurrentScreen_CharacterSelectExtra)
+                this->ChangeCurrentScreen(TitleCurrentScreen_DifficultySelectExtra);
+            else
+                this->ChangeCurrentScreen(TitleCurrentScreen_DifficultySelect);
+            this->cursor = 0;
+            return CHAIN_CALLBACK_RESULT_CONTINUE;
+        }
+
+        if (this->multiTeamReadyMask == 3)
+        {
+            g_MultiPlayerCoordinator.SetSelectedTeams(
+                static_cast<u8>(this->cursor), static_cast<u8>(this->cursor2));
+            g_GameManager.shotType = this->cursor;
+            g_GameManager.fullShotType = 0;
+            g_GameManager.difficulty = g_Supervisor.cfg.defaultDifficulty;
+            g_GameManager.currentStage =
+                this->currentScreen == TitleCurrentScreen_CharacterSelectExtra
+                    ? g_GameManager.difficulty + EXTRA
+                    : STAGE1;
+            g_GameManager.SetIsReplayWeird(FALSE);
+            g_SoundPlayer.ProcessQueues();
+            g_Supervisor.StopAudio();
+            g_Supervisor.curState = SupervisorState_GameManager;
+            return CHAIN_CALLBACK_RESULT_CONTINUE_AND_REMOVE_JOB;
+        }
+    }
+
+    this->idleFrames++;
+    this->stateTimer++;
+    this->stateTimer2++;
+    return CHAIN_CALLBACK_RESULT_CONTINUE;
+}
+#endif
 
 #pragma var_order(vmIdx, i, cursorMovement, clearInfo)
 ChainCallbackResult TitleScreen::OnUpdatePracticeStageSelect()
@@ -3608,6 +3763,35 @@ ChainCallbackResult TitleScreen::OnDraw(TitleScreen *titleScreen)
     switch (titleScreen->currentScreen)
     {
     case TitleCurrentScreen_CharacterSelect:
+#ifdef TH08_MULTI
+    case TitleCurrentScreen_CharacterSelectExtra:
+        if (titleScreen->currentScreen == TitleCurrentScreen_CharacterSelectExtra &&
+            !g_MultiPlayerCoordinator.IsConnected())
+            break;
+        if (g_MultiPlayerCoordinator.IsConnected())
+        {
+            static const char *teamNames[4] = {
+                "Reimu / Yukari", "Marisa / Alice",
+                "Sakuya / Remilia", "Youmu / Yuyuko"};
+            u8 localSlot = g_MultiPlayerCoordinator.GetLocalSlot();
+            position = Float3(344.0f, 354.0f, 0.0f);
+            g_AsciiManager.AddFormatText(
+                &position, "P1%s: %s  [%s]",
+                localSlot == MULTI_PLAYER_P1 ? " (YOU)" : "",
+                teamNames[titleScreen->cursor],
+                (titleScreen->multiTeamReadyMask & 1) != 0 ? "READY" : "SELECT");
+            position.y += 18.0f;
+            g_AsciiManager.AddFormatText(
+                &position, "P2%s: %s  [%s]",
+                localSlot == MULTI_PLAYER_P2 ? " (YOU)" : "",
+                teamNames[titleScreen->cursor2],
+                (titleScreen->multiTeamReadyMask & 2) != 0 ? "READY" : "SELECT");
+            position.y += 18.0f;
+            g_AsciiManager.AddFormatText(
+                &position, "Move: arrows  Confirm: shot  Unlock: bomb");
+        }
+        else
+#endif
         titleScreen->DrawCompletionStatusText();
         break;
     case TitleCurrentScreen_Replay:

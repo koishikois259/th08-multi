@@ -82,6 +82,9 @@ struct TitleScreen
     ChainCallbackResult OnUpdateKeyConfig();
     ChainCallbackResult OnUpdateDifficultySelect();
     ChainCallbackResult OnUpdateCharacterSelect();
+#ifdef TH08_MULTI
+    ChainCallbackResult OnUpdateMultiPlayerCharacterSelect();
+#endif
     ChainCallbackResult OnUpdatePracticeStageSelect();
     ChainCallbackResult OnUpdateSpellStageSelect();
     ChainCallbackResult OnUpdateSpellCardSelect();
@@ -210,6 +213,9 @@ struct TitleScreen
     ChainElem *drawChain;
     ControllerMapping controllerMapping;
     GameConfiguration currentGameConfig;
+#ifdef TH08_MULTI
+    u8 multiTeamReadyMask;
+#endif
 };
 C_ASSERT(offsetof(TitleScreen, unconsumedDword14) == 0x14);
 C_ASSERT(offsetof(TitleScreen, replayEnumerationResetState) == 0xC284);

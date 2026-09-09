@@ -16,11 +16,14 @@ lockstep input. TH08-specific game state remains authoritative in the game
 simulation; the transport must not duplicate gameplay rules.
 
 Replay recording and playback are out of scope for v0.1 multiplayer games.
-Single-player behavior must remain available.
+Single-player behavior must remain available. Multiplayer v0.1 supports the
+main story and Extra run paths; Practice and Spell Practice remain
+single-player-only while multiplayer is configured.
 
 ## Player selection and input
 
-- P1 and P2 independently select one of the four human-youkai teams.
+- P1 and P2 independently select one of the four human-youkai teams on the
+  in-game character-select screen after the connection is established.
 - Both players may select the same team.
 - Each player has an independent input frame.
 - Human-youkai switching, options/familiars, shots, bombs, collision, and the

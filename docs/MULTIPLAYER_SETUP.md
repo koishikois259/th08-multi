@@ -12,8 +12,6 @@ host_port=17708
 local_port=17708
 input_delay=3
 
-[player]
-team=0
 ```
 
 Allow inbound UDP port 17708 in the host firewall and forward the same UDP
@@ -30,18 +28,19 @@ host_port=17708
 local_port=0
 input_delay=3
 
-[player]
-team=1
 ```
 
-Replace `host` with the host's LAN or public IPv4 address. Each peer selects
-its own team (`0` through `3`), and duplicate teams are valid. The negotiated
-delay is the larger of the two requested values.
+Replace `host` with the host's LAN or public IPv4 address. The negotiated delay
+is the larger of the two requested values.
 
 Start both copies and wait for both window titles to report `connected` before
-operating the title menu. P1 (the host) controls shared title-menu choices;
-both players control their own characters once gameplay starts. Either player
-can open or close the in-game pause menu.
+operating the title menu. P1 (the host) controls shared title-menu and
+difficulty choices. On the character-select screen P1 and P2 independently
+move and confirm their own team cursor; identical teams are allowed and play
+starts after both cursors are locked. Both players control their own characters
+once gameplay starts. Either player can open or close the in-game pause menu.
+The v0.1 multiplayer menu supports Story and Extra runs; Practice and Spell
+Practice remain single-player-only.
 
 The internal replay bookkeeping object remains present because retail enemy
 logic depends on it, but multiplayer replay selection and saving are disabled

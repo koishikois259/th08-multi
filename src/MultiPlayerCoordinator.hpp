@@ -42,6 +42,7 @@ class MultiPlayerCoordinator
 
     void BeginGameplay(bool newRun, i32 initialLives, i32 initialBombs, i32 initialPower);
     void SetInitialPlayerResources(i32 p1Bombs, i32 p2Bombs, i32 initialPower);
+    void SetSelectedTeams(u8 p1Team, u8 p2Team);
     bool AcquireGameplayInputs(u16 localButtons, u16 *p1Buttons, u16 *p2Buttons);
     void EndGameplay();
 
@@ -60,6 +61,7 @@ class MultiPlayerCoordinator
     u32 networkFrame;
     bool initialized;
     bool gameplayActive;
+    u8 selectedTeams[2];
     MultiNetSessionState displayedState;
 };
 

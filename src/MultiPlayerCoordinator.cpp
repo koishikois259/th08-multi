@@ -36,8 +36,7 @@ void MultiPlayerLaunchConfig::Load()
     if (value > MULTI_NET_MAX_INPUT_DELAY)
         value = MULTI_NET_MAX_INPUT_DELAY;
     inputDelay = static_cast<u16>(value);
-    value = GetPrivateProfileIntA("player", "team", 0, ".\\th08_multi.ini");
-    selectedTeam = value >= 0 && value < 4 ? static_cast<u8>(value) : 0;
+    selectedTeam = 0;
     GetPrivateProfileStringA("network", "host", "127.0.0.1", hostAddress,
                              sizeof(hostAddress), ".\\th08_multi.ini");
 }
@@ -46,6 +45,8 @@ MultiPlayerCoordinator::MultiPlayerCoordinator()
 {
     initialized = false;
     gameplayActive = false;
+    selectedTeams[0] = 0;
+    selectedTeams[1] = 0;
     capturedSimulationFrame = MULTI_NET_INVALID_FRAME;
     networkFrame = 0;
     displayedState = MULTI_NET_STATE_CLOSED;
@@ -97,8 +98,8 @@ void MultiPlayerCoordinator::Pump(u32 nowMilliseconds)
             else if (sessionState == MULTI_NET_STATE_CONNECTING)
                 wsprintfA(title, "th08-multi v0.1 - connecting to %s:%u", config.hostAddress, config.hostPort);
             else if (sessionState == MULTI_NET_STATE_CONNECTED)
-                wsprintfA(title, "th08-multi v0.1 - connected (P1 team %u / P2 team %u / delay %u)",
-                          session.GetHostTeam(), session.GetGuestTeam(), session.GetInputDelay());
+                wsprintfA(title, "th08-multi v0.1 - connected (select teams in game / delay %u)",
+                          session.GetInputDelay());
             else
                 wsprintfA(title, "th08-multi v0.1 - network error %u", session.GetError());
             SetWindowTextA(g_Supervisor.hwndGameWindow, title);
@@ -155,6 +156,14 @@ void MultiPlayerCoordinator::SetInitialPlayerResources(i32 p1Bombs, i32 p2Bombs,
     g_MultiPlayerState.GetSlot(MULTI_PLAYER_P2).power = initialPower;
 }
 
+void MultiPlayerCoordinator::SetSelectedTeams(u8 p1Team, u8 p2Team)
+{
+    if (p1Team < 4)
+        selectedTeams[0] = p1Team;
+    if (p2Team < 4)
+        selectedTeams[1] = p2Team;
+}
+
 bool MultiPlayerCoordinator::AcquireGameplayInputs(u16 localButtons, u16 *p1Buttons, u16 *p2Buttons)
 {
     u32 frame;
@@ -182,10 +191,10 @@ bool MultiPlayerCoordinator::AcquireGameplayInputs(u16 localButtons, u16 *p1Butt
     if (!session.TryGetFrameInputs(frame, p1Buttons, p2Buttons))
         return false;
     networkFrame++;
+    g_MultiPlayerState.GetInput(MULTI_PLAYER_P1).Advance(*p1Buttons);
+    g_MultiPlayerState.GetInput(MULTI_PLAYER_P2).Advance(*p2Buttons);
     if (gameplayActive)
     {
-        g_MultiPlayerState.GetInput(MULTI_PLAYER_P1).Advance(*p1Buttons);
-        g_MultiPlayerState.GetInput(MULTI_PLAYER_P2).Advance(*p2Buttons);
         g_MultiPlayerState.frameNumber++;
     }
     capturedSimulationFrame = MULTI_NET_INVALID_FRAME;
@@ -198,8 +207,8 @@ void MultiPlayerCoordinator::EndGameplay()
     capturedSimulationFrame = MULTI_NET_INVALID_FRAME;
 }
 
-u8 MultiPlayerCoordinator::GetHostTeam() const { return session.GetHostTeam(); }
-u8 MultiPlayerCoordinator::GetGuestTeam() const { return session.GetGuestTeam(); }
+u8 MultiPlayerCoordinator::GetHostTeam() const { return selectedTeams[0]; }
+u8 MultiPlayerCoordinator::GetGuestTeam() const { return selectedTeams[1]; }
 u8 MultiPlayerCoordinator::GetLocalSlot() const { return session.GetLocalSlot(); }
 u32 MultiPlayerCoordinator::GetRandomSeed() const { return session.GetRandomSeed(); }
 u32 MultiPlayerCoordinator::GetDesyncFrame() const { return session.GetDesyncFrame(); }

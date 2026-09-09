@@ -1,6 +1,6 @@
 ; Copy this file to th08_multi.ini next to th08-multi.exe.
-; Both peers must use the same build. Team values: 0=Reimu/Yukari,
-; 1=Marisa/Alice, 2=Sakuya/Remilia, 3=Youmu/Yuyuko.
+; Both peers must use the same build. Each player chooses a team in the
+; in-game character-select screen after the connection is established.
 
 [network]
 ; disabled, host, or guest
@@ -10,6 +10,3 @@ host_port=17708
 ; Host uses 17708. Guest should change this to 0 (automatic local port).
 local_port=17708
 input_delay=3
-
-[player]
-team=0
