@@ -443,7 +443,9 @@ i32 EnemyManager::OnUpdate()
         if (!reinterpret_cast<EnemyFlag1Bits *>(&enemy->flags1)->noSprite &&
             !reinterpret_cast<EnemyFlag1Bits *>(&enemy->flags1)->hidePrimaryAnm &&
             !reinterpret_cast<EnemyFlag1Bits *>(&enemy->flags1)->youkaiAligned
-#ifndef TH08_MULTI
+#ifdef TH08_MULTI
+            )
+#else
             &&
             (!reinterpret_cast<EnemyFlag1Bits *>(&enemy->flags1)->noDamageDuringStop || !g_Player.bombState.isInUse))
 #endif

@@ -9,6 +9,9 @@
 #include "MultiPlayerRuntime.hpp"
 #define MULTI_NEAREST_PLAYER(position) (*GetNearestPhysicalPlayer(position))
 
+namespace th08
+{
+
 static u8 ResolveBulletCancelPlayer(Float3 *position, Float3 *size)
 {
     if (IsMultiPlayerPhysical(&g_Player) &&
@@ -39,6 +42,8 @@ static void SpawnBulletCancelItems(Player *player, Float3 *position)
                                 ITEM_STATE_AUTOCOLLECT);
     }
 }
+
+} // namespace th08
 #else
 #define MULTI_NEAREST_PLAYER(position) (g_Player)
 #endif
