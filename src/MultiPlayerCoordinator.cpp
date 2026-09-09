@@ -202,5 +202,11 @@ u8 MultiPlayerCoordinator::GetHostTeam() const { return session.GetHostTeam(); }
 u8 MultiPlayerCoordinator::GetGuestTeam() const { return session.GetGuestTeam(); }
 u8 MultiPlayerCoordinator::GetLocalSlot() const { return session.GetLocalSlot(); }
 u32 MultiPlayerCoordinator::GetRandomSeed() const { return session.GetRandomSeed(); }
+u32 MultiPlayerCoordinator::GetDesyncFrame() const { return session.GetDesyncFrame(); }
+u32 MultiPlayerCoordinator::GetLatestRemoteFrame() const { return session.GetLatestRemoteFrame(); }
+u32 MultiPlayerCoordinator::GetLatestAcknowledgedFrame() const
+{
+    return session.GetLatestAcknowledgedFrame();
+}
 
 } // namespace th08

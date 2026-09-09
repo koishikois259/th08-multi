@@ -125,8 +125,11 @@ ChainCallbackResult Supervisor::OnUpdate(Supervisor *s)
         g_MultiPlayerCoordinator.IsSessionFailed())
     {
         g_GameErrorContext.Log(
-            "multiplayer session stopped, error=%d\n",
-            g_MultiPlayerCoordinator.GetSessionError());
+            "multiplayer session stopped, error=%d desyncFrame=%u remoteFrame=%u acknowledgedFrame=%u\n",
+            g_MultiPlayerCoordinator.GetSessionError(),
+            g_MultiPlayerCoordinator.GetDesyncFrame(),
+            g_MultiPlayerCoordinator.GetLatestRemoteFrame(),
+            g_MultiPlayerCoordinator.GetLatestAcknowledgedFrame());
         return CHAIN_CALLBACK_RESULT_EXIT_GAME_ERROR;
     }
 #endif

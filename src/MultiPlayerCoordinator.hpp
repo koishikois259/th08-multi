@@ -49,6 +49,9 @@ class MultiPlayerCoordinator
     u8 GetGuestTeam() const;
     u8 GetLocalSlot() const;
     u32 GetRandomSeed() const;
+    u32 GetDesyncFrame() const;
+    u32 GetLatestRemoteFrame() const;
+    u32 GetLatestAcknowledgedFrame() const;
 
   private:
     MultiPlayerLaunchConfig config;
