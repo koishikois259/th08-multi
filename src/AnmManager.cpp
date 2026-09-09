@@ -2343,7 +2343,11 @@ AnmLoaded *AnmManager::ReadAnmEntries(int anmIdx, const char *filename)
 
     utils::DebugPrint("::preloadAnim : %s\n", filename);
 
+#ifdef TH08_MULTI
+    if (anmIdx < 0 || anmIdx > ANM_FILE_SLOT_PLAYER_P2)
+#else
     if (anmIdx >= 25)
+#endif
     {
         g_GameErrorContext.Fatal(TH_ERR_ANMMANAGER_NO_TEXTURE_STORAGE);
         return NULL;

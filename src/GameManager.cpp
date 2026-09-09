@@ -402,6 +402,11 @@ ChainCallbackResult GameManager::OnUpdate(GameManager *gameManager)
         gameManager->gameplaySetupWaitFrames++;
         return CHAIN_CALLBACK_RESULT_BREAK;
     }
+#ifdef TH08_MULTI
+    if (g_MultiPlayerCoordinator.IsGameplayActive() &&
+        !g_MultiPlayerCoordinator.IsGameplaySimulationReady())
+        return CHAIN_CALLBACK_RESULT_BREAK;
+#endif
 
     if (gameManager->stageStartupMode != 0)
     {

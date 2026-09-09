@@ -35,11 +35,13 @@ class MultiPlayerCoordinator
     bool IsConfigured() const;
     bool IsConnected() const;
     bool IsGameplayActive() const;
+    bool IsGameplaySimulationReady() const;
     bool IsSessionFailed() const;
     bool ShouldSynchronizeInputs() const;
     MultiNetSessionState GetSessionState() const;
     MultiNetSessionError GetSessionError() const;
 
+    void PrepareGameplay(i32 initialLives, i32 initialBombs, i32 initialPower);
     void BeginGameplay(bool newRun, i32 initialLives, i32 initialBombs, i32 initialPower);
     void SetInitialPlayerResources(i32 p1Bombs, i32 p2Bombs, i32 initialPower);
     void SetSelectedTeams(u8 p1Team, u8 p2Team);
@@ -61,6 +63,9 @@ class MultiPlayerCoordinator
     u32 networkFrame;
     bool initialized;
     bool gameplayActive;
+    bool gameplaySetupStarted;
+    u8 gameplayReadyMask;
+    u32 gameplayStartFrame;
     u8 selectedTeams[2];
     MultiNetSessionState displayedState;
 };

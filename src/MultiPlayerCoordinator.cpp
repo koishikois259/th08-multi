@@ -2,6 +2,7 @@
 #include <string.h>
 
 #include "th_pch.h"
+#include "GameManager.hpp"
 #include "MultiPlayerCoordinator.hpp"
 #include "MultiPlayerRuntime.hpp"
 #include "MultiPlayerState.hpp"
@@ -45,6 +46,9 @@ MultiPlayerCoordinator::MultiPlayerCoordinator()
 {
     initialized = false;
     gameplayActive = false;
+    gameplaySetupStarted = false;
+    gameplayReadyMask = 0;
+    gameplayStartFrame = MULTI_NET_INVALID_FRAME;
     selectedTeams[0] = 0;
     selectedTeams[1] = 0;
     capturedSimulationFrame = MULTI_NET_INVALID_FRAME;
@@ -77,6 +81,9 @@ void MultiPlayerCoordinator::Shutdown()
     session.Close(MULTI_NET_DISCONNECT_USER);
     initialized = false;
     gameplayActive = false;
+    gameplaySetupStarted = false;
+    gameplayReadyMask = 0;
+    gameplayStartFrame = MULTI_NET_INVALID_FRAME;
     capturedSimulationFrame = MULTI_NET_INVALID_FRAME;
     networkFrame = 0;
 }
@@ -120,6 +127,13 @@ bool MultiPlayerCoordinator::IsConnected() const
 
 bool MultiPlayerCoordinator::IsGameplayActive() const { return gameplayActive; }
 
+bool MultiPlayerCoordinator::IsGameplaySimulationReady() const
+{
+    return gameplayActive && gameplayReadyMask == 3 &&
+           gameplayStartFrame != MULTI_NET_INVALID_FRAME &&
+           networkFrame >= gameplayStartFrame;
+}
+
 bool MultiPlayerCoordinator::IsSessionFailed() const
 {
     return session.GetState() == MULTI_NET_STATE_DISCONNECTED ||
@@ -137,12 +151,34 @@ MultiNetSessionError MultiPlayerCoordinator::GetSessionError() const { return se
 void MultiPlayerCoordinator::BeginGameplay(bool newRun, i32 initialLives,
                                             i32 initialBombs, i32 initialPower)
 {
+    char title[128];
     if (!IsConnected())
         return;
-    if (newRun || !g_MultiPlayerState.IsEnabled())
-        g_MultiPlayerState.Reset(true, session.GetHostTeam(), session.GetGuestTeam(),
+    if ((newRun && !gameplayActive) || !g_MultiPlayerState.IsEnabled())
+        g_MultiPlayerState.Reset(true, selectedTeams[0], selectedTeams[1],
                                  initialLives, initialBombs, initialPower);
     gameplayActive = true;
+    gameplaySetupStarted = true;
+    capturedSimulationFrame = MULTI_NET_INVALID_FRAME;
+    if (g_Supervisor.hwndGameWindow != NULL)
+    {
+        wsprintfA(title, "th08-multi v0.1 - playing (P1 team %u / P2 team %u / delay %u)",
+                  selectedTeams[0], selectedTeams[1], session.GetInputDelay());
+        SetWindowTextA(g_Supervisor.hwndGameWindow, title);
+    }
+}
+
+void MultiPlayerCoordinator::PrepareGameplay(i32 initialLives, i32 initialBombs,
+                                              i32 initialPower)
+{
+    if (!IsConnected())
+        return;
+    g_MultiPlayerState.Reset(true, selectedTeams[0], selectedTeams[1],
+                             initialLives, initialBombs, initialPower);
+    gameplayActive = true;
+    gameplaySetupStarted = false;
+    gameplayReadyMask = 0;
+    gameplayStartFrame = MULTI_NET_INVALID_FRAME;
     capturedSimulationFrame = MULTI_NET_INVALID_FRAME;
 }
 
@@ -174,7 +210,11 @@ bool MultiPlayerCoordinator::AcquireGameplayInputs(u16 localButtons, u16 *p1Butt
     frame = networkFrame;
     if (capturedSimulationFrame != frame)
     {
-        if (gameplayActive && g_MultiPlayerState.frameNumber % 30 == 0)
+        if (gameplayActive && gameplaySetupStarted && gameplayReadyMask != 3 &&
+            g_GameManager.gameplaySetupState == GAMEPLAY_SETUP_COMPLETE)
+            localButtons |= TH_BUTTON_RESET;
+        if (IsGameplaySimulationReady() &&
+            g_MultiPlayerState.frameNumber % 30 == 0)
         {
             hashFrame = g_MultiPlayerState.frameNumber;
             hash = ComputeCurrentMultiPlayerStateHash();
@@ -190,10 +230,21 @@ bool MultiPlayerCoordinator::AcquireGameplayInputs(u16 localButtons, u16 *p1Butt
     }
     if (!session.TryGetFrameInputs(frame, p1Buttons, p2Buttons))
         return false;
+    if (gameplayActive && gameplaySetupStarted && gameplayReadyMask != 3)
+    {
+        if ((*p1Buttons & TH_BUTTON_RESET) != 0)
+            gameplayReadyMask |= 1;
+        if ((*p2Buttons & TH_BUTTON_RESET) != 0)
+            gameplayReadyMask |= 2;
+        *p1Buttons &= static_cast<u16>(~TH_BUTTON_RESET);
+        *p2Buttons &= static_cast<u16>(~TH_BUTTON_RESET);
+        if (gameplayReadyMask == 3)
+            gameplayStartFrame = frame + session.GetInputDelay() + 2;
+    }
     networkFrame++;
     g_MultiPlayerState.GetInput(MULTI_PLAYER_P1).Advance(*p1Buttons);
     g_MultiPlayerState.GetInput(MULTI_PLAYER_P2).Advance(*p2Buttons);
-    if (gameplayActive)
+    if (IsGameplaySimulationReady())
     {
         g_MultiPlayerState.frameNumber++;
     }
@@ -204,6 +255,9 @@ bool MultiPlayerCoordinator::AcquireGameplayInputs(u16 localButtons, u16 *p1Butt
 void MultiPlayerCoordinator::EndGameplay()
 {
     gameplayActive = false;
+    gameplaySetupStarted = false;
+    gameplayReadyMask = 0;
+    gameplayStartFrame = MULTI_NET_INVALID_FRAME;
     capturedSimulationFrame = MULTI_NET_INVALID_FRAME;
 }
 

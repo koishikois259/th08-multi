@@ -1886,13 +1886,13 @@ ZunResult Supervisor::CheckVersion(const char *version, i32 exeSize, i32 exeChec
     i32 versionDataExeSize;
     i32 versionDataExeChecksum;
 
-#ifdef TH08_MODERN_PORT
+#if defined(TH08_MODERN_PORT) || defined(TH08_MULTI)
     // A reconstructed executable cannot have one of the retail executable
     // sizes or checksums recorded in th08_0100d.ver. The serialized score and
-    // replay formats are already structurally validated by their loaders. A
-    // portable build has no retail executable identity to compare, including
-    // for the bundled demo replays, so leave the integrity whitelist intact
-    // only for the reconstruction build.
+    // replay formats are already structurally validated by their loaders.
+    // Portable and multiplayer builds have no retail executable identity to
+    // compare, including for bundled demo replays, so retain the whitelist
+    // only for the byte-exact normal reconstruction.
     (void)version;
     (void)exeSize;
     (void)exeChecksum;

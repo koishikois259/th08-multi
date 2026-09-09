@@ -1450,6 +1450,12 @@ ChainCallbackResult TitleScreen::OnUpdateDifficultySelect()
             }
 
             this->cursor = g_Supervisor.cfg.defaultDifficulty;
+#ifdef TH08_MULTI
+            if (g_MultiPlayerCoordinator.IsConnected())
+                this->cursor = this->currentScreen == TitleCurrentScreen_DifficultySelectExtra
+                                   ? EXTRA
+                                   : NORMAL;
+#endif
 
             if (this->currentScreen != TitleCurrentScreen_DifficultySelectExtra)
             {
@@ -1935,6 +1941,7 @@ ChainCallbackResult TitleScreen::OnUpdateMultiPlayerCharacterSelect()
     i32 *cursor;
     u8 readyBit;
     u8 readyMaskBeforeInput;
+    char windowTitle[128];
 
     if (this->currentScreenState == TitleCurrentScreenState_Init)
     {
@@ -1996,6 +2003,11 @@ ChainCallbackResult TitleScreen::OnUpdateMultiPlayerCharacterSelect()
         {
             g_MultiPlayerCoordinator.SetSelectedTeams(
                 static_cast<u8>(this->cursor), static_cast<u8>(this->cursor2));
+            // Both confirmations are consumed from the same lockstep input
+            // frame, so initialize shared co-op state here rather than from
+            // the independently scheduled gameplay loading threads.
+            g_MultiPlayerCoordinator.PrepareGameplay(
+                g_Supervisor.cfg.lifeCount, 3, 0);
             g_GameManager.shotType = this->cursor;
             g_GameManager.fullShotType = 0;
             g_GameManager.difficulty = g_Supervisor.cfg.defaultDifficulty;
@@ -2014,6 +2026,11 @@ ChainCallbackResult TitleScreen::OnUpdateMultiPlayerCharacterSelect()
     this->idleFrames++;
     this->stateTimer++;
     this->stateTimer2++;
+    wsprintfA(windowTitle,
+              "th08-multi v0.1 - team select (P1=%d%s / P2=%d%s)",
+              this->cursor, (this->multiTeamReadyMask & 1) != 0 ? " READY" : "",
+              this->cursor2, (this->multiTeamReadyMask & 2) != 0 ? " READY" : "");
+    SetWindowTextA(g_Supervisor.hwndGameWindow, windowTitle);
     return CHAIN_CALLBACK_RESULT_CONTINUE;
 }
 #endif

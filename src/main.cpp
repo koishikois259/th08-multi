@@ -991,7 +991,15 @@ ZunResult GameWindow::CheckForRunningGameInstance(HINSTANCE hInstance)
     char moduleFilenameBuf[MAX_PATH + 1];
     STARTUPINFO startupInfo;
 
+    // Multiplayer peers must be able to run side-by-side on one machine for
+    // LAN play and deterministic two-process verification. Keep the retail
+    // named mutex only in the normal build; an unnamed mutex preserves the
+    // lifetime handle without imposing a machine-wide singleton.
+#ifdef TH08_MULTI
+    g_ExclusiveMutex = CreateMutexA(NULL, TRUE, NULL);
+#else
     g_ExclusiveMutex = CreateMutexA(NULL, TRUE, "Touhou 08 App");
+#endif
 
     if (GetLastError() == ERROR_ALREADY_EXISTS)
     {

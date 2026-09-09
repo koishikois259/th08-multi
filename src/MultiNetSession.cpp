@@ -13,7 +13,8 @@ namespace
 const size_t MULTI_NET_INVALID_SOCKET_HANDLE = static_cast<size_t>(~static_cast<size_t>(0));
 const u32 MULTI_NET_RESEND_INTERVAL_MS = 250;
 const u32 MULTI_NET_INPUT_RESEND_INTERVAL_MS = 50;
-const u32 MULTI_NET_TIMEOUT_MS = 5000;
+const u32 MULTI_NET_CONNECT_TIMEOUT_MS = 30000;
+const u32 MULTI_NET_CONNECTED_TIMEOUT_MS = 5000;
 const u32 MULTI_NET_WIRE_BUFFER_SIZE = 256;
 
 u16 ClampInputDelay(u16 delay)
@@ -212,8 +213,12 @@ void MultiNetSession::SendHello()
     remote.sin_port = remotePort;
     remote.sin_addr.s_addr = remoteAddress;
     memset(remote.sin_zero, 0, sizeof(remote.sin_zero));
-    sendto(static_cast<SOCKET>(socketHandle), reinterpret_cast<const char *>(data), size, 0,
-           reinterpret_cast<const sockaddr *>(&remote), sizeof(remote));
+    if (sendto(static_cast<SOCKET>(socketHandle), reinterpret_cast<const char *>(data), size, 0,
+               reinterpret_cast<const sockaddr *>(&remote), sizeof(remote)) == SOCKET_ERROR)
+    {
+        error = MULTI_NET_ERROR_SOCKET;
+        state = MULTI_NET_STATE_ERROR;
+    }
 }
 
 void MultiNetSession::SendWelcome()
@@ -236,8 +241,12 @@ void MultiNetSession::SendWelcome()
     remote.sin_port = remotePort;
     remote.sin_addr.s_addr = remoteAddress;
     memset(remote.sin_zero, 0, sizeof(remote.sin_zero));
-    sendto(static_cast<SOCKET>(socketHandle), reinterpret_cast<const char *>(data), size, 0,
-           reinterpret_cast<const sockaddr *>(&remote), sizeof(remote));
+    if (sendto(static_cast<SOCKET>(socketHandle), reinterpret_cast<const char *>(data), size, 0,
+               reinterpret_cast<const sockaddr *>(&remote), sizeof(remote)) == SOCKET_ERROR)
+    {
+        error = MULTI_NET_ERROR_SOCKET;
+        state = MULTI_NET_STATE_ERROR;
+    }
 }
 
 void MultiNetSession::SendInput(u32 latestFrame, u32 hashFrame, u32 hash)
@@ -259,8 +268,12 @@ void MultiNetSession::SendInput(u32 latestFrame, u32 hashFrame, u32 hash)
     remote.sin_port = remotePort;
     remote.sin_addr.s_addr = remoteAddress;
     memset(remote.sin_zero, 0, sizeof(remote.sin_zero));
-    sendto(static_cast<SOCKET>(socketHandle), reinterpret_cast<const char *>(data), size, 0,
-           reinterpret_cast<const sockaddr *>(&remote), sizeof(remote));
+    if (sendto(static_cast<SOCKET>(socketHandle), reinterpret_cast<const char *>(data), size, 0,
+               reinterpret_cast<const sockaddr *>(&remote), sizeof(remote)) == SOCKET_ERROR)
+    {
+        error = MULTI_NET_ERROR_SOCKET;
+        state = MULTI_NET_STATE_ERROR;
+    }
 }
 
 void MultiNetSession::SendDisconnect(u16 reason)
@@ -278,8 +291,12 @@ void MultiNetSession::SendDisconnect(u16 reason)
     remote.sin_port = remotePort;
     remote.sin_addr.s_addr = remoteAddress;
     memset(remote.sin_zero, 0, sizeof(remote.sin_zero));
-    sendto(static_cast<SOCKET>(socketHandle), reinterpret_cast<const char *>(data), size, 0,
-           reinterpret_cast<const sockaddr *>(&remote), sizeof(remote));
+    if (sendto(static_cast<SOCKET>(socketHandle), reinterpret_cast<const char *>(data), size, 0,
+               reinterpret_cast<const sockaddr *>(&remote), sizeof(remote)) == SOCKET_ERROR)
+    {
+        error = MULTI_NET_ERROR_SOCKET;
+        state = MULTI_NET_STATE_ERROR;
+    }
 }
 
 void MultiNetSession::Pump(u32 nowMilliseconds)
@@ -308,8 +325,14 @@ void MultiNetSession::Pump(u32 nowMilliseconds)
         SendInput(latestLocalFrame, latestStateHashFrame, latestStateHash);
         lastSendTime = nowMilliseconds;
     }
-    if ((state == MULTI_NET_STATE_CONNECTING || state == MULTI_NET_STATE_CONNECTED) &&
-        lastReceiveTime != 0 && nowMilliseconds - lastReceiveTime > MULTI_NET_TIMEOUT_MS)
+    if (state == MULTI_NET_STATE_CONNECTING && lastReceiveTime != 0 &&
+        nowMilliseconds - lastReceiveTime > MULTI_NET_CONNECT_TIMEOUT_MS)
+    {
+        error = MULTI_NET_ERROR_TIMEOUT;
+        state = MULTI_NET_STATE_DISCONNECTED;
+    }
+    else if (state == MULTI_NET_STATE_CONNECTED && lastReceiveTime != 0 &&
+             nowMilliseconds - lastReceiveTime > MULTI_NET_CONNECTED_TIMEOUT_MS)
     {
         error = MULTI_NET_ERROR_TIMEOUT;
         state = MULTI_NET_STATE_DISCONNECTED;
@@ -487,6 +510,8 @@ bool MultiNetSession::TryGetFrameInputs(u32 frame, u16 *p1Buttons, u16 *p2Button
 
 void MultiNetSession::StoreLocalHash(u32 frame, u32 hash)
 {
+    if (frame == MULTI_NET_INVALID_FRAME)
+        return;
     HashEntry &entry = localHashes[frame % MULTI_NET_INPUT_HISTORY_SIZE];
     entry.frame = frame;
     entry.hash = hash;
@@ -500,6 +525,7 @@ void MultiNetSession::StoreLocalHash(u32 frame, u32 hash)
             state = MULTI_NET_STATE_ERROR;
         }
         pendingRemoteHashFrame = MULTI_NET_INVALID_FRAME;
+        pendingRemoteHash = 0;
     }
 }
 
