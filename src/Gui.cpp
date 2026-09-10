@@ -79,6 +79,12 @@ static void DrawMultiPlayerHudPair(f32 y, i32 p1Value, i32 p2Value)
     g_AsciiManager.SetColor(0xffffffff);
     g_AsciiManager.SetScale(1.0f, 1.0f);
 }
+
+// A player can still be holding Ctrl while the stage timeline opens a boss
+// message.  Retail immediately consumes the whole skippable message in that
+// case.  With two synchronized input streams that race is twice as likely, so
+// require both peers to release dialogue controls once before accepting them.
+static bool g_MultiDialogueAwaitInputRelease;
 #endif
 
 typedef const char *GuiMessagePathRow[SHOT_ALL];
@@ -264,6 +270,11 @@ void GuiImpl::StartMessage(i32 messageIndex)
     this->message.dialogueLineIndex = 0;
     this->message.currentPortraitIndex = 0xff;
 
+#ifdef TH08_MULTI
+    if (g_MultiPlayerState.IsEnabled())
+        g_MultiDialogueAwaitInputRelease = true;
+#endif
+
     g_BulletManager.ClearBulletsForTransition();
     g_EnemyManager.KillAllNonBossEnemies(0, 0);
     g_ItemManager.AutoCollectAllItems();
@@ -286,6 +297,20 @@ i32 GuiImpl::RunMsg()
 
     if (this->message.currentMsgIdx < 0)
         return -1;
+
+#ifdef TH08_MULTI
+    if (g_MultiPlayerState.IsEnabled() && g_MultiDialogueAwaitInputRelease)
+    {
+        const u16 dialogueControls = TH_BUTTON_SHOOT | TH_BUTTON_SKIP;
+        if ((g_GuiMessageInputCurrent & dialogueControls) == 0)
+            g_MultiDialogueAwaitInputRelease = false;
+        else
+        {
+            g_GuiMessageInputCurrent &= static_cast<u16>(~dialogueControls);
+            g_GuiMessageInputPrevious &= static_cast<u16>(~dialogueControls);
+        }
+    }
+#endif
 
     if (this->message.ignoreWaitCounter > 0)
         this->message.ignoreWaitCounter--;

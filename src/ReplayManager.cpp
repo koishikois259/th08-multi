@@ -239,7 +239,14 @@ ChainCallbackResult ReplayManager::RecordInputAndFps(ReplayManager *replayManage
     }
 
     g_GuiMessageInputPrevious = g_GuiMessageInputCurrent;
-    g_GuiMessageInputCurrent = g_CurFrameInput;
+#ifdef TH08_MULTI
+    if (g_MultiPlayerState.IsEnabled())
+        g_GuiMessageInputCurrent =
+            g_MultiPlayerState.GetInput(MULTI_PLAYER_P1).current |
+            g_MultiPlayerState.GetInput(MULTI_PLAYER_P2).current;
+    else
+#endif
+        g_GuiMessageInputCurrent = g_CurFrameInput;
 
     if (g_GameManager.cfg->slowMode != 0)
     {
@@ -263,6 +270,11 @@ ChainCallbackResult ReplayManager::RecordInputAndFps(ReplayManager *replayManage
 
     stage = g_GameManager.stageAtStart;
     input = g_CurFrameInput;
+#ifdef TH08_MULTI
+    if (g_MultiPlayerState.IsEnabled())
+        input = g_MultiPlayerState.GetInput(MULTI_PLAYER_P1).current |
+                g_MultiPlayerState.GetInput(MULTI_PLAYER_P2).current;
+#endif
     g_GuiMessageInputCurrent = input;
 
     replayManager->replayInputCursor += sizeof(u16);

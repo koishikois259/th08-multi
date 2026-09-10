@@ -746,6 +746,20 @@ i32 Player::UpdateMovementAndOptions()
             }
             if (this->focusEffect == NULL)
             {
+#ifdef TH08_MULTI
+                if (g_MultiPlayerState.IsEnabled())
+                {
+                    // A retail focus aura owns fixed slot 2. Two players
+                    // cannot share that storage: the second spawn erases the
+                    // first VM and both Player objects retain the same pointer.
+                    this->focusEffect =
+                        g_EffectManager.SpawnEffect(
+                            EFFECT_FOCUS_AURA, D3DXVECTOR3_PTR(&this->position), 1, -1);
+                    this->focusEffect->unconsumedDword344 =
+                        GetMultiPlayerSlot(this) + 1;
+                }
+                else
+#endif
                 this->focusEffect =
                     g_EffectManager.SpawnEffectInFixedSlot(
                         EFFECT_FOCUS_AURA, D3DXVECTOR3_PTR(&this->position), 2, 1, -1);

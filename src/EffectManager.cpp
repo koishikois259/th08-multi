@@ -9,6 +9,10 @@
 #include "GameManager.hpp"
 #include "EnemyManager.hpp"
 #include "Player.hpp"
+#ifdef TH08_MULTI
+#include "MultiPlayerRuntime.hpp"
+#include "MultiPlayerState.hpp"
+#endif
 
 namespace th08
 {
@@ -655,6 +659,14 @@ i32 __fastcall TrackPlayerUntilAnimationEnds(Effect *effect)
     if (HasAnimationEnded(effect))
         return 0;
 
+#ifdef TH08_MULTI
+    if (g_MultiPlayerState.IsEnabled() &&
+        effect->unconsumedDword344 == MULTI_PLAYER_P2 + 1)
+    {
+        effect->position = g_Player2.position;
+        return 1;
+    }
+#endif
     effect->position = g_Player.position;
     return 1;
 }
