@@ -10,7 +10,7 @@
 #include "GameManager.hpp"
 #include "ItemManager.hpp"
 #ifdef TH08_MULTI
-#include "MultiPlayerRuntime.hpp"
+#include "MultiPlayerCoordinator.hpp"
 #include "MultiPlayerState.hpp"
 #endif
 #include "ReplayManager.hpp"
@@ -59,6 +59,27 @@ DIFFABLE_STATIC_ARRAY_ASSIGN(const char *, 12, g_GuiLoadingAnmPaths) = {
     "loading00.anm", "loading01.anm", "loading02.anm", "loading03.anm", "loading00h.anm", "loading00a.anm",
     "loading01h.anm", "loading01a.anm", "loading02h.anm", "loading02a.anm", "loading03h.anm", "loading03a.anm",
 };
+
+#ifdef TH08_MULTI
+static void DrawMultiPlayerHudPair(f32 y, i32 p1Value, i32 p2Value)
+{
+    Float3 position;
+    u8 localSlot = g_MultiPlayerCoordinator.GetLocalSlot();
+
+    g_AsciiManager.SetScale(0.5f, 1.0f);
+    g_AsciiManager.SetColor(0xffa0d8ff);
+    position = Float3(488.0f, y, 0.0f);
+    g_AsciiManager.AddFormatText(
+        &position, "%cP1:%d", localSlot == MULTI_PLAYER_P1 ? '*' : ' ', p1Value);
+
+    g_AsciiManager.SetColor(0xffffb0d0);
+    position = Float3(558.0f, y, 0.0f);
+    g_AsciiManager.AddFormatText(
+        &position, "%cP2:%d", localSlot == MULTI_PLAYER_P2 ? '*' : ' ', p2Value);
+    g_AsciiManager.SetColor(0xffffffff);
+    g_AsciiManager.SetScale(1.0f, 1.0f);
+}
+#endif
 
 typedef const char *GuiMessagePathRow[SHOT_ALL];
 DIFFABLE_STATIC_ARRAY_ASSIGN(GuiMessagePathRow, MAX_STAGES, g_GuiMessagePaths) = {
@@ -1235,21 +1256,35 @@ void Gui::DrawGameScene()
 
     if (this->flags.lifeDisplayUpdateFrames)
     {
+#ifdef TH08_MULTI
+        if (!g_MultiPlayerState.IsEnabled())
+        {
+#endif
         vm = &this->impl->frontVms[10];
         for (idx = 0, xPos = 488.0f; idx < g_GameManager.GetLives(); idx++, xPos += 16.0f)
         {
             vm->pos = Float3(xPos, 88.0f, 0.46f);
             g_AnmManager->DrawNoRotation(vm);
         }
+#ifdef TH08_MULTI
+        }
+#endif
     }
     if (this->flags.bombDisplayUpdateFrames)
     {
+#ifdef TH08_MULTI
+        if (!g_MultiPlayerState.IsEnabled())
+        {
+#endif
         vm = &this->impl->frontVms[11];
         for (idx = 0, xPos = 488.0f; idx < g_GameManager.GetBombsRemaining(); idx++, xPos += 16.0f)
         {
             vm->pos = Float3(xPos, 104.0f, 0.46f);
             g_AnmManager->DrawNoRotation(vm);
         }
+#ifdef TH08_MULTI
+        }
+#endif
     }
     if ((this->flags.bombDisplayUpdateFrames || this->flags.lifeDisplayUpdateFrames) &&
         (((*reinterpret_cast<u32 *>(&g_GameManager.flags) >>
@@ -1286,11 +1321,39 @@ void Gui::DrawGameScene()
 
         if (this->flags.grazeDisplayUpdateFrames || g_Supervisor.IsMinimumGraphicsMode())
         {
+#ifdef TH08_MULTI
+            if (g_MultiPlayerState.IsEnabled())
+            {
+                DrawMultiPlayerHudPair(
+                    152.0f,
+                    g_MultiPlayerState.GetSlot(MULTI_PLAYER_P1).graze,
+                    g_MultiPlayerState.GetSlot(MULTI_PLAYER_P2).graze);
+            }
+            else
+#endif
+            {
             elemPos = Float3(488.0f, 152.0f, 0.0f);
             g_AsciiManager.AddFormatText(&elemPos, "%d", g_GameManager.globals->graze);
+            }
         }
         if (this->flags.pointDisplayUpdateFrames || g_Supervisor.IsMinimumGraphicsMode())
         {
+#ifdef TH08_MULTI
+            if (g_MultiPlayerState.IsEnabled())
+            {
+                g_AsciiManager.SetScale(0.5f, 1.0f);
+                g_AsciiManager.SetColor(0xfff0f0c0);
+                elemPos = Float3(488.0f, 168.0f, 0.0f);
+                g_AsciiManager.AddFormatText(
+                    &elemPos, "SH:%d MAX:%d",
+                    g_GameManager.globals->pointItemsCollected,
+                    g_GameManager.globals->pointItemValue);
+                g_AsciiManager.SetColor(0xffffffff);
+                g_AsciiManager.SetScale(1.0f, 1.0f);
+            }
+            else
+#endif
+            {
             elemPos = Float3(488.0f, 168.0f, 0.0f);
             elemPos.x += g_AsciiManager.AddFormatText2(&elemPos, "%d", g_GameManager.globals->pointItemsCollected) * 13;
             g_AsciiManager.SetScale(0.5f, 1.0f);
@@ -1298,9 +1361,30 @@ void Gui::DrawGameScene()
             g_AsciiManager.SetScale(1.0f, 1.0f);
             elemPos.x += 6.0f;
             g_AsciiManager.AddFormatText(&elemPos, "%d", g_GameManager.globals->nextPointItemExtendThreshold);
+            }
         }
         if (this->flags.timeDisplayUpdateFrames || g_Supervisor.IsMinimumGraphicsMode())
         {
+#ifdef TH08_MULTI
+            if (g_MultiPlayerState.IsEnabled())
+            {
+                if (g_GameManager.GetTimeOrbs() >= g_GameManager.GetLastSpellTimeOrbThreshold())
+                    g_AsciiManager.SetColor(0xfffff0c0);
+                else
+                    g_AsciiManager.SetColor(0xfff0f0c0);
+                g_AsciiManager.SetScale(0.5f, 1.0f);
+                elemPos = Float3(488.0f, 184.0f, 0.0f);
+                g_AsciiManager.AddFormatText(
+                    &elemPos, "SH:%d/%d T:%d",
+                    g_GameManager.GetTimeOrbs(),
+                    g_GameManager.GetLastSpellTimeOrbThreshold(),
+                    g_GameManager.globals->totalTimeOrbs);
+                g_AsciiManager.SetScale(1.0f, 1.0f);
+                g_AsciiManager.SetColor(0xffffffff);
+            }
+            else
+#endif
+            {
             if (g_GameManager.GetTimeOrbs() >= g_GameManager.GetLastSpellTimeOrbThreshold())
                 g_AsciiManager.SetColor(0xfffff0c0);
             elemPos = Float3(488.0f, 184.0f, 0.0f);
@@ -1311,31 +1395,34 @@ void Gui::DrawGameScene()
             elemPos.x += 6.0f;
             g_AsciiManager.AddFormatText(&elemPos, "%d", g_GameManager.GetLastSpellTimeOrbThreshold());
             g_AsciiManager.SetColor(0xffffffff);
+            }
         }
 #ifdef TH08_MULTI
         if (g_MultiPlayerState.IsEnabled())
         {
             const MultiPlayerSlotState &p1 = g_MultiPlayerState.GetSlot(MULTI_PLAYER_P1);
             const MultiPlayerSlotState &p2 = g_MultiPlayerState.GetSlot(MULTI_PLAYER_P2);
-            elemPos = Float3(464.0f, 216.0f, 0.0f);
-            g_AsciiManager.SetColor(0xffa0d8ff);
-            g_AsciiManager.AddFormatText(&elemPos, "1 L%d B%d P%d G%d", p1.lives, p1.bombs, p1.power, p1.graze);
-            elemPos = Float3(464.0f, 232.0f, 0.0f);
-            g_AsciiManager.SetColor(0xffffb0d0);
-            g_AsciiManager.AddFormatText(&elemPos, "2 L%d B%d P%d G%d", p2.lives, p2.bombs, p2.power, p2.graze);
-            elemPos = Float3(464.0f, 248.0f, 0.0f);
+            DrawMultiPlayerHudPair(88.0f, p1.lives, p2.lives);
+            DrawMultiPlayerHudPair(104.0f, p1.bombs, p2.bombs);
+            DrawMultiPlayerHudPair(136.0f, p1.power, p2.power);
+            elemPos = Float3(488.0f, 200.0f, 0.0f);
             g_AsciiManager.SetColor(0xffffffff);
-            g_AsciiManager.AddFormatText(&elemPos, "H/Y %d  %d", p1.youkaiGauge, p2.youkaiGauge);
+            g_AsciiManager.SetScale(0.5f, 1.0f);
+            g_AsciiManager.AddFormatText(
+                &elemPos, "H/Y P1:%d P2:%d", p1.youkaiGauge, p2.youkaiGauge);
+            g_AsciiManager.SetScale(1.0f, 1.0f);
             if (p1.presence == MULTI_PLAYER_SPIRIT || p2.presence == MULTI_PLAYER_SPIRIT)
             {
                 const MultiPlayerSlotState &rescuer =
                     p1.presence == MULTI_PLAYER_SPIRIT ? p2 : p1;
-                elemPos = Float3(464.0f, 264.0f, 0.0f);
+                elemPos = Float3(488.0f, 216.0f, 0.0f);
                 g_AsciiManager.SetColor(0xffffff80);
+                g_AsciiManager.SetScale(0.5f, 1.0f);
                 g_AsciiManager.AddFormatText(
                     &elemPos, "P%d SPIRIT %d/90",
                     p1.presence == MULTI_PLAYER_SPIRIT ? 1 : 2,
                     rescuer.reviveProgressFrames);
+                g_AsciiManager.SetScale(1.0f, 1.0f);
             }
             g_AsciiManager.SetColor(0xffffffff);
         }
@@ -1345,6 +1432,10 @@ void Gui::DrawGameScene()
     g_AnmManager->FlushVertexBuffer();
     if (this->flags.powerDisplayUpdateFrames || g_Supervisor.IsMinimumGraphicsMode())
     {
+#ifdef TH08_MULTI
+        if (!g_MultiPlayerState.IsEnabled())
+        {
+#endif
         VertexDiffuseXyzrhw vertices[4];
         if (g_GameManager.GetPower() > 0)
         {
@@ -1387,6 +1478,9 @@ void Gui::DrawGameScene()
         {
             g_AsciiManager.AddFormatText(&Float3(488.0f, 136.0f, 0.0f), "MAX");
         }
+#ifdef TH08_MULTI
+        }
+#endif
     }
 
     if (this->flags.lifeDisplayUpdateFrames)

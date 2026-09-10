@@ -123,6 +123,42 @@ void TestNoRevivalWithoutReserveLife()
     Expect(state.IsSpirit(MULTI_PLAYER_P2), "failed revival keeps spirit state");
 }
 
+void TestRevivalRequiresEveryInteractionCondition()
+{
+    MultiPlayerState state;
+    state.Reset(true, 0, 1, 2, 3, 0);
+    state.EnterSpirit(MULTI_PLAYER_P2);
+
+    Expect(
+        state.UpdateRevival(MULTI_PLAYER_P1, false, true, false) == MULTI_REVIVE_NONE,
+        "revival requires overlap");
+    Expect(
+        state.UpdateRevival(MULTI_PLAYER_P1, true, false, false) == MULTI_REVIVE_NONE,
+        "revival requires Focus");
+    Expect(
+        state.UpdateRevival(MULTI_PLAYER_P1, true, true, true) == MULTI_REVIVE_NONE,
+        "revival requires no shooting");
+
+    Expect(
+        state.UpdateRevival(MULTI_PLAYER_P1, true, true, false) == MULTI_REVIVE_PROGRESS,
+        "valid revival starts progress");
+    Expect(
+        state.UpdateRevival(MULTI_PLAYER_P1, false, true, false) == MULTI_REVIVE_CANCELLED,
+        "breaking overlap cancels active progress");
+}
+
+void TestGameOverRequiresBothPlayersUnable()
+{
+    MultiPlayerState state;
+    state.Reset(true, 0, 1, 0, 3, 0);
+
+    Expect(!state.BothPlayersUnableToContinue(), "two physical players can continue");
+    state.EnterSpirit(MULTI_PLAYER_P1);
+    Expect(!state.BothPlayersUnableToContinue(), "one physical player keeps the run alive");
+    state.EnterSpirit(MULTI_PLAYER_P2);
+    Expect(state.BothPlayersUnableToContinue(), "two spirit players end the run");
+}
+
 void TestStateHash()
 {
     MultiPlayerState state;
@@ -146,6 +182,31 @@ void TestStateHash()
     Expect(original != state.ComputeStateHash(positions, shared), "P2 state changes the hash");
 }
 
+void TestEverySharedHudResourceAffectsStateHash()
+{
+    MultiPlayerState state;
+    MultiPlayerPosition positions[MULTI_PLAYER_COUNT] = {
+        { 100.0f, 200.0f },
+        { 200.0f, 200.0f },
+    };
+    MultiPlayerSharedSnapshot shared = EmptySharedSnapshot();
+    u32 original;
+
+    state.Reset(true, 0, 1, 2, 3, 0);
+    original = state.ComputeStateHash(positions, shared);
+    ++shared.score;
+    Expect(original != state.ComputeStateHash(positions, shared), "shared score changes the hash");
+    --shared.score;
+    ++shared.pointItems;
+    Expect(original != state.ComputeStateHash(positions, shared), "shared point count changes the hash");
+    --shared.pointItems;
+    ++shared.pointItemValue;
+    Expect(original != state.ComputeStateHash(positions, shared), "shared maximum point value changes the hash");
+    --shared.pointItemValue;
+    ++shared.totalTimeOrbs;
+    Expect(original != state.ComputeStateHash(positions, shared), "shared total Time changes the hash");
+}
+
 } // namespace
 
 int main()
@@ -155,7 +216,10 @@ int main()
     TestNearestPhysicalPlayer();
     TestSpiritRevival();
     TestNoRevivalWithoutReserveLife();
+    TestRevivalRequiresEveryInteractionCondition();
+    TestGameOverRequiresBothPlayersUnable();
     TestStateHash();
+    TestEverySharedHudResourceAffectsStateHash();
 
     if (failures != 0)
     {

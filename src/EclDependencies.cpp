@@ -6,6 +6,12 @@
 #include "BulletManager.hpp"
 #include "GameManager.hpp"
 #include "Player.hpp"
+#ifdef TH08_MULTI
+#include "MultiPlayerRuntime.hpp"
+#define MULTI_ECL_DEP_PLAYER(enemy) (*GetNearestPhysicalPlayer((enemy)->worldPosition))
+#else
+#define MULTI_ECL_DEP_PLAYER(enemy) (g_Player)
+#endif
 #include "EclOperands.hpp"
 #include "EclManager.hpp"
 #include "utils.hpp"
@@ -124,7 +130,7 @@ void __fastcall BeginBoundaryAwareMove(
 {
     f32 angle;
 
-    if (g_Player.position.x <
+    if (MULTI_ECL_DEP_PLAYER(enemy).position.x <
         enemy->position.x)
     {
         angle = AddNormalizeAngle(
@@ -204,10 +210,10 @@ void __fastcall ApplyRandomBiasedMove(
 
     if (g_Rng.GetRandomU32InRange(4) != 0)
     {
-        if (g_Player.position.x < enemy->position.x)
+        if (MULTI_ECL_DEP_PLAYER(enemy).position.x < enemy->position.x)
         {
-            wrappedPlayerX = g_Player.position.x + 384.0f;
-            if (enemy->position.x - g_Player.position.x <
+            wrappedPlayerX = MULTI_ECL_DEP_PLAYER(enemy).position.x + 384.0f;
+            if (enemy->position.x - MULTI_ECL_DEP_PLAYER(enemy).position.x <
                 wrappedPlayerX - enemy->position.x)
             {
                 angle = AddNormalizeAngle(
@@ -221,8 +227,8 @@ void __fastcall ApplyRandomBiasedMove(
         }
         else
         {
-            wrappedPlayerX = g_Player.position.x - 384.0f;
-            if (g_Player.position.x - enemy->position.x <
+            wrappedPlayerX = MULTI_ECL_DEP_PLAYER(enemy).position.x - 384.0f;
+            if (MULTI_ECL_DEP_PLAYER(enemy).position.x - enemy->position.x <
                 enemy->position.x - wrappedPlayerX)
             {
                 angle = g_Rng.GetRandomF32InRange(1.5707964f) - 0.78539819f;
@@ -702,10 +708,10 @@ void __fastcall DispatchShotInstruction(
            ENEMY_FLAG_YOUKAI_ALIGNED_SHIFT) & 1) != 0))
         return;
     if ((enemy->minimumPlayerDistanceSquared > 0.0f) &&
-        (((enemy->worldPosition.x - g_Player.position.x) *
-             (enemy->worldPosition.x - g_Player.position.x) +
-         (enemy->worldPosition.y - g_Player.position.y) *
-             (enemy->worldPosition.y - g_Player.position.y)) <
+        (((enemy->worldPosition.x - MULTI_ECL_DEP_PLAYER(enemy).position.x) *
+             (enemy->worldPosition.x - MULTI_ECL_DEP_PLAYER(enemy).position.x) +
+         (enemy->worldPosition.y - MULTI_ECL_DEP_PLAYER(enemy).position.y) *
+             (enemy->worldPosition.y - MULTI_ECL_DEP_PLAYER(enemy).position.y)) <
         enemy->minimumPlayerDistanceSquared))
         return;
 

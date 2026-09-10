@@ -226,7 +226,11 @@ Item *ItemManager::SpawnItem(Float3 *position, ItemType itemType, i32 state)
             item->startPositionOrVelocity.y = -2.0f - g_Rng.GetRandomF32InRange(0.2f);
             item->startPositionOrVelocity.x = g_Rng.GetRandomF32SignedInRange(0.6f);
 
+#ifdef TH08_MULTI
+            if (ResolveNearestPhysicalItemPlayer(*position) == NULL)
+#else
             if (g_Player.playerState == PLAYER_STATE_DYING)
+#endif
             {
                 item->state = ITEM_STATE_DEFAULT;
                 item->startPositionOrVelocity.x = 0.0f;
@@ -240,7 +244,11 @@ Item *ItemManager::SpawnItem(Float3 *position, ItemType itemType, i32 state)
             item->startPositionOrVelocity.y = -2.0f - g_Rng.GetRandomF32InRange(0.2f);
             item->startPositionOrVelocity.x = g_Rng.GetRandomF32SignedInRange(0.6f);
 
+#ifdef TH08_MULTI
+            if (ResolveNearestPhysicalItemPlayer(*position) == NULL)
+#else
             if (g_Player.playerState == PLAYER_STATE_DYING)
+#endif
             {
                 item->state = ITEM_STATE_DEFAULT;
                 item->startPositionOrVelocity.x = 0.0f;
@@ -317,13 +325,30 @@ void ItemManager::OnUpdate()
 #endif
 
     this->itemCount = 0;
+#ifndef TH08_MULTI
     speed = g_Player.focusMode ? g_Player.secondaryShtFile->itemMovementSpeed
-                                    : g_Player.primaryShtFile->itemMovementSpeed;
+                               : g_Player.primaryShtFile->itemMovementSpeed;
     speed *= g_Supervisor.framerateMultiplier;
+#endif
 
     while (item != NULL)
     {
         this->itemCount++;
+
+#ifdef TH08_MULTI
+        autoCollectPlayer = ResolveNearestPhysicalItemPlayer(item->currentPosition);
+        if (autoCollectPlayer != NULL)
+        {
+            speed = autoCollectPlayer->focusMode
+                        ? autoCollectPlayer->secondaryShtFile->itemMovementSpeed
+                        : autoCollectPlayer->primaryShtFile->itemMovementSpeed;
+        }
+        else
+        {
+            speed = 1.0f;
+        }
+        speed *= g_Supervisor.framerateMultiplier;
+#endif
 
         if (item->state == ITEM_STATE_DEATH_DROP_SPREAD)
         {
@@ -344,12 +369,22 @@ void ItemManager::OnUpdate()
         else if (item->state == ITEM_STATE_TIME_RISING)
         {
             item->startPositionOrVelocity.y += 0.05f * g_Supervisor.framerateMultiplier;
+#ifdef TH08_MULTI
+            autoCollectPlayer = ResolveNearestPhysicalItemPlayer(item->currentPosition);
+            if (item->startPositionOrVelocity.y > 0.0f ||
+                (autoCollectPlayer != NULL && autoCollectPlayer->shotTimer < 0))
+#else
             if (item->startPositionOrVelocity.y > 0.0f ||
                 g_Player.shotTimer < 0)
+#endif
             {
                 item->state = ITEM_STATE_AUTOCOLLECT;
             }
+#ifdef TH08_MULTI
+            if (autoCollectPlayer == NULL)
+#else
             if (g_Player.playerState == PLAYER_STATE_DYING)
+#endif
             {
                 item->state = ITEM_STATE_DEFAULT;
                 item->startPositionOrVelocity.x = 0.0f;
@@ -370,7 +405,12 @@ void ItemManager::OnUpdate()
             {
                 goto executeOnly;
             }
+#ifdef TH08_MULTI
+            autoCollectPlayer = ResolveNearestPhysicalItemPlayer(item->currentPosition);
+            if (autoCollectPlayer == NULL)
+#else
             if (g_Player.playerState == PLAYER_STATE_DYING)
+#endif
             {
                 item->state = ITEM_STATE_DEFAULT;
                 item->startPositionOrVelocity.x = 0.0f;
