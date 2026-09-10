@@ -96,6 +96,8 @@ class MultiPlayerState
     bool IsPhysical(MultiPlayerSlot slot) const;
     bool IsSpirit(MultiPlayerSlot slot) const;
     bool BothPlayersUnableToContinue() const;
+    void ResetStageCounters();
+    i32 GetCombinedGrazeInStage() const;
 
     MultiPlayerSlot ResolveNearestPhysicalPlayer(
         const MultiPlayerPosition &target,

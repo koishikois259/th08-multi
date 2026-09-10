@@ -671,6 +671,11 @@ i32 GuiImpl::RunMsg()
             this->stageClear.power = g_GameManager.GetPower();
             this->stageClear.pointItemsCollected = g_GameManager.globals->pointItemsCollectedInStage;
             this->stageClear.timeOrbs = g_GameManager.GetTimeOrbs();
+#ifdef TH08_MULTI
+            if (g_MultiPlayerState.IsEnabled())
+                this->stageClear.graze = g_MultiPlayerState.GetCombinedGrazeInStage();
+            else
+#endif
             this->stageClear.graze = g_GameManager.globals->grazeInStage;
             this->stageClear.clockDisplayStart =
                 (i8)g_GameManager.GetClockTime() * 30 + 0x294;

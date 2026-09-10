@@ -159,6 +159,28 @@ void TestGameOverRequiresBothPlayersUnable()
     Expect(state.BothPlayersUnableToContinue(), "two spirit players end the run");
 }
 
+void TestCombinedStageGrazeAndReset()
+{
+    MultiPlayerState state;
+    state.Reset(true, 0, 1, 2, 3, 0);
+    state.GetSlot(MULTI_PLAYER_P1).graze = 1000;
+    state.GetSlot(MULTI_PLAYER_P2).graze = 2000;
+    state.GetSlot(MULTI_PLAYER_P1).grazeInStage = 123;
+    state.GetSlot(MULTI_PLAYER_P2).grazeInStage = 456;
+
+    Expect(state.GetCombinedGrazeInStage() == 579,
+           "stage-clear graze combines P1 and P2");
+    state.ResetStageCounters();
+    Expect(state.GetSlot(MULTI_PLAYER_P1).grazeInStage == 0,
+           "new stage clears P1 stage graze");
+    Expect(state.GetSlot(MULTI_PLAYER_P2).grazeInStage == 0,
+           "new stage clears P2 stage graze");
+    Expect(state.GetSlot(MULTI_PLAYER_P1).graze == 1000,
+           "new stage retains P1 run graze");
+    Expect(state.GetSlot(MULTI_PLAYER_P2).graze == 2000,
+           "new stage retains P2 run graze");
+}
+
 void TestStateHash()
 {
     MultiPlayerState state;
@@ -218,6 +240,7 @@ int main()
     TestNoRevivalWithoutReserveLife();
     TestRevivalRequiresEveryInteractionCondition();
     TestGameOverRequiresBothPlayersUnable();
+    TestCombinedStageGrazeAndReset();
     TestStateHash();
     TestEverySharedHudResourceAffectsStateHash();
 

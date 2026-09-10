@@ -20,7 +20,7 @@ result has been reproduced; compiling successfully is not gameplay acceptance.
 | Independent shooting and familiar/team state | CODE | Separate `Player` shot/option state and per-slot team files are active; different-team stress run stayed synchronized | Observe damage from both players and all four team combinations |
 | Independent Focus and human-youkai gauge | CODE | P1-only Focus was observed without changing P2 Focus; per-slot gauge accessors are used | Observe both gauges changing independently in HUD |
 | Independent bombs | PASS | P2 bomb changed the synchronized resource view from 3/3 to 3/2 while P1 remained 3 | Exercise simultaneous and deathbomb cases |
-| Independent collision and graze | CODE | Bullets, lasers, and enemy contact call each physical player's collision functions; bullets carry separate P1/P2 graze latches | Observe one-player-only hit and one-player-only graze |
+| Independent collision and graze | CODE | Bullets, lasers, and enemy contact call each physical player's collision functions; bullets carry separate P1/P2 graze latches; state tests cover combined stage reward and per-stage reset | Observe one-player-only hit/graze and verify the stage reward uses the P1+P2 sum |
 | Shared score | CODE | One canonical `ZunGlobals::score` is included in the deterministic state hash and displayed by both peers | Raise score and compare both HUDs frame-for-frame |
 | Shared point count and maximum point value | CODE | Point collection updates the canonical count/value; threshold life goes to the actual collector | Collect point items on each player and compare both HUDs |
 | Shared Time and Last Spell threshold | CODE | Time uses one canonical current/total value; the deathbomb window reads the shared threshold | Reach threshold, hit only one player, and observe partner control plus local bomb spend |
@@ -58,9 +58,17 @@ Use [the manual network testing guide](MULTIPLAYER_TESTING.md) and the bundled
 
 - The multi build produces both `th08-multi.exe` and
   `th08-multi-launcher.exe`.
+- The packaging script verifies the original Japanese 1.00d executable before
+  installing and refuses to include original DAT, executable, score, or replay
+  data in the patch archive.
 - The launcher process remained alive during its startup smoke test.
 - Fresh copies placed in the local Host/Guest fixtures connected successfully;
   both window titles reported `connected (select teams in game / delay 3)`.
+- The deterministic six-file patch archive was reproduced twice with SHA-256
+  `5a6af04d71a123ff6cb44094f1e92520cb8810ca0b7d6b70d0910424d4869e35`.
+- Installation into the verified `th08-origin` directory preserved the original
+  `th08.exe` hash, all installed payload hashes matched, and the installed
+  launcher remained alive during its startup smoke test.
 - Button-level visual inspection and cross-PC public-IPv4 testing remain manual
   checks because native Win32 windows are unavailable to the current automation
   surface.
@@ -73,6 +81,7 @@ build\multiplayer-state-tests.exe
 build\multiplayer-net-tests.exe
 python scripts/build.py --build-type normal --fresh -j 1
 python scripts/build.py --build-type multi --fresh -j 1
+python scripts/package-multiplayer-patch.py --install-dir ..\th08-origin
 ```
 
 Build configurations must be generated serially because they share

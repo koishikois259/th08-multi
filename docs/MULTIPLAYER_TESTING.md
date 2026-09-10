@@ -4,6 +4,10 @@
 `th08-multi.exe`. Keep both executables in the same directory as the legally
 obtained TH08 1.00d data files.
 
+The distributable `th08-multi-v0.1-patch.zip` contains no original game data.
+Extract all of its files directly into a Japanese TH08 1.00d directory, then
+start `th08-multi-launcher.exe`. The original `th08.exe` remains untouched.
+
 ## LAN test
 
 On the Host PC:

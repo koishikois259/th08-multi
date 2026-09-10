@@ -146,6 +146,18 @@ bool MultiPlayerState::BothPlayersUnableToContinue() const
     return enabled && !IsPhysical(MULTI_PLAYER_P1) && !IsPhysical(MULTI_PLAYER_P2);
 }
 
+void MultiPlayerState::ResetStageCounters()
+{
+    slots[MULTI_PLAYER_P1].grazeInStage = 0;
+    slots[MULTI_PLAYER_P2].grazeInStage = 0;
+}
+
+i32 MultiPlayerState::GetCombinedGrazeInStage() const
+{
+    return slots[MULTI_PLAYER_P1].grazeInStage +
+           slots[MULTI_PLAYER_P2].grazeInStage;
+}
+
 MultiPlayerSlot MultiPlayerState::ResolveNearestPhysicalPlayer(
     const MultiPlayerPosition &target,
     const MultiPlayerPosition positions[MULTI_PLAYER_COUNT]) const

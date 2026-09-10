@@ -973,6 +973,7 @@ void __fastcall GameManager::GameplaySetupThread(void *unused)
 #ifdef TH08_MULTI
     if (g_MultiPlayerState.IsEnabled())
     {
+        g_MultiPlayerState.ResetStageCounters();
         if (multiNewRun)
         {
             g_MultiPlayerCoordinator.SetInitialPlayerResources(
