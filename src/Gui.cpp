@@ -1063,8 +1063,24 @@ void Gui::UpdateStageElements()
 
         if (g_GameManager.currentStage >= STAGE6A && !g_GameManager.IsPracticeMode())
         {
+#ifdef TH08_MULTI
+            if (g_MultiPlayerState.IsEnabled())
+            {
+                score += 2500000 *
+                         (g_MultiPlayerState.GetSlot(MULTI_PLAYER_P1).lives +
+                          g_MultiPlayerState.GetSlot(MULTI_PLAYER_P2).lives);
+                score += 500000 *
+                         (g_MultiPlayerState.GetSlot(MULTI_PLAYER_P1).bombs +
+                          g_MultiPlayerState.GetSlot(MULTI_PLAYER_P2).bombs);
+            }
+            else
+            {
+#endif
             score += 2500000 * g_GameManager.GetLives();
             score += 500000 * g_GameManager.GetBombsRemaining();
+#ifdef TH08_MULTI
+            }
+#endif
         }
         if (g_GameManager.currentStage == STAGE6B)
             score += 2000000 * (12 - static_cast<i8>(g_GameManager.GetClockTime()));
@@ -1898,10 +1914,30 @@ void Gui::DrawStageClearScreen()
     {
         stringPos.y += 16.0f;
         g_AsciiManager.SetColor(0xffffff80);
+#ifdef TH08_MULTI
+        if (g_MultiPlayerState.IsEnabled())
+        {
+            g_AsciiManager.AddFormatText(
+                &stringPos, "Players = %7d0",
+                (g_MultiPlayerState.GetSlot(MULTI_PLAYER_P1).lives +
+                 g_MultiPlayerState.GetSlot(MULTI_PLAYER_P2).lives) * 2500000);
+            stringPos.y += 16.0f;
+            g_AsciiManager.SetColor(0xffffff80);
+            g_AsciiManager.AddFormatText(
+                &stringPos, "Bombs = %9d0",
+                (g_MultiPlayerState.GetSlot(MULTI_PLAYER_P1).bombs +
+                 g_MultiPlayerState.GetSlot(MULTI_PLAYER_P2).bombs) * 500000);
+        }
+        else
+        {
+#endif
         g_AsciiManager.AddFormatText(&stringPos, "Player = %8d0", g_GameManager.GetLives() * 2500000);
         stringPos.y += 16.0f;
         g_AsciiManager.SetColor(0xffffff80);
         g_AsciiManager.AddFormatText(&stringPos, "Bomb = %8d0", g_GameManager.GetBombsRemaining() * 500000);
+#ifdef TH08_MULTI
+        }
+#endif
 
         if (g_GameManager.currentStage == STAGE6B && !g_GameManager.IsPracticeMode() && !g_GameManager.IsReplayPractice())
         {

@@ -43,7 +43,7 @@ def build(build_type, verbose=False, jobs=1, targets=None, fresh=False):
     elif build_type == BuildType.OBJDIFFBUILD:
         ninja_args += ["objdiff"]
     elif build_type == BuildType.MULTI:
-        ninja_args += ["build/th08-multi.exe"]
+        ninja_args += ["build/th08-multi.exe", "build/th08-multi-launcher.exe"]
     else:
         ninja_args += ["build/th08.exe"]
 

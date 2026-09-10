@@ -446,6 +446,20 @@ def configure(build_type):
 
         if build_type == BuildType.MULTI:
             writer.build(
+                "$builddir/Th08MultiLauncher.obj",
+                "cc",
+                "src/Th08MultiLauncher.cpp",
+            )
+            writer.build(
+                "$builddir/th08-multi-launcher.exe",
+                "link",
+                inputs=["$builddir/Th08MultiLauncher.obj"],
+                variables={
+                    "link_libs": "kernel32.lib user32.lib gdi32.lib wsock32.lib",
+                    "link_flags": "/subsystem:windows /machine:X86 /incremental:no",
+                },
+            )
+            writer.build(
                 "$builddir/tests/MultiplayerStateTests.obj",
                 "cc",
                 "tests/MultiplayerStateTests.cpp",

@@ -29,6 +29,7 @@ result has been reproduced; compiling successfully is not gameplay acceptance.
 | Nearest living player enemy/Boss targeting | CODE | bullet/laser aim, ECL operands, movement bias, and minimum-distance gates use the nearest physical player | Observe aimed patterns after swapping which player is closer |
 | Spirit mode and TH06-style revival | CODE | State tests cover Focus/no-shoot/overlap, 90-frame completion, cancel, and reserve-life rejection | Exhaust one player, revive them, then repeat with P1/P2 reversed |
 | Game over only when both are unable | CODE | spirit transition tests and `BothPlayersUnableToContinue` gate exist | Exhaust both players in one two-process run |
+| Final lives/bombs bonus sums both players | CODE | Stage-clear calculation and detail rows read P1+P2 independent resources | Complete Stage 6 and compare the displayed bonus with both players' remaining resources |
 | Replay disabled in multiplayer | CODE | Multiplayer launch forces non-replay gameplay and hides multiplayer replay flow | Complete/end a run and confirm no replay-save prompt |
 | Packet loss/jitter tolerance | PASS | Two local processes stayed alive and responsive with every 10th UDP packet dropped plus 4-18 ms jitter | Cross-machine WAN envelope |
 | Desync detection | PASS | Forced Guest P2-position mutation was detected by both peers; both exited cleanly | Verify packaged diagnostic log paths |
@@ -49,6 +50,20 @@ The VC7 multiplayer and normal builds pass. Visual two-window HUD acceptance is
 still **PENDING** because the current automation surface cannot capture or send
 input to native DirectX game windows. Do not mark the HUD complete until both
 Host and Guest views have been inspected.
+
+Use [the manual network testing guide](MULTIPLAYER_TESTING.md) and the bundled
+`th08-multi-launcher.exe` for LAN or Internet two-PC tests.
+
+## Launcher acceptance
+
+- The multi build produces both `th08-multi.exe` and
+  `th08-multi-launcher.exe`.
+- The launcher process remained alive during its startup smoke test.
+- Fresh copies placed in the local Host/Guest fixtures connected successfully;
+  both window titles reported `connected (select teams in game / delay 3)`.
+- Button-level visual inspection and cross-PC public-IPv4 testing remain manual
+  checks because native Win32 windows are unavailable to the current automation
+  surface.
 
 ## Reproducible automated checks
 
