@@ -484,6 +484,46 @@ ZunResult Spellcard::Init()
                     return ZUN_ERROR;
                 break;
             }
+#ifdef TH08_MULTI
+            if (g_MultiPlayerState.IsEnabled())
+            {
+                switch (GetMultiPlayerShotType(&g_Player2))
+                {
+                default:
+                    this->player2FaceAnm0 = g_AnmManager->PreloadAnm(
+                        ANM_FILE_SLOT_FACE_PLAYER2_PRIMARY, "face_rm00.anm");
+                    this->player2FaceAnm1 = g_AnmManager->PreloadAnm(
+                        ANM_FILE_SLOT_FACE_PLAYER2_SECONDARY, "face_yk00.anm");
+                    break;
+                case SHOT_MARISA_ALICE:
+                case SHOT_MARISA:
+                case SHOT_ALICE:
+                    this->player2FaceAnm0 = g_AnmManager->PreloadAnm(
+                        ANM_FILE_SLOT_FACE_PLAYER2_PRIMARY, "face_mr00.anm");
+                    this->player2FaceAnm1 = g_AnmManager->PreloadAnm(
+                        ANM_FILE_SLOT_FACE_PLAYER2_SECONDARY, "face_al00.anm");
+                    break;
+                case SHOT_SAKUYA_REMILIA:
+                case SHOT_SAKUYA:
+                case SHOT_REMILIA:
+                    this->player2FaceAnm0 = g_AnmManager->PreloadAnm(
+                        ANM_FILE_SLOT_FACE_PLAYER2_PRIMARY, "face_sk00.anm");
+                    this->player2FaceAnm1 = g_AnmManager->PreloadAnm(
+                        ANM_FILE_SLOT_FACE_PLAYER2_SECONDARY, "face_rs00.anm");
+                    break;
+                case SHOT_YOUMU_YUYUKO:
+                case SHOT_YOUMU:
+                case SHOT_YUYUKO:
+                    this->player2FaceAnm0 = g_AnmManager->PreloadAnm(
+                        ANM_FILE_SLOT_FACE_PLAYER2_PRIMARY, "face_ym00.anm");
+                    this->player2FaceAnm1 = g_AnmManager->PreloadAnm(
+                        ANM_FILE_SLOT_FACE_PLAYER2_SECONDARY, "face_yy00.anm");
+                    break;
+                }
+                if (this->player2FaceAnm0 == NULL || this->player2FaceAnm1 == NULL)
+                    return ZUN_ERROR;
+            }
+#endif
         }
     }
     else
@@ -494,6 +534,13 @@ ZunResult Spellcard::Init()
         {
             this->playerFaceAnm0 = g_AnmManager->GetAnm(ANM_FILE_SLOT_FACE_PLAYER_PRIMARY);
             this->playerFaceAnm1 = g_AnmManager->GetAnm(ANM_FILE_SLOT_FACE_PLAYER_SECONDARY);
+#ifdef TH08_MULTI
+            if (g_MultiPlayerState.IsEnabled())
+            {
+                this->player2FaceAnm0 = g_AnmManager->GetAnm(ANM_FILE_SLOT_FACE_PLAYER2_PRIMARY);
+                this->player2FaceAnm1 = g_AnmManager->GetAnm(ANM_FILE_SLOT_FACE_PLAYER2_SECONDARY);
+            }
+#endif
         }
     }
 
@@ -748,6 +795,17 @@ void Spellcard::StartSpell(i32 spellCardNumber, const u8 *encodedName, i32 enemy
     this->CutInEnemy(enemyFace, this->spellName, 0);
     g_BulletManager.ClearBulletsForTransition();
     g_Background.StartSpellBackground();
+    // The retail linker overlaid g_SpellcardBackgroundAnm with the final
+    // EffectManager field. A normal relink gives the standalone symbol its own
+    // zero-initialized storage, so use the actual aggregate owner in multiplayer.
+#ifdef TH08_MULTI
+    g_SpellcardBackgroundAnm = g_EffectManager.stageEffectAnm;
+#endif
+    if (g_SpellcardBackgroundAnm == NULL)
+    {
+        utils::DebugPrint("spell background ANM is unavailable\n");
+        g_Background.spellVmCount = 0;
+    }
     for (i = 0; (i32)i < g_Background.spellVmCount; i++)
     {
         g_SpellcardBackgroundAnm->SetAndExecuteScriptIdx(&g_Background.spellVms[i],
@@ -920,17 +978,28 @@ void Spellcard::CutInEnemyNoPortrait(const char *name, i32 unused)
 }
 
 // FUNCTION: th08 0x415d60
+#ifdef TH08_MULTI
+void Spellcard::CutInPlayer(Player *player, i32 playerFace, const char *name, i32 sprite)
+#else
 void Spellcard::CutInPlayer(i32 playerFace, const char *name, i32 sprite)
+#endif
 {
+#ifdef TH08_MULTI
+    AnmLoaded *faceAnm0 = player == &g_Player2 ? this->player2FaceAnm0 : this->playerFaceAnm0;
+    AnmLoaded *faceAnm1 = player == &g_Player2 ? this->player2FaceAnm1 : this->playerFaceAnm1;
+#else
+    AnmLoaded *faceAnm0 = this->playerFaceAnm0;
+    AnmLoaded *faceAnm1 = this->playerFaceAnm1;
+#endif
     if (playerFace == 0)
     {
-        this->playerFaceAnm0->SetAndExecuteScriptIdx(&this->playerPortraitVm, 0);
-        this->playerFaceAnm0->SetSprite(&this->playerPortraitVm, 0);
+        faceAnm0->SetAndExecuteScriptIdx(&this->playerPortraitVm, 0);
+        faceAnm0->SetSprite(&this->playerPortraitVm, 0);
     }
     else if (playerFace == 1)
     {
-        this->playerFaceAnm1->SetAndExecuteScriptIdx(&this->playerPortraitVm, 0);
-        this->playerFaceAnm1->SetSprite(&this->playerPortraitVm, 0);
+        faceAnm1->SetAndExecuteScriptIdx(&this->playerPortraitVm, 0);
+        faceAnm1->SetSprite(&this->playerPortraitVm, 0);
     }
 
     this->commonFaceAnm->SetAndExecuteScriptIdx(&this->portraitBackdropVm, 0);
@@ -1710,6 +1779,10 @@ ZunResult Spellcard::DeletedCallback(Spellcard *spellcard)
         g_AnmManager->ReleaseAnm(ANM_FILE_SLOT_FACE_COMMON);
         g_AnmManager->ReleaseAnm(ANM_FILE_SLOT_FACE_PLAYER_PRIMARY);
         g_AnmManager->ReleaseAnm(ANM_FILE_SLOT_FACE_PLAYER_SECONDARY);
+#ifdef TH08_MULTI
+        g_AnmManager->ReleaseAnm(ANM_FILE_SLOT_FACE_PLAYER2_PRIMARY);
+        g_AnmManager->ReleaseAnm(ANM_FILE_SLOT_FACE_PLAYER2_SECONDARY);
+#endif
     }
 
     if (spellcard->lifetimeObject != NULL)

@@ -181,7 +181,11 @@ void __fastcall BeginBombSpell(Player *player, i32 cutInType, const char *cutInT
     PlayerBombWorkItem *workItem;
 
     bomb = &player->bombState;
+#ifdef TH08_MULTI
+    g_Spellcard.CutInPlayer(player, cutInType, cutInText, cutInArg);
+#else
     g_Spellcard.CutInPlayer(cutInType, cutInText, cutInArg);
+#endif
     bomb->duration = duration;
     player->timer = timer;
     player->playerState = PLAYER_STATE_INVULNERABLE;

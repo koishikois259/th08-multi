@@ -10,6 +10,7 @@ namespace th08
 {
 struct Effect;
 struct Enemy;
+struct Player;
 
 // Naming scheme:
 // SPELLCARD_[STAGE]_[ENEMY]_(LAST SPELL)(NUM)(DIFFICULTY)
@@ -335,11 +336,21 @@ struct Spellcard
     i32 scoreLimit;                  // +0x2638
     ChainElem *lifetimeObject;       // +0x263C
     ChainElem *lifetimeChain;        // +0x2640
+#ifdef TH08_MULTI
+    // P2 can choose a different team, so its bomb cut-in cannot share P1's
+    // two portrait ANMs.
+    AnmLoaded *player2FaceAnm0;       // +0x2644
+    AnmLoaded *player2FaceAnm1;       // +0x2648
+#endif
 
     void StartSpell(i32 spellCardNumber, const u8 *encodedName, i32 enemyFace, i32 bonus, Enemy *enemy,
                     const u8 *encodedOwner, const char *commentLine1, const char *commentLine2);
     void CutInEnemyNoPortrait(const char *name, i32 unused);
+#ifdef TH08_MULTI
+    void CutInPlayer(Player *player, i32 playerFace, const char *name, i32 sprite);
+#else
     void CutInPlayer(i32 playerFace, const char *name, i32 sprite);
+#endif
     void CutInEnemy(i32 enemyFace, const char *name, i32 sprite);
     void HidePlayerSpellPresentation();
     void HideEnemySpellPresentation();
@@ -377,7 +388,11 @@ struct Spellcard
 };
 C_ASSERT(offsetof(Spellcard, timeRemaining) == 0x108);
 C_ASSERT(offsetof(Spellcard, timeLimit) == 0x114);
+#ifdef TH08_MULTI
+C_ASSERT(sizeof(Spellcard) == 0x264C);
+#else
 C_ASSERT(sizeof(Spellcard) == 0x2644);
+#endif
 
 DIFFABLE_EXTERN_ARRAY(i32 *, 6, g_SpellcardNumbersPerDifficulty);
 DIFFABLE_EXTERN_ARRAY(i32, 6, g_SpellcardCountsPerDifficulty);

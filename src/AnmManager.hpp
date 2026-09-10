@@ -164,6 +164,8 @@ enum AnmFileSlot
     // Multiplayer-only resource owner. The retail table has 256 entries, so
     // this does not change AnmManager's layout.
     ANM_FILE_SLOT_PLAYER_P2 = 25,
+    ANM_FILE_SLOT_FACE_PLAYER2_PRIMARY = 26,
+    ANM_FILE_SLOT_FACE_PLAYER2_SECONDARY = 27,
 #endif
 };
 

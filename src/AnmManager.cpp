@@ -2344,7 +2344,7 @@ AnmLoaded *AnmManager::ReadAnmEntries(int anmIdx, const char *filename)
     utils::DebugPrint("::preloadAnim : %s\n", filename);
 
 #ifdef TH08_MULTI
-    if (anmIdx < 0 || anmIdx > ANM_FILE_SLOT_PLAYER_P2)
+    if (anmIdx < 0 || anmIdx > ANM_FILE_SLOT_FACE_PLAYER2_SECONDARY)
 #else
     if (anmIdx >= 25)
 #endif
