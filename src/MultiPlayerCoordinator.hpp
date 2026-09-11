@@ -20,6 +20,7 @@ struct MultiPlayerLaunchConfig
     u16 inputDelay;
     u8 selectedTeam;
     char hostAddress[64];
+    char bindAddress[64];
 
     void Load();
 };

@@ -129,7 +129,9 @@ def configure(build_type):
             "MusicRoom": small_codegen,
             "Player": debug_codegen,
             "MultiPlayerState": debug_codegen,
-            "MultiNetProtocol": debug_codegen,
+            # Keep the wire codec standalone so the same parser can be built by
+            # clang/libFuzzer without the Windows game precompiled header.
+            "MultiNetProtocol": "/Od /DTH08_MULTI_PROTOCOL_STANDALONE",
             "MultiNetSession": debug_codegen,
             "MultiPlayerCoordinator": debug_codegen,
             "MultiPlayerRuntime": debug_codegen,
@@ -455,7 +457,7 @@ def configure(build_type):
                 "link",
                 inputs=["$builddir/Th08MultiLauncher.obj"],
                 variables={
-                    "link_libs": "kernel32.lib user32.lib gdi32.lib wsock32.lib",
+                    "link_libs": "kernel32.lib user32.lib gdi32.lib advapi32.lib wsock32.lib",
                     "link_flags": "/subsystem:windows /machine:X86 /incremental:no",
                 },
             )

@@ -1,4 +1,4 @@
-# th08-multi v0.22 local/network setup
+# th08-multi trusted LAN/VPN setup
 
 The multiplayer fork reads `th08_multi.ini` from the executable's working
 directory. Copy `th08_multi.ini.example` to that name on both computers.
@@ -8,30 +8,39 @@ directory. Copy `th08_multi.ini.example` to that name on both computers.
 ```ini
 [network]
 mode=host
+bind_address=192.168.1.20
 host_port=17708
 local_port=17708
 input_delay=3
 
 ```
 
-Allow inbound UDP port 17708 in the host firewall and forward the same UDP
-port when connecting through a router. Direct IPv4 connections are the v0.22
-scope; relay and automatic NAT traversal are not included.
+Replace `bind_address` with the Host PC's exact LAN or trusted-VPN IPv4. If a
+firewall rule is needed, restrict UDP 17708 to the Windows Private profile and
+the Guest's LAN/VPN address. Never forward this port on a router.
 
 ## Guest
 
 ```ini
 [network]
 mode=guest
-host=192.0.2.10
+bind_address=192.168.1.21
+host=192.168.1.20
 host_port=17708
 local_port=0
 input_delay=3
 
 ```
 
-Replace `host` with the host's LAN or public IPv4 address. The negotiated delay
-is the larger of the two requested values.
+Replace `bind_address` with the Guest PC's exact LAN/VPN IPv4 and `host` with
+the Host's address on that same trusted network. `0.0.0.0` is deliberately
+rejected. Keep `127.0.0.1` only for two-process testing on one PC. The
+negotiated delay is the larger of the two requested values.
+
+This protocol has no peer authentication or encryption. Use it only with a
+person you trust on a private LAN or trusted VPN; public-Internet connections
+and router port forwarding are outside the supported security boundary. See
+[`SECURITY.md`](../SECURITY.md).
 
 Start both launchers and select **Connect**. The Host waits on its configured
 UDP port while the Guest performs a launcher handshake. The Host's **Start

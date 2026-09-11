@@ -1,0 +1,6 @@
+magic="\x54\x48\x30\x38"
+protocol="\x00\x01\x00\x00"
+hello="\x01"
+welcome="\x02"
+input="\x03"
+disconnect="\x04"

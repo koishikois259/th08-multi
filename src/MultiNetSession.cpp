@@ -16,6 +16,7 @@ const u32 MULTI_NET_INPUT_RESEND_INTERVAL_MS = 50;
 const u32 MULTI_NET_CONNECT_TIMEOUT_MS = 30000;
 const u32 MULTI_NET_CONNECTED_TIMEOUT_MS = 5000;
 const u32 MULTI_NET_WIRE_BUFFER_SIZE = 256;
+const u32 MULTI_NET_MAX_PACKETS_PER_PUMP = 64;
 
 u16 ClampInputDelay(u16 delay)
 {
@@ -88,7 +89,7 @@ void MultiNetSession::ResetState()
     }
 }
 
-bool MultiNetSession::OpenSocket(u16 localPort)
+bool MultiNetSession::OpenSocket(u16 localPort, u32 bindAddress)
 {
     WSADATA data;
     SOCKET sock;
@@ -105,7 +106,7 @@ bool MultiNetSession::OpenSocket(u16 localPort)
     }
     local.sin_family = AF_INET;
     local.sin_port = htons(localPort);
-    local.sin_addr.s_addr = htonl(INADDR_ANY);
+    local.sin_addr.s_addr = bindAddress;
     memset(local.sin_zero, 0, sizeof(local.sin_zero));
     if (bind(sock, reinterpret_cast<const sockaddr *>(&local), sizeof(local)) == SOCKET_ERROR ||
         ioctlsocket(sock, FIONBIO, &nonBlocking) == SOCKET_ERROR)
@@ -118,12 +119,27 @@ bool MultiNetSession::OpenSocket(u16 localPort)
     return true;
 }
 
-bool MultiNetSession::OpenHost(u16 localPort, u8 selectedTeam, u16 delay,
+bool MultiNetSession::OpenHost(u16 localPort, const char *bindAddress,
+                               u8 selectedTeam, u16 delay,
                                u32 fingerprint, u32 hostNonce, u32 seed)
 {
+    u32 localAddress;
     Close(MULTI_NET_DISCONNECT_USER);
     ResetState();
-    if (selectedTeam >= 4 || !OpenSocket(localPort))
+    if (hostNonce == 0 || seed == 0)
+    {
+        state = MULTI_NET_STATE_ERROR;
+        error = MULTI_NET_ERROR_ENTROPY;
+        return false;
+    }
+    localAddress = bindAddress != NULL ? inet_addr(bindAddress) : INADDR_NONE;
+    if (localAddress == INADDR_NONE || localAddress == htonl(INADDR_ANY))
+    {
+        state = MULTI_NET_STATE_ERROR;
+        error = MULTI_NET_ERROR_ADDRESS;
+        return false;
+    }
+    if (selectedTeam >= 4 || !OpenSocket(localPort, localAddress))
     {
         state = MULTI_NET_STATE_ERROR;
         error = selectedTeam >= 4 ? MULTI_NET_ERROR_PROTOCOL : MULTI_NET_ERROR_SOCKET;
@@ -142,26 +158,36 @@ bool MultiNetSession::OpenHost(u16 localPort, u8 selectedTeam, u16 delay,
     return true;
 }
 
-bool MultiNetSession::OpenGuest(u16 localPort, const char *hostAddress, u16 hostPort,
+bool MultiNetSession::OpenGuest(u16 localPort, const char *bindAddress,
+                                const char *hostAddress, u16 hostPort,
                                 u8 selectedTeam, u16 delay, u32 fingerprint, u32 clientNonce)
 {
     u32 address;
+    u32 localAddress;
     Close(MULTI_NET_DISCONNECT_USER);
     ResetState();
-    if (hostAddress == NULL || selectedTeam >= 4)
+    if (clientNonce == 0)
+    {
+        state = MULTI_NET_STATE_ERROR;
+        error = MULTI_NET_ERROR_ENTROPY;
+        return false;
+    }
+    if (hostAddress == NULL || bindAddress == NULL || selectedTeam >= 4)
     {
         state = MULTI_NET_STATE_ERROR;
         error = MULTI_NET_ERROR_ADDRESS;
         return false;
     }
     address = inet_addr(hostAddress);
-    if (address == INADDR_NONE)
+    localAddress = inet_addr(bindAddress);
+    if (address == INADDR_NONE || localAddress == INADDR_NONE ||
+        localAddress == htonl(INADDR_ANY))
     {
         state = MULTI_NET_STATE_ERROR;
         error = MULTI_NET_ERROR_ADDRESS;
         return false;
     }
-    if (!OpenSocket(localPort))
+    if (!OpenSocket(localPort, localAddress))
     {
         state = MULTI_NET_STATE_ERROR;
         error = MULTI_NET_ERROR_SOCKET;
@@ -346,7 +372,8 @@ void MultiNetSession::ReceivePackets(u32 nowMilliseconds)
     int senderSize;
     int received;
     MultiNetPacketType type;
-    for (;;)
+    u32 packetCount;
+    for (packetCount = 0; packetCount < MULTI_NET_MAX_PACKETS_PER_PUMP; ++packetCount)
     {
         senderSize = sizeof(sender);
         received = recvfrom(static_cast<SOCKET>(socketHandle), reinterpret_cast<char *>(data),

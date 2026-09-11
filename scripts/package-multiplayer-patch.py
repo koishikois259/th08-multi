@@ -71,6 +71,16 @@ def write_zip(output: Path, payload: dict[str, bytes]) -> None:
     temporary.replace(output)
 
 
+def write_external_checksum(output: Path) -> Path:
+    checksum_path = output.with_name(output.name + ".sha256")
+    temporary = checksum_path.with_name(checksum_path.name + ".tmp")
+    temporary.write_text(
+        f"{sha256(output.read_bytes())}  {output.name}\n", encoding="ascii"
+    )
+    temporary.replace(checksum_path)
+    return checksum_path
+
+
 def install_payload(directory: Path, payload: dict[str, bytes]) -> None:
     verify_original_game(directory)
     for name, data in payload.items():
@@ -94,8 +104,10 @@ def main() -> int:
         payload = load_payload()
         output = args.output.resolve()
         write_zip(output, payload)
+        checksum_path = write_external_checksum(output)
         print(f"Packaged {output}")
         print(f"SHA-256 {sha256(output.read_bytes())}")
+        print(f"Checksum file {checksum_path}")
         if args.install_dir is not None:
             install_directory = args.install_dir.resolve()
             install_payload(install_directory, payload)

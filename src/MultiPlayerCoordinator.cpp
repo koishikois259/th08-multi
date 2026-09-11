@@ -6,6 +6,7 @@
 #include "MultiPlayerCoordinator.hpp"
 #include "MultiPlayerRuntime.hpp"
 #include "MultiPlayerState.hpp"
+#include "SecureRandom.hpp"
 
 namespace th08
 {
@@ -40,6 +41,8 @@ void MultiPlayerLaunchConfig::Load()
     selectedTeam = 0;
     GetPrivateProfileStringA("network", "host", "127.0.0.1", hostAddress,
                              sizeof(hostAddress), ".\\th08_multi.ini");
+    GetPrivateProfileStringA("network", "bind_address", "127.0.0.1", bindAddress,
+                             sizeof(bindAddress), ".\\th08_multi.ini");
 }
 
 MultiPlayerCoordinator::MultiPlayerCoordinator()
@@ -58,20 +61,25 @@ MultiPlayerCoordinator::MultiPlayerCoordinator()
 
 bool MultiPlayerCoordinator::Initialize()
 {
-    u32 nonce;
-    u32 seed;
+    DWORD nonce;
+    DWORD seed;
     if (initialized)
         return true;
     config.Load();
     initialized = true;
     if (config.mode == MULTI_LAUNCH_DISABLED)
         return true;
-    nonce = GetTickCount() ^ (GetCurrentProcessId() * 0x45D9F3B);
-    seed = nonce ^ 0xA5366B4D;
+    nonce = 0;
+    seed = 0;
+    GenerateSecureRandomNonZeroU32(&nonce);
     if (config.mode == MULTI_LAUNCH_HOST)
-        return session.OpenHost(config.localPort, config.selectedTeam, config.inputDelay,
+        GenerateSecureRandomNonZeroU32(&seed);
+    if (config.mode == MULTI_LAUNCH_HOST)
+        return session.OpenHost(config.localPort, config.bindAddress,
+                                config.selectedTeam, config.inputDelay,
                                 TH08_MULTI_BUILD_FINGERPRINT, nonce, seed);
-    return session.OpenGuest(config.localPort, config.hostAddress, config.hostPort,
+    return session.OpenGuest(config.localPort, config.bindAddress,
+                             config.hostAddress, config.hostPort,
                              config.selectedTeam, config.inputDelay,
                              TH08_MULTI_BUILD_FINGERPRINT, nonce);
 }

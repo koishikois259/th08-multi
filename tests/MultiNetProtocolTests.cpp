@@ -77,6 +77,118 @@ void TestRejectsMalformedPackets()
     Expect(!DecodeMultiNetInputPacket(wire, wireSize, &decoded), "invalid player slot is rejected");
     wire[9] = 1;
     Expect(!DecodeMultiNetInputPacket(wire, wireSize - 1, &decoded), "truncated packet is rejected");
+
+    packet = CreatePacket();
+    packet.sessionId = 0;
+    Expect(!EncodeMultiNetInputPacket(packet, wire, sizeof(wire), &wireSize),
+           "zero session id is rejected");
+    packet = CreatePacket();
+    packet.samples[1].frame = packet.samples[0].frame;
+    Expect(!EncodeMultiNetInputPacket(packet, wire, sizeof(wire), &wireSize),
+           "non-descending redundant frames are rejected");
+}
+
+void TestHandshakeAndDisconnectGuards()
+{
+    MultiNetHelloPacket hello = { 0 };
+    MultiNetWelcomePacket welcome = { 0 };
+    MultiNetDisconnectPacket disconnect = { 0 };
+    MultiNetHelloPacket decodedHello = { 0 };
+    MultiNetWelcomePacket decodedWelcome = { 0 };
+    MultiNetDisconnectPacket decodedDisconnect = { 0 };
+    u8 wire[256];
+    u32 wireSize;
+
+    hello.buildFingerprint = 0x00020022;
+    hello.clientNonce = 0x12345678;
+    hello.requestedInputDelay = 3;
+    hello.selectedTeam = 2;
+    Expect(EncodeMultiNetHelloPacket(hello, wire, sizeof(wire), &wireSize),
+           "valid hello encodes");
+    Expect(DecodeMultiNetHelloPacket(wire, wireSize, &decodedHello),
+           "valid hello decodes");
+    wire[27] = 1;
+    Expect(!DecodeMultiNetHelloPacket(wire, wireSize, &decodedHello),
+           "nonzero hello reserved byte is rejected");
+    hello.clientNonce = 0;
+    Expect(!EncodeMultiNetHelloPacket(hello, wire, sizeof(wire), &wireSize),
+           "zero client nonce is rejected");
+
+    welcome.sessionId = 0x11223344;
+    welcome.hostNonce = 0x22334455;
+    welcome.echoedClientNonce = 0x12345678;
+    welcome.randomSeed = 0x33445566;
+    welcome.inputDelay = 3;
+    welcome.hostTeam = 1;
+    welcome.guestTeam = 2;
+    welcome.assignedSlot = 1;
+    Expect(EncodeMultiNetWelcomePacket(welcome, wire, sizeof(wire), &wireSize),
+           "valid welcome encodes");
+    Expect(DecodeMultiNetWelcomePacket(wire, wireSize, &decodedWelcome),
+           "valid welcome decodes");
+    wire[35] = 1;
+    Expect(!DecodeMultiNetWelcomePacket(wire, wireSize, &decodedWelcome),
+           "nonzero welcome reserved byte is rejected");
+
+    disconnect.sessionId = 0x11223344;
+    disconnect.reason = MULTI_NET_DISCONNECT_USER;
+    disconnect.senderSlot = 1;
+    Expect(EncodeMultiNetDisconnectPacket(disconnect, wire, sizeof(wire), &wireSize),
+           "valid disconnect encodes");
+    Expect(DecodeMultiNetDisconnectPacket(wire, wireSize, &decodedDisconnect),
+           "valid disconnect decodes");
+    wire[19] = 1;
+    Expect(!DecodeMultiNetDisconnectPacket(wire, wireSize, &decodedDisconnect),
+           "nonzero disconnect reserved byte is rejected");
+    disconnect.reason = 0xFFFF;
+    Expect(!EncodeMultiNetDisconnectPacket(disconnect, wire, sizeof(wire), &wireSize),
+           "unknown disconnect reason is rejected");
+}
+
+unsigned long NextMutation(unsigned long *state)
+{
+    unsigned long value = *state;
+    value ^= value << 13;
+    value ^= value >> 17;
+    value ^= value << 5;
+    *state = value;
+    return value;
+}
+
+void ExerciseAllDecoders(const u8 *data, u32 size)
+{
+    MultiNetPacketType type;
+    MultiNetHelloPacket hello;
+    MultiNetWelcomePacket welcome;
+    MultiNetInputPacket input;
+    MultiNetDisconnectPacket disconnect;
+
+    GetMultiNetPacketType(data, size, &type);
+    DecodeMultiNetHelloPacket(data, size, &hello);
+    DecodeMultiNetWelcomePacket(data, size, &welcome);
+    DecodeMultiNetInputPacket(data, size, &input);
+    DecodeMultiNetDisconnectPacket(data, size, &disconnect);
+}
+
+void TestDeterministicMalformedCorpus()
+{
+    u8 data[256];
+    unsigned long state = 0x54483038UL;
+    u32 size;
+    u32 iteration;
+    u32 index;
+
+    ExerciseAllDecoders(NULL, 0);
+    for (size = 0; size <= sizeof(data); ++size)
+    {
+        for (iteration = 0; iteration < 32; ++iteration)
+        {
+            for (index = 0; index < size; ++index)
+                data[index] = static_cast<u8>(NextMutation(&state));
+            ExerciseAllDecoders(data, size);
+        }
+    }
+    Expect(true, "deterministic malformed corpus completed without a crash");
 }
 
 void TestHistoryAndRedundancy()
@@ -133,8 +245,10 @@ int main()
 {
     TestRoundTrip();
     TestRejectsMalformedPackets();
+    TestHandshakeAndDisconnectGuards();
     TestHistoryAndRedundancy();
     TestDroppedPacketRecovery();
+    TestDeterministicMalformedCorpus();
 
     if (failures != 0)
     {

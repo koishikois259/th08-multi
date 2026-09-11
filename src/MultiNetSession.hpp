@@ -34,6 +34,7 @@ enum MultiNetSessionError
     MULTI_NET_ERROR_TIMEOUT = 5,
     MULTI_NET_ERROR_REMOTE_CLOSED = 6,
     MULTI_NET_ERROR_DESYNC = 7,
+    MULTI_NET_ERROR_ENTROPY = 8,
 };
 
 class MultiNetSession
@@ -42,9 +43,11 @@ class MultiNetSession
     MultiNetSession();
     ~MultiNetSession();
 
-    bool OpenHost(u16 localPort, u8 selectedTeam, u16 requestedInputDelay,
+    bool OpenHost(u16 localPort, const char *bindAddress,
+                  u8 selectedTeam, u16 requestedInputDelay,
                   u32 buildFingerprint, u32 hostNonce, u32 randomSeed);
-    bool OpenGuest(u16 localPort, const char *hostAddress, u16 hostPort,
+    bool OpenGuest(u16 localPort, const char *bindAddress,
+                   const char *hostAddress, u16 hostPort,
                    u8 selectedTeam, u16 requestedInputDelay,
                    u32 buildFingerprint, u32 clientNonce);
     void Close(u16 reason);
@@ -76,7 +79,7 @@ class MultiNetSession
     };
 
     void ResetState();
-    bool OpenSocket(u16 localPort);
+    bool OpenSocket(u16 localPort, u32 bindAddress);
     void SendHello();
     void SendWelcome();
     void SendInput(u32 latestFrame, u32 stateHashFrame, u32 stateHash);

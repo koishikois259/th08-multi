@@ -5,6 +5,8 @@
 [network]
 ; disabled, host, or guest
 mode=disabled
+; Bind only the chosen local LAN/VPN interface. Do not use 0.0.0.0.
+bind_address=127.0.0.1
 host=127.0.0.1
 host_port=17708
 ; Host uses 17708. Guest should change this to 0 (automatic local port).

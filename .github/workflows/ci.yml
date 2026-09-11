@@ -22,3 +22,13 @@ jobs:
           python-version: "3.12"
       - name: Run repository-owned validation
         run: python3 scripts/ci.py
+
+  multiplayer-protocol-fuzz:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Fuzz UDP packet decoders with ASan and UBSan
+        run: python3 scripts/run-multiplayer-protocol-fuzz.py --seconds 30

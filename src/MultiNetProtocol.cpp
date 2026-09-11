@@ -1,4 +1,9 @@
+#ifndef TH08_MULTI_PROTOCOL_STANDALONE
 #include "th_pch.h"
+#else
+#include <stddef.h>
+#endif
+
 #include "MultiNetProtocol.hpp"
 
 namespace th08
@@ -78,6 +83,7 @@ bool EncodeMultiNetHelloPacket(
     const MultiNetHelloPacket &packet, u8 *output, u32 outputCapacity, u32 *outputSize)
 {
     if (output == NULL || outputSize == NULL || outputCapacity < MULTI_NET_HELLO_SIZE ||
+        packet.clientNonce == 0 || packet.capabilities != 0 ||
         packet.selectedTeam >= 4 || packet.requestedInputDelay < MULTI_NET_MIN_INPUT_DELAY ||
         packet.requestedInputDelay > MULTI_NET_MAX_INPUT_DELAY)
         return false;
@@ -102,7 +108,8 @@ bool DecodeMultiNetHelloPacket(const u8 *data, u32 dataSize, MultiNetHelloPacket
     packet->capabilities = ReadU32(data + 20);
     packet->requestedInputDelay = ReadU16(data + 24);
     packet->selectedTeam = data[26];
-    return packet->selectedTeam < 4 &&
+    return packet->clientNonce != 0 && packet->capabilities == 0 && data[27] == 0 &&
+           packet->selectedTeam < 4 &&
            packet->requestedInputDelay >= MULTI_NET_MIN_INPUT_DELAY &&
            packet->requestedInputDelay <= MULTI_NET_MAX_INPUT_DELAY;
 }
@@ -111,6 +118,7 @@ bool EncodeMultiNetWelcomePacket(
     const MultiNetWelcomePacket &packet, u8 *output, u32 outputCapacity, u32 *outputSize)
 {
     if (output == NULL || outputSize == NULL || outputCapacity < MULTI_NET_WELCOME_SIZE ||
+        packet.sessionId == 0 || packet.hostNonce == 0 || packet.randomSeed == 0 ||
         packet.hostTeam >= 4 || packet.guestTeam >= 4 || packet.assignedSlot != 1 ||
         packet.inputDelay < MULTI_NET_MIN_INPUT_DELAY || packet.inputDelay > MULTI_NET_MAX_INPUT_DELAY)
         return false;
@@ -141,7 +149,9 @@ bool DecodeMultiNetWelcomePacket(const u8 *data, u32 dataSize, MultiNetWelcomePa
     packet->hostTeam = data[30];
     packet->guestTeam = data[31];
     packet->assignedSlot = data[32];
-    return packet->sessionId != 0 && packet->hostTeam < 4 && packet->guestTeam < 4 &&
+    return packet->sessionId != 0 && packet->hostNonce != 0 && packet->randomSeed != 0 &&
+           data[33] == 0 && data[34] == 0 && data[35] == 0 &&
+           packet->hostTeam < 4 && packet->guestTeam < 4 &&
            packet->assignedSlot == 1 && packet->inputDelay >= MULTI_NET_MIN_INPUT_DELAY &&
            packet->inputDelay <= MULTI_NET_MAX_INPUT_DELAY;
 }
@@ -209,7 +219,7 @@ u32 MultiNetInputHistory::BuildRedundantSamples(
 
 u32 MultiNetInputPacketWireSize(u32 sampleCount)
 {
-    if (sampleCount > MULTI_NET_MAX_REDUNDANT_INPUTS)
+    if (sampleCount == 0 || sampleCount > MULTI_NET_MAX_REDUNDANT_INPUTS)
         return 0;
     return MULTI_NET_INPUT_HEADER_SIZE + sampleCount * MULTI_NET_INPUT_SAMPLE_SIZE;
 }
@@ -224,8 +234,15 @@ bool EncodeMultiNetInputPacket(
     u32 i;
     u32 cursor;
 
-    if (wireSize == 0 || output == NULL || outputSize == NULL || outputCapacity < wireSize)
+    if (wireSize == 0 || output == NULL || outputSize == NULL || outputCapacity < wireSize ||
+        packet.sessionId == 0 || packet.senderSlot >= 2 ||
+        packet.samples[0].frame != packet.latestFrame)
         return false;
+    for (i = 1; i < packet.sampleCount; ++i)
+    {
+        if (packet.samples[i].frame >= packet.samples[i - 1].frame)
+            return false;
+    }
 
     WriteHeader(output, MULTI_NET_PACKET_INPUT, packet.senderSlot, wireSize);
     WriteU32(output + 12, packet.sessionId);
@@ -268,7 +285,7 @@ bool DecodeMultiNetInputPacket(
     if (sampleBytes % MULTI_NET_INPUT_SAMPLE_SIZE != 0)
         return false;
     sampleCount = sampleBytes / MULTI_NET_INPUT_SAMPLE_SIZE;
-    if (sampleCount > MULTI_NET_MAX_REDUNDANT_INPUTS)
+    if (sampleCount == 0 || sampleCount > MULTI_NET_MAX_REDUNDANT_INPUTS)
         return false;
 
     packet->senderSlot = data[9];
@@ -288,6 +305,13 @@ bool DecodeMultiNetInputPacket(
         packet->samples[i].buttons = ReadU16(data + cursor + 4);
         cursor += MULTI_NET_INPUT_SAMPLE_SIZE;
     }
+    if (packet->sessionId == 0 || packet->samples[0].frame != packet->latestFrame)
+        return false;
+    for (i = 1; i < sampleCount; ++i)
+    {
+        if (packet->samples[i].frame >= packet->samples[i - 1].frame)
+            return false;
+    }
     return true;
 }
 
@@ -295,7 +319,9 @@ bool EncodeMultiNetDisconnectPacket(
     const MultiNetDisconnectPacket &packet, u8 *output, u32 outputCapacity, u32 *outputSize)
 {
     if (output == NULL || outputSize == NULL || outputCapacity < MULTI_NET_DISCONNECT_SIZE ||
-        packet.senderSlot >= 2)
+        packet.sessionId == 0 || packet.senderSlot >= 2 ||
+        packet.reason < MULTI_NET_DISCONNECT_USER ||
+        packet.reason > MULTI_NET_DISCONNECT_BUILD_MISMATCH)
         return false;
     WriteHeader(output, MULTI_NET_PACKET_DISCONNECT, packet.senderSlot, MULTI_NET_DISCONNECT_SIZE);
     WriteU32(output + 12, packet.sessionId);
@@ -315,7 +341,9 @@ bool DecodeMultiNetDisconnectPacket(
     packet->sessionId = ReadU32(data + 12);
     packet->reason = ReadU16(data + 16);
     packet->senderSlot = data[18];
-    return true;
+    return packet->sessionId != 0 && data[19] == 0 &&
+           packet->reason >= MULTI_NET_DISCONNECT_USER &&
+           packet->reason <= MULTI_NET_DISCONNECT_BUILD_MISMATCH;
 }
 
 } // namespace th08

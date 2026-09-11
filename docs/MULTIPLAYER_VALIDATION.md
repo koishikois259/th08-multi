@@ -53,7 +53,7 @@ input to native DirectX game windows. Do not mark the HUD complete until both
 Host and Guest views have been inspected.
 
 Use [the manual network testing guide](MULTIPLAYER_TESTING.md) and the bundled
-`th08-multi-launcher.exe` for LAN or Internet two-PC tests.
+`th08-multi-launcher.exe` only for trusted LAN/VPN two-PC tests.
 
 ## Launcher acceptance
 
@@ -76,9 +76,9 @@ Use [the manual network testing guide](MULTIPLAYER_TESTING.md) and the bundled
 - Installation into the verified `th08-origin` directory preserved the original
   `th08.exe` hash, all installed payload hashes matched, and the installed
   launcher remained alive during its startup smoke test.
-- Button-level visual inspection and cross-PC public-IPv4 testing remain manual
-  checks because native Win32 windows are unavailable to the current automation
-  surface.
+- Button-level visual inspection and cross-PC trusted LAN/VPN testing remain
+  manual checks because native Win32 windows are unavailable to the current
+  automation surface. Public-IPv4 testing is intentionally unsupported.
 
 ## Reproducible automated checks
 

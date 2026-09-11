@@ -27,6 +27,7 @@
 | Read our accuracy and readability philosophy | [What we mean by semantic reconstruction](#what-we-mean-by-semantic-reconstruction) |
 | Contribute | [Contributing](#contributing) |
 | Play or build a port | [Platform guides](#platform-guides) |
+| Test the two-player Windows fork | [Trusted LAN/VPN setup](docs/MULTIPLAYER_SETUP.md) |
 | Reproduce the exact comparison | [Exact reconstruction](#exact-reconstruction) |
 | Browse the technical documentation | [Project map](#project-map) |
 | Review upstream history and attribution | [Credits and provenance](#credits-and-provenance) |
@@ -56,6 +57,11 @@ The remaining exact-reconstruction work is the last authored near match,
 whole-image layout, and the compiler/runtime and D3DX code linked into the
 original game. The repository ledgers are the canonical source for live
 counts.
+
+The Windows two-player fork is limited to trusted private LAN or trusted VPN
+sessions. Its UDP protocol is not authenticated or encrypted and must not be
+exposed directly to the public Internet. See [SECURITY.md](SECURITY.md) before
+opening a firewall rule.
 
 ## AI agent workflow
 
