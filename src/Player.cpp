@@ -84,7 +84,30 @@ static u8 GetPlayerRenderAlpha(Player *player, u8 originalAlpha)
 }
 
 #define MULTI_PLAYER_SHOT_TYPE(player) GetMultiPlayerShotType(player)
-#define MULTI_PLAYER_ANM_SLOT(player) ((player) == &g_Player2 ? ANM_FILE_SLOT_PLAYER_P2 : ANM_FILE_SLOT_PLAYER)
+static i32 GetMultiPlayerAnmSlot(Player *player)
+{
+    if (player != &g_Player2)
+        return ANM_FILE_SLOT_PLAYER;
+
+    // Once initialized, use the actual resource owner. This keeps teardown
+    // correct even if multiplayer state is reset before the player chains.
+    if (player->anmFile != NULL)
+    {
+        if (player->anmFile == g_AnmManager->GetAnm(ANM_FILE_SLOT_PLAYER))
+            return ANM_FILE_SLOT_PLAYER;
+        return ANM_FILE_SLOT_PLAYER_P2;
+    }
+
+    // Identical teams can share the immutable loaded ANM. Their AnmVm
+    // instances still hold independent animation state. Avoiding a second
+    // load of the same texture set prevents the duplicate-team startup crash.
+    if (GetMultiPlayerShotType(&g_Player) == GetMultiPlayerShotType(&g_Player2))
+        return ANM_FILE_SLOT_PLAYER;
+
+    return ANM_FILE_SLOT_PLAYER_P2;
+}
+
+#define MULTI_PLAYER_ANM_SLOT(player) GetMultiPlayerAnmSlot(player)
 #define MULTI_PLAYER_PRIMARY_SHT(player) ((player)->primaryShtFile)
 #define MULTI_PLAYER_SECONDARY_SHT(player) ((player)->secondaryShtFile)
 #define MULTI_PLAYER_IS_SOLO_HUMAN(player) MultiPlayerShotTypeIsSoloHuman(player)

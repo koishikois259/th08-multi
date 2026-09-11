@@ -127,6 +127,21 @@ enum
 
 DIFFABLE_STATIC(TitleScreen *, g_TitleScreen);
 
+#ifdef TH08_MULTI
+static ZunBool IsExtraStartAvailable()
+{
+    // Multiplayer Extra must not depend on either peer's local score.dat.
+    // A configured network session makes both peers take the same menu path.
+    if (g_MultiPlayerCoordinator.IsConfigured())
+        return TRUE;
+    return g_GameManager.IsExtraUnlocked();
+}
+#define IS_EXTRA_START_AVAILABLE() IsExtraStartAvailable()
+#else
+// Keep the original single-player expression intact in reconstruction builds.
+#define IS_EXTRA_START_AVAILABLE() g_GameManager.IsExtraUnlocked()
+#endif
+
 i32 g_TitleCharacterSpriteIndices[SHOT_ALL][4] = {
     /* Team character sprites */
     {
@@ -363,7 +378,7 @@ ChainCallbackResult TitleScreen::OnUpdateStartMenu()
             }
 
             /* Mark the "Extra Start" button as grayed out. */
-            if (!g_GameManager.IsExtraUnlocked())
+            if (!IS_EXTRA_START_AVAILABLE())
             {
                 this->vms[2].color1.d3dColor = 0xff404040;
             }
@@ -398,7 +413,7 @@ ChainCallbackResult TitleScreen::OnUpdateStartMenu()
                 }
             }
 
-            if (!g_GameManager.IsExtraUnlocked())
+            if (!IS_EXTRA_START_AVAILABLE())
             {
                 if (this->cursor == TITLE_MENU_ITEM_START_EXTRA_START)
                 {
@@ -423,7 +438,7 @@ ChainCallbackResult TitleScreen::OnUpdateStartMenu()
             }
 
             /* Mark the "Extra Start" button as grayed out. */
-            if (!g_GameManager.IsExtraUnlocked())
+            if (!IS_EXTRA_START_AVAILABLE())
             {
                 this->vms[2].color1.d3dColor = 0xff404040;
             }
@@ -540,7 +555,7 @@ ChainCallbackResult TitleScreen::OnUpdateStartMenu()
 
                 return CHAIN_CALLBACK_RESULT_CONTINUE;
             case TITLE_MENU_ITEM_START_EXTRA_START:
-                if (g_GameManager.IsExtraUnlocked())
+                if (IS_EXTRA_START_AVAILABLE())
                 {
                     g_GameManager.flags.isPracticeMode = FALSE;
                     g_GameManager.flags.isSpellPractice = FALSE;
