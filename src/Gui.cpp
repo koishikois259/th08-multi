@@ -79,7 +79,6 @@ DIFFABLE_STATIC_ARRAY_ASSIGN(const char *, 12, g_GuiLoadingAnmPaths) = {
 
 #ifdef TH08_MULTI
 static i32 g_MultiPendingEnemyNameSprite = -1;
-static bool g_MultiGuiStateLogged = false;
 
 static void DrawMultiPlayerHudPair(
     f32 y, const char *label, i32 p1Value, i32 p2Value)
@@ -1064,30 +1063,6 @@ void Gui::UpdateStageElements()
     }
 
     g_AnmManager->ExecuteScriptArray(this->impl->frontVms, 16);
-#ifdef TH08_MULTI
-    if (g_MultiPlayerState.IsEnabled() && !g_MultiGuiStateLogged && this->frameCounter >= 120)
-    {
-        AnmLoaded *front = this->frontAnm;
-        bool texture0Ready = front != NULL && front->totalEntries > 0 &&
-                             front->textures != NULL && front->textures[0].texture != NULL;
-        bool texture1Ready = front != NULL && front->totalEntries > 1 &&
-                             front->textures != NULL && front->textures[1].texture != NULL;
-        g_GameErrorContext.Log(
-            "multi gui state: stage=%d entries=%d tex0=%d tex1=%d "
-            "vm0(sprite=%d visible=%d anm=%d) vm12(sprite=%d visible=%d anm=%d)\n",
-            g_GameManager.currentStage,
-            front != NULL ? front->totalEntries : 0,
-            texture0Ready ? 1 : 0,
-            texture1Ready ? 1 : 0,
-            this->impl->frontVms[0].activeSpriteIndex,
-            this->impl->frontVms[0].visible,
-            this->impl->frontVms[0].anmFile == front ? 1 : 0,
-            this->impl->frontVms[12].activeSpriteIndex,
-            this->impl->frontVms[12].visible,
-            this->impl->frontVms[12].anmFile == front ? 1 : 0);
-        g_MultiGuiStateLogged = true;
-    }
-#endif
     g_AnmManager->ExecuteScriptArray(this->impl->stageTextVms, 4);
     if (!g_GameManager.flags.isSpellPractice && this->impl->stageTextVms[0].color1.a)
         g_AnmManager->ExecuteScriptArray(&this->impl->clockIntroVm, 1);
@@ -1298,7 +1273,11 @@ void Gui::DrawGameScene()
     g_Supervisor.viewport.Height = 480;
     g_Supervisor.d3dDevice->SetViewport(&g_Supervisor.viewport);
 
-    if (!g_Supervisor.IsMinimumGraphicsMode())
+    if (!g_Supervisor.IsMinimumGraphicsMode()
+#ifdef TH08_MULTI
+        && !g_MultiPlayerState.IsEnabled()
+#endif
+    )
     {
         vm = &this->impl->frontVms[15];
         xPos = 480.0f;
@@ -1341,27 +1320,6 @@ void Gui::DrawGameScene()
     }
 
     vm = &this->impl->frontVms[13];
-#ifdef TH08_MULTI
-    if (g_MultiPlayerState.IsEnabled())
-    {
-        // The retail HUD is normally cached in the backbuffer. In the co-op
-        // render path that cache is not preserved reliably, so keep the
-        // original static front sprites drawable on the live frame.
-        for (idx = 0; idx < 10; idx++)
-        {
-            AnmVm *frontVm = &this->impl->frontVms[idx];
-            if (frontVm->anmFile != this->frontAnm ||
-                frontVm->loadedSprite == NULL || frontVm->activeSpriteIndex < 0)
-                this->frontAnm->SetAndExecuteScriptIdx(frontVm, idx);
-            if (frontVm->loadedSprite != NULL && frontVm->activeSpriteIndex >= 0)
-            {
-                frontVm->visible = true;
-                frontVm->color1.a = 0xff;
-                frontVm->color2.a = 0xff;
-            }
-        }
-    }
-#endif
     if (
 #ifdef TH08_MULTI
         g_MultiPlayerState.IsEnabled() ||
@@ -1389,17 +1347,24 @@ void Gui::DrawGameScene()
             vm->pos = Float3(xPos, 464.0f, 0.49f);
             g_AnmManager->DrawNoRotation(vm);
         }
-        g_AnmManager->DrawNoRotation(&this->impl->frontVms[0]);
-        g_AnmManager->Draw2D(&this->impl->frontVms[1]);
-        g_AnmManager->DrawNoRotation(&this->impl->frontVms[2]);
-        g_AnmManager->DrawNoRotation(&this->impl->frontVms[3]);
-        g_AnmManager->DrawNoRotation(&this->impl->frontVms[4]);
-        g_AnmManager->DrawNoRotation(&this->impl->frontVms[5]);
-        g_AnmManager->DrawNoRotation(&this->impl->frontVms[6]);
-        g_AnmManager->DrawNoRotation(&this->impl->frontVms[7]);
-        g_AnmManager->DrawNoRotation(&this->impl->frontVms[8]);
-        g_AnmManager->DrawNoRotation(&this->impl->frontVms[9]);
-        g_AnmManager->DrawNoRotation(&this->impl->difficultyVm);
+#ifdef TH08_MULTI
+        if (!g_MultiPlayerState.IsEnabled())
+        {
+#endif
+            g_AnmManager->DrawNoRotation(&this->impl->frontVms[0]);
+            g_AnmManager->Draw2D(&this->impl->frontVms[1]);
+            g_AnmManager->DrawNoRotation(&this->impl->frontVms[2]);
+            g_AnmManager->DrawNoRotation(&this->impl->frontVms[3]);
+            g_AnmManager->DrawNoRotation(&this->impl->frontVms[4]);
+            g_AnmManager->DrawNoRotation(&this->impl->frontVms[5]);
+            g_AnmManager->DrawNoRotation(&this->impl->frontVms[6]);
+            g_AnmManager->DrawNoRotation(&this->impl->frontVms[7]);
+            g_AnmManager->DrawNoRotation(&this->impl->frontVms[8]);
+            g_AnmManager->DrawNoRotation(&this->impl->frontVms[9]);
+            g_AnmManager->DrawNoRotation(&this->impl->difficultyVm);
+#ifdef TH08_MULTI
+        }
+#endif
         this->flags.lifeDisplayUpdateFrames = 2;
         this->flags.bombDisplayUpdateFrames = 2;
         this->flags.grazeDisplayUpdateFrames = 2;
@@ -1458,20 +1423,37 @@ void Gui::DrawGameScene()
 
     {
         Float3 elemPos(488.0f, 56.0f, 0.0f);
-        g_AsciiManager.AddFormatText(&elemPos, "%.9d", g_GameManager.globals->displayScore);
-        elemPos.x += 117.0f;
-        g_AsciiManager.AddFormatText(&elemPos, "%1d",
-                                     g_GameManager.globals->numRetries > 9 ? 9 : g_GameManager.globals->numRetries);
-        g_AsciiManager.SetScale(1.0f, 1.0f);
+#ifdef TH08_MULTI
+        if (g_MultiPlayerState.IsEnabled())
+        {
+            g_AsciiManager.SetScale(0.5f, 1.0f);
+            g_AsciiManager.AddFormatText(
+                &elemPos, "SCORE %.9d", g_GameManager.globals->displayScore);
+            elemPos = Float3(488.0f, 40.0f, 0.0f);
+            g_AsciiManager.AddFormatText(
+                &elemPos, "HI %.9d", g_GameManager.globals->displayedHighScore);
+            g_AsciiManager.SetScale(1.0f, 1.0f);
+        }
+        else
+        {
+#endif
+            g_AsciiManager.AddFormatText(&elemPos, "%.9d", g_GameManager.globals->displayScore);
+            elemPos.x += 117.0f;
+            g_AsciiManager.AddFormatText(&elemPos, "%1d",
+                                         g_GameManager.globals->numRetries > 9 ? 9 : g_GameManager.globals->numRetries);
+            g_AsciiManager.SetScale(1.0f, 1.0f);
 
-        elemPos = Float3(488.0f, 40.0f, 0.0f);
-        g_AsciiManager.AddFormatText(&elemPos, "%.9d", g_GameManager.globals->displayedHighScore);
-        elemPos.x += 117.0f;
-        g_AsciiManager.AddFormatText(
-            &elemPos, "%1d", g_GameManager.globals->continuesUsedInHighScore > 9
-                                 ? 9
-                                 : g_GameManager.globals->continuesUsedInHighScore);
-        g_AsciiManager.SetScale(1.0f, 1.0f);
+            elemPos = Float3(488.0f, 40.0f, 0.0f);
+            g_AsciiManager.AddFormatText(&elemPos, "%.9d", g_GameManager.globals->displayedHighScore);
+            elemPos.x += 117.0f;
+            g_AsciiManager.AddFormatText(
+                &elemPos, "%1d", g_GameManager.globals->continuesUsedInHighScore > 9
+                                     ? 9
+                                     : g_GameManager.globals->continuesUsedInHighScore);
+            g_AsciiManager.SetScale(1.0f, 1.0f);
+#ifdef TH08_MULTI
+        }
+#endif
 
         if (this->flags.grazeDisplayUpdateFrames || g_Supervisor.IsMinimumGraphicsMode())
         {
@@ -2456,11 +2438,9 @@ ZunResult Gui::ActualAddedCallback()
 #ifdef TH08_MULTI
     if (g_MultiPlayerState.IsEnabled())
     {
-        g_MultiGuiStateLogged = false;
         // The co-op setup handshake can register a reused GUI after the retail
-        // "initial stage" flag has already changed. All original sidebar art
-        // and the boss name plate live in these front VMs, so initialize them
-        // above on every co-op GUI load, then populate the current name sprite.
+        // "initial stage" flag has already changed. Keep the boss name plate
+        // initialized even though decorative sidebar sprites are not drawn.
         if (g_MultiPendingEnemyNameSprite >= 0)
             CopyEnemyNameTexture(g_MultiPendingEnemyNameSprite);
         else
