@@ -189,6 +189,7 @@ void TestSpiritDriftIsDeterministicAndBounces()
     MultiPlayerPosition secondPosition = firstPosition;
     MultiPlayerPosition edgePosition = { 375.8f, 200.0f };
     f32 speedSquared;
+    i32 frame;
 
     first.Reset(true, 0, 1, 2, 3, 0);
     second.Reset(true, 0, 1, 2, 3, 0);
@@ -209,6 +210,17 @@ void TestSpiritDriftIsDeterministicAndBounces()
     Expect(speedSquared >= 0.66f * 0.66f &&
                speedSquared <= 1.14f * 1.14f + 0.0001f,
            "spirit launch speed stays in the slow range");
+
+    for (frame = 0; frame < 256; ++frame)
+    {
+        first.frameNumber = static_cast<u32>(frame);
+        first.EnterSpirit(MULTI_PLAYER_P1);
+        Expect(first.GetSlot(MULTI_PLAYER_P1).spiritVelocity.x != 0.0f &&
+                   first.GetSlot(MULTI_PLAYER_P1).spiritVelocity.y != 0.0f,
+               "spirit launch direction is never perpendicular to an edge");
+    }
+    first.frameNumber = 1234;
+    first.EnterSpirit(MULTI_PLAYER_P1);
 
     first.UpdateSpiritPosition(
         MULTI_PLAYER_P1, &firstPosition, 8.0f, 16.0f, 376.0f, 432.0f);

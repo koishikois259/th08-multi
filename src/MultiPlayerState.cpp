@@ -53,14 +53,15 @@ u32 NextSpiritRandom(u32 value)
     return value;
 }
 
-const MultiPlayerPosition g_SpiritDirections[16] = {
-    {1.0000000f, 0.0000000f}, {0.9238795f, 0.3826834f},
-    {0.7071068f, 0.7071068f}, {0.3826834f, 0.9238795f},
-    {0.0000000f, 1.0000000f}, {-0.3826834f, 0.9238795f},
+// Axis-aligned directions are intentionally excluded. Every launch keeps at
+// least a 22.5-degree angle from a playfield-edge normal, so a spirit cannot
+// start by travelling perpendicularly into any edge.
+const MultiPlayerPosition g_SpiritDirections[12] = {
+    {0.9238795f, 0.3826834f}, {0.7071068f, 0.7071068f},
+    {0.3826834f, 0.9238795f}, {-0.3826834f, 0.9238795f},
     {-0.7071068f, 0.7071068f}, {-0.9238795f, 0.3826834f},
-    {-1.0000000f, 0.0000000f}, {-0.9238795f, -0.3826834f},
-    {-0.7071068f, -0.7071068f}, {-0.3826834f, -0.9238795f},
-    {0.0000000f, -1.0000000f}, {0.3826834f, -0.9238795f},
+    {-0.9238795f, -0.3826834f}, {-0.7071068f, -0.7071068f},
+    {-0.3826834f, -0.9238795f}, {0.3826834f, -0.9238795f},
     {0.7071068f, -0.7071068f}, {0.9238795f, -0.3826834f},
 };
 
@@ -213,9 +214,9 @@ void MultiPlayerState::EnterSpirit(MultiPlayerSlot slot)
             static_cast<f32>((randomValue >> 8) & 0xffu) *
                 (0.48f / 255.0f);
     slots[slot].spiritVelocity.x =
-        g_SpiritDirections[randomValue & 15u].x * speed;
+        g_SpiritDirections[randomValue % 12u].x * speed;
     slots[slot].spiritVelocity.y =
-        g_SpiritDirections[randomValue & 15u].y * speed;
+        g_SpiritDirections[randomValue % 12u].y * speed;
 }
 
 void MultiPlayerState::UpdateSpiritPosition(
