@@ -59,6 +59,11 @@ Use [the manual network testing guide](MULTIPLAYER_TESTING.md) and the bundled
 
 - The multi build produces both `th08-multi.exe` and
   `th08-multi-launcher.exe`.
+- Both launchers establish a separate pre-game UDP handshake and display their
+  connection state before either game process starts.
+- Only the connected Host can issue the synchronized start command. The Guest
+  acknowledges it, both launcher sockets are released, and both games start;
+  the Guest cannot start independently.
 - The packaging script verifies the original Japanese 1.00d executable before
   installing and refuses to include original DAT, executable, score, or replay
   data in the patch archive.

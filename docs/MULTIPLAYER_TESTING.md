@@ -1,7 +1,8 @@
 # th08-multi v0.2 manual network testing
 
-`th08-multi-launcher.exe` writes `th08_multi.ini` and starts
-`th08-multi.exe`. Keep both executables in the same directory as the legally
+`th08-multi-launcher.exe` writes `th08_multi.ini`, establishes the pre-game
+connection, and starts `th08-multi.exe` on both peers after the Host issues the
+start command. Keep both executables in the same directory as the legally
 obtained TH08 1.00d data files.
 
 The distributable `th08-multi-v0.2-patch.zip` contains no original game data.
@@ -17,7 +18,8 @@ On the Host PC:
 3. Set Host UDP port and Local UDP port to the same value. The default is
    `17708`.
 4. Use the displayed local IPv4 address on the Guest PC.
-5. Choose **Save and launch**.
+5. Choose **Connect** and wait for the status to report `Connected`.
+6. After the Guest is connected, choose **Start both games**.
 
 On the Guest PC:
 
@@ -26,11 +28,13 @@ On the Guest PC:
 3. Enter the Host's UDP port. Local UDP port may remain `0` for automatic
    selection.
 4. Set the same input delay as the Host; start with `3`.
-5. Choose **Save and launch**.
+5. Choose **Connect** and wait for the Host. The Guest start button remains
+   disabled; the game starts when the Host chooses **Start both games**.
 
-The game window title reports listening, connecting, connected, team-select,
-playing, and network-error states. Both computers must use the same v0.2 build
-and the same Japanese TH08 1.00d game data.
+The launcher reports waiting, connecting, connected, and synchronized-start
+states. After launch, the game window title reports listening, connecting,
+connected, team-select, playing, and network-error states. Both computers must
+use the same v0.2 build and the same Japanese TH08 1.00d game data.
 
 ## Internet test
 

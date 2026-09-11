@@ -33,8 +33,16 @@ input_delay=3
 Replace `host` with the host's LAN or public IPv4 address. The negotiated delay
 is the larger of the two requested values.
 
-Start both copies and wait for both window titles to report `connected` before
-operating the title menu. P1 (the host) controls shared title-menu and
+Start both launchers and select **Connect**. The Host waits on its configured
+UDP port while the Guest performs a launcher handshake. The Host's **Start
+both games** button is disabled until both launchers report `Connected`; the
+Guest cannot start independently. When the Host selects **Start both games**,
+the launchers exchange a start acknowledgement, release their rendezvous
+sockets, and start both game processes. The games then establish their normal
+lockstep session on the configured game port.
+
+Wait for both game window titles to report `connected` before operating the
+title menu. P1 (the host) controls shared title-menu and
 difficulty choices. On the character-select screen P1 and P2 independently
 move and confirm their own team cursor; identical teams are allowed and play
 starts after both cursors are locked. Both players control their own characters
