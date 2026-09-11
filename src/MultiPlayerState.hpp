@@ -89,6 +89,7 @@ class MultiPlayerState
     MultiPlayerState();
 
     void Reset(bool enabled, u32 p1Team, u32 p2Team, i32 initialLives, i32 initialBombs, i32 initialPower);
+    void ResetForContinue(i32 initialLives, i32 p1InitialBombs, i32 p2InitialBombs, i32 initialPower);
     bool IsEnabled() const;
     MultiPlayerSlotState &GetSlot(MultiPlayerSlot slot);
     const MultiPlayerSlotState &GetSlot(MultiPlayerSlot slot) const;

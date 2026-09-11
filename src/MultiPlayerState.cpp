@@ -128,6 +128,21 @@ void MultiPlayerState::Reset(
         slots[MULTI_PLAYER_P2].presence = MULTI_PLAYER_INACTIVE;
 }
 
+void MultiPlayerState::ResetForContinue(
+    i32 initialLives,
+    i32 p1InitialBombs,
+    i32 p2InitialBombs,
+    i32 initialPower)
+{
+    u32 p1Team = slots[MULTI_PLAYER_P1].team;
+    u32 p2Team = slots[MULTI_PLAYER_P2].team;
+    u32 continueFrameNumber = frameNumber;
+
+    Reset(true, p1Team, p2Team, initialLives, p1InitialBombs, initialPower);
+    frameNumber = continueFrameNumber;
+    slots[MULTI_PLAYER_P2].bombs = p2InitialBombs;
+}
+
 bool MultiPlayerState::IsEnabled() const
 {
     return enabled;

@@ -159,6 +159,43 @@ void TestGameOverRequiresBothPlayersUnable()
     Expect(state.BothPlayersUnableToContinue(), "two spirit players end the run");
 }
 
+void TestContinueRestoresBothPlayersWithFullPower()
+{
+    MultiPlayerState state;
+    state.Reset(true, 2, 7, 0, 1, 0);
+    state.EnterSpirit(MULTI_PLAYER_P1);
+    state.EnterSpirit(MULTI_PLAYER_P2);
+    state.GetSlot(MULTI_PLAYER_P1).youkaiGauge = -8000;
+    state.GetSlot(MULTI_PLAYER_P2).youkaiGauge = 8000;
+    state.GetSlot(MULTI_PLAYER_P1).reviveProgressFrames = 45;
+    state.GetSlot(MULTI_PLAYER_P2).reviveProgressFrames = 60;
+    state.frameNumber = 4242;
+
+    state.ResetForContinue(2, 3, 2, 128);
+
+    Expect(state.IsPhysical(MULTI_PLAYER_P1), "continue restores P1 physical presence");
+    Expect(state.IsPhysical(MULTI_PLAYER_P2), "continue restores P2 physical presence");
+    Expect(state.GetSlot(MULTI_PLAYER_P1).team == 2, "continue retains P1 team");
+    Expect(state.GetSlot(MULTI_PLAYER_P2).team == 7, "continue retains P2 team");
+    Expect(state.GetSlot(MULTI_PLAYER_P1).lives == 2 &&
+               state.GetSlot(MULTI_PLAYER_P2).lives == 2,
+           "continue restores both life stocks");
+    Expect(state.GetSlot(MULTI_PLAYER_P1).bombs == 3 &&
+               state.GetSlot(MULTI_PLAYER_P2).bombs == 2,
+           "continue restores each team's initial bombs");
+    Expect(state.GetSlot(MULTI_PLAYER_P1).power == 128 &&
+               state.GetSlot(MULTI_PLAYER_P2).power == 128,
+           "continue starts both players at 128 power");
+    Expect(state.GetSlot(MULTI_PLAYER_P1).youkaiGauge == 0 &&
+               state.GetSlot(MULTI_PLAYER_P2).youkaiGauge == 0,
+           "continue resets both human-youkai gauges");
+    Expect(state.GetSlot(MULTI_PLAYER_P1).reviveProgressFrames == 0 &&
+               state.GetSlot(MULTI_PLAYER_P2).reviveProgressFrames == 0,
+           "continue clears revival progress");
+    Expect(state.frameNumber == 4242,
+           "continue preserves the active network simulation frame");
+}
+
 void TestCombinedStageGrazeAndReset()
 {
     MultiPlayerState state;
@@ -299,6 +336,7 @@ int main()
     TestNoRevivalWithoutReserveLife();
     TestRevivalRequiresEveryInteractionCondition();
     TestGameOverRequiresBothPlayersUnable();
+    TestContinueRestoresBothPlayersWithFullPower();
     TestCombinedStageGrazeAndReset();
     TestSpiritDriftIsDeterministicAndBounces();
     TestStateHash();

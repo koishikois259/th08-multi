@@ -321,6 +321,97 @@ void SyncP1MultiPlayerResourcesFromGame()
     state.grazeInStage = g_GameManager.globals->grazeInStage;
 }
 
+static void ResetPlayerObjectAfterContinue(Player *player, MultiPlayerSlot slot)
+{
+    i32 i;
+
+    if (player->deathbombEffect != NULL)
+    {
+        player->deathbombEffect->active = 0;
+        player->deathbombEffect = NULL;
+    }
+    if (player->focusEffect != NULL)
+    {
+        player->focusEffect->active = 0;
+        player->focusEffect = NULL;
+    }
+    if (player->extremeGaugeEffect != NULL)
+    {
+        player->extremeGaugeEffect->active = 0;
+        player->extremeGaugeEffect = NULL;
+    }
+    if (player->stateEffect != NULL)
+    {
+        player->stateEffect->active = 0;
+        player->stateEffect = NULL;
+    }
+
+    player->position.x = g_GameManager.arcadeRegionSize.x / 2.0f;
+    player->position.x += slot == MULTI_PLAYER_P1 ? -12.0f : 12.0f;
+    player->position.y = g_GameManager.arcadeRegionSize.y - 64.0f;
+    player->position.z = 0.2f;
+    for (i = 0; i < 16; ++i)
+        player->positionHistory[i] = player->position;
+
+    for (i = 0; i < 0x80; ++i)
+        player->shots[i].state = PLAYER_SHOT_INACTIVE;
+
+    player->movementDirection = PLAYER_DIRECTION_NONE;
+    player->currentHorizontalSpeed = 0.0f;
+    player->currentVerticalSpeed = 0.0f;
+    player->horizontalSpeedMultiplier = 1.0f;
+    player->verticalSpeedMultiplier = 1.0f;
+    player->focusMode = PLAYER_FOCUS_MODE_UNINITIALIZED;
+    player->focusTransitionFrames = 0;
+    player->shotTimer = -1;
+    player->gaugeShiftDelayTimer = 0;
+    player->shootingGaugeChangeRampTimer = 0;
+    player->bombState.isInUse = 0;
+    player->bombState.timer = 0;
+    player->deathbombWindowFrames = 0;
+    player->deathbombPending = 0;
+    player->forceDeathbombAtWindowEnd = 0;
+    player->bombInputLockFrames = 0;
+    player->playerStateSlotCooldown = 0;
+
+    player->playerState = PLAYER_STATE_SPAWNING;
+    player->timer = 0;
+    player->mainVm.scale.x = 3.0f;
+    player->mainVm.scale.y = 3.0f;
+    player->mainVm.color1.d3dColor = 0xFFFFFFFF;
+    player->mainVm.flagsWord &= ~0x20000u;
+}
+
+void ResetMultiPlayersAfterContinue(i32 initialLives, i32 initialPower)
+{
+    i32 p1InitialBombs = g_GameManager.GetBombsRemaining();
+    i32 p2InitialBombs = p1InitialBombs;
+
+    if (!g_MultiPlayerState.IsEnabled())
+        return;
+
+    if (g_Player.primaryShtFile != NULL)
+        p1InitialBombs = static_cast<i32>(g_Player.primaryShtFile->initialBombCount);
+    if (g_Player2.primaryShtFile != NULL)
+        p2InitialBombs = static_cast<i32>(g_Player2.primaryShtFile->initialBombCount);
+
+    g_MultiPlayerState.ResetForContinue(
+        initialLives, p1InitialBombs, p2InitialBombs, initialPower);
+
+    g_GameManager.SetLives(initialLives);
+    g_GameManager.SetBombCount(p1InitialBombs);
+    g_GameManager.SetPower(initialPower);
+    g_GameManager.SetYoukaiGauge(0);
+
+    ResetPlayerObjectAfterContinue(&g_Player, MULTI_PLAYER_P1);
+    ResetPlayerObjectAfterContinue(&g_Player2, MULTI_PLAYER_P2);
+    SyncP1MultiPlayerResourcesFromGame();
+
+    g_Gui.flags.lifeDisplayUpdateFrames = 2;
+    g_Gui.flags.bombDisplayUpdateFrames = 2;
+    g_Gui.flags.powerDisplayUpdateFrames = 2;
+}
+
 void RestoreMultiPlayerPresenceForStage()
 {
     Player *players[MULTI_PLAYER_COUNT] = {&g_Player, &g_Player2};

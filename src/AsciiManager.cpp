@@ -1474,29 +1474,26 @@ selected_no:
             g_GameManager.globals->scoreDisplayStep = 0;
             g_GameManager.globals->score = g_GameManager.globals->displayScore;
 
-            g_GameManager.SetLives(g_GameManager.cfg->lifeCount);
-
-            g_GameManager.SetBombCount(g_Player.primaryShtFile->initialBombCount);
-
-            g_GameManager.globals->grazeInStage = 0;
-            g_GameManager.globals->pointItemsCollectedInStage = 0;
-            g_GameManager.globals->pointItemsCollected = 0;
-
-            g_GameManager.SetPower(0);
-
 #ifdef TH08_MULTI
             if (g_MultiPlayerState.IsEnabled())
             {
-                u32 p1Team = g_MultiPlayerState.GetSlot(MULTI_PLAYER_P1).team;
-                u32 p2Team = g_MultiPlayerState.GetSlot(MULTI_PLAYER_P2).team;
-                g_MultiPlayerState.Reset(
-                    true, p1Team, p2Team, g_GameManager.cfg->lifeCount,
-                    g_Player.primaryShtFile->initialBombCount, 0);
-                g_MultiPlayerState.GetSlot(MULTI_PLAYER_P2).bombs =
-                    g_Player2.primaryShtFile->initialBombCount;
-                SyncP1MultiPlayerResourcesFromGame();
+                g_GameManager.globals->grazeInStage = 0;
+                g_GameManager.globals->pointItemsCollectedInStage = 0;
+                g_GameManager.globals->pointItemsCollected = 0;
+                ResetMultiPlayersAfterContinue(g_GameManager.cfg->lifeCount, 128);
             }
+            else
 #endif
+            {
+                g_GameManager.SetLives(g_GameManager.cfg->lifeCount);
+                g_GameManager.SetBombCount(g_Player.primaryShtFile->initialBombCount);
+
+                g_GameManager.globals->grazeInStage = 0;
+                g_GameManager.globals->pointItemsCollectedInStage = 0;
+                g_GameManager.globals->pointItemsCollected = 0;
+
+                g_GameManager.SetPower(0);
+            }
 
             g_GameManager.globals->pointItemExtendsSoFar = 0;
             g_GameManager.globals->nextPointItemExtendThreshold = 100;
