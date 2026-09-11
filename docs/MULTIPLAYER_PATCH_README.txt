@@ -3,6 +3,9 @@ th08-multi v0.2 联机补丁
 
 适用版本：东方永夜抄 日文原版 1.00d。
 
+GitHub 源码：https://github.com/koishikois259/th08-multi
+v0.2 发布页：https://github.com/koishikois259/th08-multi/releases/tag/v0.2
+
 安装：
 1. 将补丁压缩包内的所有文件直接解压到原版游戏目录。
 2. 保留原版 th08.exe、th08.dat 和 thbgm.dat；补丁不会覆盖原版 th08.exe。
