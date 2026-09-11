@@ -1022,9 +1022,11 @@ void Item::CollectTimeOrb()
 
     if (this != NULL)
     {
+#ifndef TH08_MULTI
         g_AsciiManager.CreateScorePopup(
             &this->currentPosition, score,
             g_GameManager.GetTimeOrbs() < g_GameManager.GetLastSpellTimeOrbThreshold() ? -536870913 : -536875136);
+#endif
     }
 
     g_Gui.flags.timeDisplayUpdateFrames = 2;

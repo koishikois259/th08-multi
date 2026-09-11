@@ -56,7 +56,7 @@ static Effect *SpawnPlayerOwnedEffect(Player *player, i32 effectId,
 static u8 GetPlayerRenderAlpha(Player *player, u8 originalAlpha)
 {
     const f32 fadeRadius = 48.0f;
-    const f32 minimumOpacity = 0.55f;
+    const f32 minimumOpacity = 0.25f;
     f32 dx;
     f32 dy;
     f32 distanceSquared;
@@ -612,7 +612,9 @@ void Player::AwardGraze(Float3 *position, i32 suppressExtraItems)
     }
 
     midpoint = (this->position + *position) / 2.0f;
+#ifndef TH08_MULTI
     g_EffectManager.SpawnEffect(EFFECT_GRAZE, D3DXVECTOR3_PTR(&midpoint), 1, -1);
+#endif
     g_GameManager.IncreaseSubrank(6);
     g_Gui.flags.grazeDisplayUpdateFrames = 2;
     g_SoundPlayer.PlaySoundPositionedByIdx(SOUND_GRAZE, position->x);

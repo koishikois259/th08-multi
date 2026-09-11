@@ -10,6 +10,7 @@
 #include "EnemyManager.hpp"
 #include "Player.hpp"
 #ifdef TH08_MULTI
+#include "MultiPlayerCoordinator.hpp"
 #include "MultiPlayerRuntime.hpp"
 #include "MultiPlayerState.hpp"
 #endif
@@ -18,6 +19,31 @@ namespace th08
 {
 
 ZunBool IsDisableResourceReload();
+
+#ifdef TH08_MULTI
+static bool ShouldHideRemoteFocusEffect(Effect *effect)
+{
+    MultiPlayerSlot owner;
+    f32 dx;
+    f32 dy;
+
+    if (!g_MultiPlayerState.IsEnabled() ||
+        effect->effectId != EFFECT_FOCUS_AURA ||
+        effect->unconsumedDword344 < MULTI_PLAYER_P1 + 1 ||
+        effect->unconsumedDword344 > MULTI_PLAYER_P2 + 1)
+        return false;
+
+    owner = static_cast<MultiPlayerSlot>(effect->unconsumedDword344 - 1);
+    if (owner == static_cast<MultiPlayerSlot>(
+                     g_MultiPlayerCoordinator.GetLocalSlot()) ||
+        !g_MultiPlayerState.IsPhysical(owner))
+        return false;
+
+    dx = g_Player.position.x - g_Player2.position.x;
+    dy = g_Player.position.y - g_Player2.position.y;
+    return dx * dx + dy * dy < 48.0f * 48.0f;
+}
+#endif
 
 void __fastcall AdjustStageEffectDrawPosition(AnmVm *effect, D3DXVECTOR3 *base);
 i32 __fastcall HasAnimationEnded(Effect *effect);
@@ -1253,6 +1279,13 @@ ChainCallbackResult EffectManager::OnDraw(EffectManager *effectManager)
     effect = effectManager->drawGroupSentinel0.nextInDrawGroup;
     while (effect != NULL)
     {
+#ifdef TH08_MULTI
+        if (ShouldHideRemoteFocusEffect(effect))
+        {
+            effect = effect->nextInDrawGroup;
+            continue;
+        }
+#endif
         if (effect->drawCallback != NULL)
         {
             effect->drawCallback(effect);
@@ -1272,6 +1305,13 @@ ChainCallbackResult EffectManager::OnDraw(EffectManager *effectManager)
     effect = effectManager->drawGroupSentinel2.nextInDrawGroup;
     while (effect != NULL)
     {
+#ifdef TH08_MULTI
+        if (ShouldHideRemoteFocusEffect(effect))
+        {
+            effect = effect->nextInDrawGroup;
+            continue;
+        }
+#endif
         effect->vm.pos = effect->position;
         g_AnmManager->DrawCameraFacingQuad(&effect->vm);
         effect = effect->nextInDrawGroup;
@@ -1280,6 +1320,13 @@ ChainCallbackResult EffectManager::OnDraw(EffectManager *effectManager)
     effect = effectManager->drawGroupSentinel4.nextInDrawGroup;
     while (effect != NULL)
     {
+#ifdef TH08_MULTI
+        if (ShouldHideRemoteFocusEffect(effect))
+        {
+            effect = effect->nextInDrawGroup;
+            continue;
+        }
+#endif
         if (effect->drawCallback != NULL)
         {
             effect->drawCallback(effect);
@@ -1307,6 +1354,13 @@ i32 EffectManager::DrawBulletLayerEffects()
 
     while (effect != NULL)
     {
+#ifdef TH08_MULTI
+        if (ShouldHideRemoteFocusEffect(effect))
+        {
+            effect = effect->nextInDrawGroup;
+            continue;
+        }
+#endif
         if (effect->drawCallback != NULL)
         {
             effect->drawCallback(effect);
