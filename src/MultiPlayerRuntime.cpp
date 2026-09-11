@@ -5,6 +5,7 @@
 #include "Gui.hpp"
 #include "BulletManager.hpp"
 #include "EnemyManager.hpp"
+#include "EclManager.hpp"
 #include "Global.hpp"
 #include "Player.hpp"
 
@@ -353,6 +354,7 @@ void UpdateMultiPlayerSpiritMotion(Player *player)
     f32 oldY;
     f32 deltaX;
     f32 deltaY;
+    Effect *effect;
     i32 i;
 
     if (!g_MultiPlayerState.IsEnabled() ||
@@ -384,6 +386,20 @@ void UpdateMultiPlayerSpiritMotion(Player *player)
     {
         player->optionStates[i].position.x += deltaX;
         player->optionStates[i].position.y += deltaY;
+    }
+
+    // The death ring is spawned at the commit point and is not backed by an
+    // update callback, so retail leaves it at that coordinate. In co-op it is
+    // also the visible spirit halo: keep the owner-tagged instance centered
+    // on the moving spirit until its animation naturally finishes.
+    effect = g_EffectManager.effects;
+    for (i = 0; i < 653; ++i, ++effect)
+    {
+        if (effect->active != 0 &&
+            effect->effectId == EFFECT_PLAYER_DEATH_OR_BOMB_RING &&
+            effect->unconsumedDword344 ==
+                static_cast<u32>(GetMultiPlayerSlot(player) + 1))
+            effect->position = player->position;
     }
 }
 
