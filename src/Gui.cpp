@@ -78,19 +78,24 @@ DIFFABLE_STATIC_ARRAY_ASSIGN(const char *, 12, g_GuiLoadingAnmPaths) = {
 };
 
 #ifdef TH08_MULTI
-static void DrawMultiPlayerHudPair(f32 y, i32 p1Value, i32 p2Value)
+static void DrawMultiPlayerHudPair(
+    f32 y, const char *label, i32 p1Value, i32 p2Value)
 {
     Float3 position;
     u8 localSlot = g_MultiPlayerCoordinator.GetLocalSlot();
 
     g_AsciiManager.SetScale(0.5f, 1.0f);
-    g_AsciiManager.SetColor(0xffa0d8ff);
+    g_AsciiManager.SetColor(0xffffffff);
     position = Float3(488.0f, y, 0.0f);
+    g_AsciiManager.AddFormatText(&position, "%s", label);
+
+    g_AsciiManager.SetColor(0xffa0d8ff);
+    position = Float3(524.0f, y, 0.0f);
     g_AsciiManager.AddFormatText(
         &position, "%cP1:%d", localSlot == MULTI_PLAYER_P1 ? '*' : ' ', p1Value);
 
     g_AsciiManager.SetColor(0xffffb0d0);
-    position = Float3(558.0f, y, 0.0f);
+    position = Float3(582.0f, y, 0.0f);
     g_AsciiManager.AddFormatText(
         &position, "%cP2:%d", localSlot == MULTI_PLAYER_P2 ? '*' : ' ', p2Value);
     g_AsciiManager.SetColor(0xffffffff);
@@ -1394,7 +1399,7 @@ void Gui::DrawGameScene()
             if (g_MultiPlayerState.IsEnabled())
             {
                 DrawMultiPlayerHudPair(
-                    152.0f,
+                    152.0f, "GRAZE",
                     g_MultiPlayerState.GetSlot(MULTI_PLAYER_P1).graze,
                     g_MultiPlayerState.GetSlot(MULTI_PLAYER_P2).graze);
             }
@@ -1472,9 +1477,9 @@ void Gui::DrawGameScene()
         {
             const MultiPlayerSlotState &p1 = g_MultiPlayerState.GetSlot(MULTI_PLAYER_P1);
             const MultiPlayerSlotState &p2 = g_MultiPlayerState.GetSlot(MULTI_PLAYER_P2);
-            DrawMultiPlayerHudPair(88.0f, p1.lives, p2.lives);
-            DrawMultiPlayerHudPair(104.0f, p1.bombs, p2.bombs);
-            DrawMultiPlayerHudPair(136.0f, p1.power, p2.power);
+            DrawMultiPlayerHudPair(88.0f, "LIFE", p1.lives, p2.lives);
+            DrawMultiPlayerHudPair(104.0f, "BOMB", p1.bombs, p2.bombs);
+            DrawMultiPlayerHudPair(136.0f, "POWER", p1.power, p2.power);
             elemPos = Float3(488.0f, 200.0f, 0.0f);
             g_AsciiManager.SetColor(0xffffffff);
             g_AsciiManager.SetScale(0.5f, 1.0f);

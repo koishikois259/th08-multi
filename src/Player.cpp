@@ -8,6 +8,7 @@
 #include "AnmManager.hpp"
 #include "Player.hpp"
 #ifdef TH08_MULTI
+#include "MultiPlayerCoordinator.hpp"
 #include "MultiPlayerRuntime.hpp"
 #endif
 #include "SoundPlayer.hpp"
@@ -50,6 +51,36 @@ static Effect *SpawnPlayerOwnedEffect(Player *player, i32 effectId,
     if (effect != NULL)
         effect->unconsumedDword344 = GetMultiPlayerSlot(player) + 1;
     return effect;
+}
+
+static u8 GetPlayerRenderAlpha(Player *player, u8 originalAlpha)
+{
+    const f32 fadeRadius = 48.0f;
+    const f32 minimumOpacity = 0.55f;
+    f32 dx;
+    f32 dy;
+    f32 distanceSquared;
+    f32 opacity;
+
+    if (!g_MultiPlayerState.IsEnabled() ||
+        GetMultiPlayerSlot(player) ==
+            (MultiPlayerSlot)g_MultiPlayerCoordinator.GetLocalSlot() ||
+        !g_MultiPlayerState.IsPhysical(GetMultiPlayerSlot(player)))
+        return originalAlpha;
+
+    dx = g_Player.position.x - g_Player2.position.x;
+    dy = g_Player.position.y - g_Player2.position.y;
+    distanceSquared = dx * dx + dy * dy;
+    if (distanceSquared >= fadeRadius * fadeRadius)
+        return originalAlpha;
+
+    // Smoothly fade only the remote player as the sprites overlap.  Scaling
+    // the existing alpha preserves retail death, spawn and invulnerability
+    // effects instead of replacing them.
+    opacity = minimumOpacity +
+              (1.0f - minimumOpacity) *
+                  sqrtf(distanceSquared) / fadeRadius;
+    return (u8)((f32)originalAlpha * opacity);
 }
 
 #define MULTI_PLAYER_SHOT_TYPE(player) GetMultiPlayerShotType(player)
@@ -1713,6 +1744,22 @@ doneTop:
 ChainCallbackResult Player::OnDrawHighPrio(Player *player)
 {
     u32 i;
+#ifdef TH08_MULTI
+    u8 mainAlpha;
+    u8 optionAlpha[4];
+    u8 renderAlpha;
+
+    mainAlpha = player->mainVm.color1.a;
+    renderAlpha = GetPlayerRenderAlpha(player, 255);
+    player->mainVm.color1.a =
+        (u8)(((u32)mainAlpha * renderAlpha) / 255);
+    for (i = 0; i < 4; ++i)
+    {
+        optionAlpha[i] = player->optionStates[i].vm.color1.a;
+        player->optionStates[i].vm.color1.a =
+            (u8)(((u32)optionAlpha[i] * renderAlpha) / 255);
+    }
+#endif
 
     player->DrawActiveShots();
 
@@ -1738,6 +1785,12 @@ ChainCallbackResult Player::OnDrawHighPrio(Player *player)
             player->optionStates[i].renderCallback(player, &player->optionStates[i]);
         }
     }
+
+#ifdef TH08_MULTI
+    player->mainVm.color1.a = mainAlpha;
+    for (i = 0; i < 4; ++i)
+        player->optionStates[i].vm.color1.a = optionAlpha[i];
+#endif
 
     return CHAIN_CALLBACK_RESULT_CONTINUE;
 }
