@@ -79,6 +79,7 @@ DIFFABLE_STATIC_ARRAY_ASSIGN(const char *, 12, g_GuiLoadingAnmPaths) = {
 
 #ifdef TH08_MULTI
 static i32 g_MultiPendingEnemyNameSprite = -1;
+static bool g_MultiGuiStateLogged = false;
 
 static void DrawMultiPlayerHudPair(
     f32 y, const char *label, i32 p1Value, i32 p2Value)
@@ -314,7 +315,7 @@ void GuiImpl::StartMessage(i32 messageIndex)
 }
 
 // FUNCTION: th08 0x433db3
-#pragma var_order(args, j, portraitArgs, k, portraitSpriteArgs, text3, text16, text19, text20, i)
+#pragma var_order(args, j, portraitArgs, k, portraitSpriteArgs, text3, text16, text19, text20, i, selectionInputCurrent, selectionInputPrevious)
 i32 GuiImpl::RunMsg()
 {
     GuiMessageInstructionArgs *args;
@@ -327,6 +328,8 @@ i32 GuiImpl::RunMsg()
     char text20[64];
     char text16[64];
     u32 i;
+    u16 selectionInputCurrent;
+    u16 selectionInputPrevious;
 
     if (this->message.currentMsgIdx < 0)
         return -1;
@@ -618,15 +621,26 @@ i32 GuiImpl::RunMsg()
             break;
 
         case GUI_MSG_SHOW_SELECTION:
-            if ((g_GuiMessageInputCurrent & TH_BUTTON_UP) &&
-                (g_GuiMessageInputCurrent & TH_BUTTON_UP) != (g_GuiMessageInputPrevious & TH_BUTTON_UP))
+            selectionInputCurrent = g_GuiMessageInputCurrent;
+            selectionInputPrevious = g_GuiMessageInputPrevious;
+#ifdef TH08_MULTI
+            if (g_MultiPlayerState.IsEnabled() && g_GameManager.currentStage == STAGE5)
+            {
+                selectionInputCurrent =
+                    g_MultiPlayerState.GetInput(MULTI_PLAYER_P1).current;
+                selectionInputPrevious =
+                    g_MultiPlayerState.GetInput(MULTI_PLAYER_P1).previous;
+            }
+#endif
+            if ((selectionInputCurrent & TH_BUTTON_UP) &&
+                (selectionInputCurrent & TH_BUTTON_UP) != (selectionInputPrevious & TH_BUTTON_UP))
             {
                 if (this->message.selectedOption == 1)
                     g_SoundPlayer.PlaySoundByIdx(SOUND_MOVE_MENU, 0);
                 this->message.selectedOption = 0;
             }
-            if ((g_GuiMessageInputCurrent & TH_BUTTON_DOWN) &&
-                (g_GuiMessageInputCurrent & TH_BUTTON_DOWN) != (g_GuiMessageInputPrevious & TH_BUTTON_DOWN))
+            if ((selectionInputCurrent & TH_BUTTON_DOWN) &&
+                (selectionInputCurrent & TH_BUTTON_DOWN) != (selectionInputPrevious & TH_BUTTON_DOWN))
             {
                 if (this->message.selectedOption == 0)
                     g_SoundPlayer.PlaySoundByIdx(SOUND_MOVE_MENU, 0);
@@ -634,9 +648,9 @@ i32 GuiImpl::RunMsg()
             }
             this->message.dialogueLines[this->message.selectedOption].color1.d3dColor = -1;
             this->message.dialogueLines[1 - this->message.selectedOption].color1.d3dColor = 0xE0606060;
-            if (!((g_GuiMessageInputCurrent & TH_BUTTON_SHOOT) &&
-                  (g_GuiMessageInputCurrent & TH_BUTTON_SHOOT) !=
-                      (g_GuiMessageInputPrevious & TH_BUTTON_SHOOT)) ||
+            if (!((selectionInputCurrent & TH_BUTTON_SHOOT) &&
+                  (selectionInputCurrent & TH_BUTTON_SHOOT) !=
+                      (selectionInputPrevious & TH_BUTTON_SHOOT)) ||
                 this->message.framesElapsedDuringPause < 60)
             {
                 if (this->message.framesElapsedDuringPause >=
@@ -1050,6 +1064,30 @@ void Gui::UpdateStageElements()
     }
 
     g_AnmManager->ExecuteScriptArray(this->impl->frontVms, 16);
+#ifdef TH08_MULTI
+    if (g_MultiPlayerState.IsEnabled() && !g_MultiGuiStateLogged && this->frameCounter >= 120)
+    {
+        AnmLoaded *front = this->frontAnm;
+        bool texture0Ready = front != NULL && front->totalEntries > 0 &&
+                             front->textures != NULL && front->textures[0].texture != NULL;
+        bool texture1Ready = front != NULL && front->totalEntries > 1 &&
+                             front->textures != NULL && front->textures[1].texture != NULL;
+        g_GameErrorContext.Log(
+            "multi gui state: stage=%d entries=%d tex0=%d tex1=%d "
+            "vm0(sprite=%d visible=%d anm=%d) vm12(sprite=%d visible=%d anm=%d)\n",
+            g_GameManager.currentStage,
+            front != NULL ? front->totalEntries : 0,
+            texture0Ready ? 1 : 0,
+            texture1Ready ? 1 : 0,
+            this->impl->frontVms[0].activeSpriteIndex,
+            this->impl->frontVms[0].visible,
+            this->impl->frontVms[0].anmFile == front ? 1 : 0,
+            this->impl->frontVms[12].activeSpriteIndex,
+            this->impl->frontVms[12].visible,
+            this->impl->frontVms[12].anmFile == front ? 1 : 0);
+        g_MultiGuiStateLogged = true;
+    }
+#endif
     g_AnmManager->ExecuteScriptArray(this->impl->stageTextVms, 4);
     if (!g_GameManager.flags.isSpellPractice && this->impl->stageTextVms[0].color1.a)
         g_AnmManager->ExecuteScriptArray(&this->impl->clockIntroVm, 1);
@@ -1303,6 +1341,27 @@ void Gui::DrawGameScene()
     }
 
     vm = &this->impl->frontVms[13];
+#ifdef TH08_MULTI
+    if (g_MultiPlayerState.IsEnabled())
+    {
+        // The retail HUD is normally cached in the backbuffer. In the co-op
+        // render path that cache is not preserved reliably, so keep the
+        // original static front sprites drawable on the live frame.
+        for (idx = 0; idx < 10; idx++)
+        {
+            AnmVm *frontVm = &this->impl->frontVms[idx];
+            if (frontVm->anmFile != this->frontAnm ||
+                frontVm->loadedSprite == NULL || frontVm->activeSpriteIndex < 0)
+                this->frontAnm->SetAndExecuteScriptIdx(frontVm, idx);
+            if (frontVm->loadedSprite != NULL && frontVm->activeSpriteIndex >= 0)
+            {
+                frontVm->visible = true;
+                frontVm->color1.a = 0xff;
+                frontVm->color2.a = 0xff;
+            }
+        }
+    }
+#endif
     if (
 #ifdef TH08_MULTI
         g_MultiPlayerState.IsEnabled() ||
@@ -1666,6 +1725,15 @@ void Gui::DrawStageElements()
             ScreenEffect::DrawSquareShaded(&rect, bossColor, bossColor, bossColorDark, bossColorDark);
         }
 
+#ifdef TH08_MULTI
+        if (g_MultiPlayerState.IsEnabled() &&
+            this->impl->frontVms[12].loadedSprite != NULL)
+        {
+            this->impl->frontVms[12].visible = true;
+            this->impl->frontVms[12].color1.a = this->bossUIOpacity;
+            this->impl->frontVms[12].color2.a = this->bossUIOpacity;
+        }
+#endif
         g_AnmManager->DrawNoRotation(&this->impl->frontVms[12]);
 
         i32 segmentWidth;
@@ -2388,6 +2456,7 @@ ZunResult Gui::ActualAddedCallback()
 #ifdef TH08_MULTI
     if (g_MultiPlayerState.IsEnabled())
     {
+        g_MultiGuiStateLogged = false;
         // The co-op setup handshake can register a reused GUI after the retail
         // "initial stage" flag has already changed. All original sidebar art
         // and the boss name plate live in these front VMs, so initialize them
