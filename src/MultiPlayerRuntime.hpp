@@ -46,6 +46,7 @@ bool ShouldPauseEnemyTimerForMultiPlayers();
 bool AllMultiPlayersHaveFullPower();
 
 void SyncP1MultiPlayerResourcesFromGame();
+void RestoreMultiPlayerPresenceForStage();
 u32 ComputeCurrentMultiPlayerStateHash();
 MultiPlayerReviveResult UpdateMultiPlayerRevival(Player *rescuer);
 

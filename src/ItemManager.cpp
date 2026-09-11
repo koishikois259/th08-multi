@@ -121,6 +121,27 @@ static void CollectExtendForPlayer(Player *collector)
         g_Gui.flags.bombDisplayUpdateFrames = 2;
     }
 }
+
+static void CollectSharedPointExtend()
+{
+    bool awarded = false;
+    Player *players[MULTI_PLAYER_COUNT] = {&g_Player, &g_Player2};
+    i32 i;
+
+    for (i = 0; i < MULTI_PLAYER_COUNT; ++i)
+    {
+        if (GetMultiPlayerLives(players[i]) >= 8)
+            continue;
+        AddMultiPlayerLives(players[i], 1);
+        awarded = true;
+    }
+    if (awarded)
+    {
+        g_SoundPlayer.PlaySoundByIdx(SOUND_1UP, 0);
+        g_GameManager.IncreaseSubrank(200);
+        g_Gui.flags.lifeDisplayUpdateFrames = 2;
+    }
+}
 #endif
 
 // FUNCTION: th08 0x441830
@@ -819,7 +840,7 @@ void Item::CollectPoint()
                 g_GameManager.globals->pointItemsCollected >= g_GameManager.globals->nextPointItemExtendThreshold))
         {
 #ifdef TH08_MULTI
-            CollectExtendForPlayer(collector);
+            CollectSharedPointExtend();
 #else
             g_GameManager.CollectExtend();
 #endif

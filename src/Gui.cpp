@@ -80,11 +80,10 @@ static void DrawMultiPlayerHudPair(f32 y, i32 p1Value, i32 p2Value)
     g_AsciiManager.SetScale(1.0f, 1.0f);
 }
 
-// A player can still be holding Ctrl while the stage timeline opens a boss
-// message.  Retail immediately consumes the whole skippable message in that
-// case.  With two synchronized input streams that race is twice as likely, so
-// require both peers to release dialogue controls once before accepting them.
-static bool g_MultiDialogueAwaitInputRelease;
+// Dialogue consumes the synchronized pair directly. Controls already held
+// when a message opens remain blocked until released, matching retail's
+// press-edge behavior without letting either peer skip the complete message.
+static u16 g_MultiDialogueBlockedControls;
 #endif
 
 typedef const char *GuiMessagePathRow[SHOT_ALL];
@@ -113,6 +112,15 @@ ChainCallbackResult Gui::OnUpdate(Gui *gui)
     if (g_GameManager.scriptedUpdateFreeze)
         return CHAIN_CALLBACK_RESULT_CONTINUE;
 
+#ifdef TH08_MULTI
+    if (g_MultiPlayerState.IsEnabled())
+    {
+        g_GuiMessageInputPrevious = g_GuiMessageInputCurrent;
+        g_GuiMessageInputCurrent =
+            g_MultiPlayerState.GetInput(MULTI_PLAYER_P1).current |
+            g_MultiPlayerState.GetInput(MULTI_PLAYER_P2).current;
+    }
+#endif
     gui->UpdateStageElements();
     gui->impl->RunMsg();
     if ((g_CurFrameInput & TH_BUTTON_SKIP) && g_GuiMessageScreenEffectDuration < 8)
@@ -272,7 +280,8 @@ void GuiImpl::StartMessage(i32 messageIndex)
 
 #ifdef TH08_MULTI
     if (g_MultiPlayerState.IsEnabled())
-        g_MultiDialogueAwaitInputRelease = true;
+        g_MultiDialogueBlockedControls =
+            g_GuiMessageInputCurrent & (TH_BUTTON_SHOOT | TH_BUTTON_SKIP);
 #endif
 
     g_BulletManager.ClearBulletsForTransition();
@@ -299,16 +308,13 @@ i32 GuiImpl::RunMsg()
         return -1;
 
 #ifdef TH08_MULTI
-    if (g_MultiPlayerState.IsEnabled() && g_MultiDialogueAwaitInputRelease)
+    if (g_MultiPlayerState.IsEnabled() && g_MultiDialogueBlockedControls != 0)
     {
-        const u16 dialogueControls = TH_BUTTON_SHOOT | TH_BUTTON_SKIP;
-        if ((g_GuiMessageInputCurrent & dialogueControls) == 0)
-            g_MultiDialogueAwaitInputRelease = false;
-        else
-        {
-            g_GuiMessageInputCurrent &= static_cast<u16>(~dialogueControls);
-            g_GuiMessageInputPrevious &= static_cast<u16>(~dialogueControls);
-        }
+        g_MultiDialogueBlockedControls &= g_GuiMessageInputCurrent;
+        g_GuiMessageInputCurrent &=
+            static_cast<u16>(~g_MultiDialogueBlockedControls);
+        g_GuiMessageInputPrevious &=
+            static_cast<u16>(~g_MultiDialogueBlockedControls);
     }
 #endif
 
@@ -1387,12 +1393,13 @@ void Gui::DrawGameScene()
 #ifdef TH08_MULTI
             if (g_MultiPlayerState.IsEnabled())
             {
-                g_AsciiManager.SetScale(0.5f, 1.0f);
+                g_AsciiManager.SetScale(0.45f, 1.0f);
                 g_AsciiManager.SetColor(0xfff0f0c0);
                 elemPos = Float3(488.0f, 168.0f, 0.0f);
                 g_AsciiManager.AddFormatText(
-                    &elemPos, "SH:%d MAX:%d",
+                    &elemPos, "POINT %d/%d MAX %d",
                     g_GameManager.globals->pointItemsCollected,
+                    g_GameManager.globals->nextPointItemExtendThreshold,
                     g_GameManager.globals->pointItemValue);
                 g_AsciiManager.SetColor(0xffffffff);
                 g_AsciiManager.SetScale(1.0f, 1.0f);
@@ -1801,6 +1808,19 @@ void __fastcall Gui::CopyEnemyNameTexture(i32 spriteIdx)
 {
     RECT destRect;
     RECT srcRect;
+
+#ifdef TH08_MULTI
+    if (g_MultiPlayerState.IsEnabled() &&
+        (g_Gui.stageTextAnm == NULL ||
+         g_Gui.stageTextAnm->rawData == NULL ||
+         g_Gui.stageTextAnm->sprites == NULL))
+    {
+        g_GameErrorContext.Log(
+            "multi: skipped enemy-name copy during released GUI resource state (stage=%d sprite=%d)\n",
+            g_GameManager.currentStage, spriteIdx);
+        return;
+    }
+#endif
 
     destRect.left = (i32)g_Gui.stageTextAnm->GetSprite(10)->startPixelInclusive.x;
     destRect.top = (i32)g_Gui.stageTextAnm->GetSprite(10)->startPixelInclusive.y;

@@ -321,6 +321,31 @@ void SyncP1MultiPlayerResourcesFromGame()
     state.grazeInStage = g_GameManager.globals->grazeInStage;
 }
 
+void RestoreMultiPlayerPresenceForStage()
+{
+    Player *players[MULTI_PLAYER_COUNT] = {&g_Player, &g_Player2};
+    i32 i;
+
+    if (!g_MultiPlayerState.IsEnabled())
+        return;
+
+    for (i = 0; i < MULTI_PLAYER_COUNT; ++i)
+    {
+        Player *player = players[i];
+        if (!g_MultiPlayerState.IsSpirit(static_cast<MultiPlayerSlot>(i)))
+            continue;
+
+        // Registering a Player for the next stage initializes it as spawning.
+        // Reapply the persistent co-op presence before the first gameplay tick
+        // so a player with no remaining life cannot silently return.
+        player->playerState = PLAYER_STATE_SPIRIT;
+        player->timer = 0;
+        player->bombState.isInUse = 0;
+        player->deathbombWindowFrames = 0;
+        player->mainVm.color1.a = 80;
+    }
+}
+
 u32 ComputeCurrentMultiPlayerStateHash()
 {
     MultiPlayerPosition positions[MULTI_PLAYER_COUNT];

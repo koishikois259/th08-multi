@@ -982,6 +982,7 @@ void __fastcall GameManager::GameplaySetupThread(void *unused)
                 g_GameManager.GetPower());
         }
         SyncP1MultiPlayerResourcesFromGame();
+        RestoreMultiPlayerPresenceForStage();
     }
 #endif
 
@@ -1108,7 +1109,10 @@ void __fastcall GameManager::GameplaySetupThread(void *unused)
     }
 
     gameManager->scriptedUpdateFreeze = 0;
-    gameManager->globals->score = 0;
+#ifdef TH08_MULTI
+    if (!g_MultiPlayerState.IsEnabled() || multiNewRun)
+#endif
+        gameManager->globals->score = 0;
     GM_FLAGS_WORD(gameManager) &= ~GameManagerFlags::GAME_CLEARED_MASK;
     g_AsciiManager.Reset();
     g_AsciiManager.InitializeVms();

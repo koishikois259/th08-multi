@@ -28,6 +28,33 @@ namespace th08
 DIFFABLE_STATIC(Player, g_Player);
 #ifdef TH08_MULTI
 Player g_Player2;
+
+static Effect *SpawnPlayerOwnedEffect(Player *player, i32 effectId,
+                                      D3DXVECTOR3 *position, i32 retailSlot,
+                                      i32 unused, i32 color)
+{
+    Effect *effect;
+    if (player == &g_Player2)
+    {
+        // The retail fixed pool only has slots 0..13. Keep P1's original
+        // ownership and reserve the otherwise-unused final slot for P2's
+        // focus marker; other P2 tracking effects use the dynamic pool.
+        if (retailSlot == 2)
+            effect = g_EffectManager.SpawnEffectInFixedSlot(
+                effectId, position, 13, unused, color);
+        else
+            effect = g_EffectManager.SpawnEffect(effectId, position, 1, color);
+    }
+    else
+    {
+        effect = g_EffectManager.SpawnEffectInFixedSlot(
+            effectId, position, retailSlot, unused, color);
+    }
+    if (effect != NULL)
+        effect->unconsumedDword344 = GetMultiPlayerSlot(player) + 1;
+    return effect;
+}
+
 #define MULTI_PLAYER_SHOT_TYPE(player) GetMultiPlayerShotType(player)
 #define MULTI_PLAYER_ANM_SLOT(player) ((player) == &g_Player2 ? ANM_FILE_SLOT_PLAYER_P2 : ANM_FILE_SLOT_PLAYER)
 #define MULTI_PLAYER_PRIMARY_SHT(player) ((player)->primaryShtFile)
@@ -622,9 +649,16 @@ void Player::Die()
             this->mainVm.color2.a = this->mainVm.color1.a;
             this->mainVm.flagsWord |= 0x20000;
 
+#ifdef TH08_MULTI
+            this->deathbombEffect = SpawnPlayerOwnedEffect(
+                this, EFFECT_PLAYER_DEATH_FIXED_SLOT,
+                D3DXVECTOR3_PTR(&this->position), 11, 1, 0xFFF0404F);
+#else
             this->deathbombEffect =
-                g_EffectManager.SpawnEffectInFixedSlot(EFFECT_PLAYER_DEATH_FIXED_SLOT, D3DXVECTOR3_PTR(&this->position),
-                                              11, 1, 0xFFF0404F);
+                g_EffectManager.SpawnEffectInFixedSlot(
+                    EFFECT_PLAYER_DEATH_FIXED_SLOT,
+                    D3DXVECTOR3_PTR(&this->position), 11, 1, 0xFFF0404F);
+#endif
             effect = this->deathbombEffect;
             effect->vm.interpCurrentTimers[AnmInterp_Pos] = 0;
             effect->vm.interpEndTimers[AnmInterp_Pos] = this->deathbombWindowFrames;
@@ -752,11 +786,9 @@ i32 Player::UpdateMovementAndOptions()
                     // A retail focus aura owns fixed slot 2. Two players
                     // cannot share that storage: the second spawn erases the
                     // first VM and both Player objects retain the same pointer.
-                    this->focusEffect =
-                        g_EffectManager.SpawnEffect(
-                            EFFECT_FOCUS_AURA, D3DXVECTOR3_PTR(&this->position), 1, -1);
-                    this->focusEffect->unconsumedDword344 =
-                        GetMultiPlayerSlot(this) + 1;
+                    this->focusEffect = SpawnPlayerOwnedEffect(
+                        this, EFFECT_FOCUS_AURA,
+                        D3DXVECTOR3_PTR(&this->position), 2, 1, -1);
                 }
                 else
 #endif
@@ -1025,9 +1057,15 @@ i32 Player::UpdateMovementAndOptions()
     if ((MULTI_PLAYER_GAUGE_EXTREME_HUMAN(this) || MULTI_PLAYER_GAUGE_EXTREME_YOUKAI(this)) &&
         this->extremeGaugeEffect == NULL)
     {
+#ifdef TH08_MULTI
+        this->extremeGaugeEffect = SpawnPlayerOwnedEffect(
+            this, EFFECT_EXTREME_GAUGE,
+            D3DXVECTOR3_PTR(&this->position), 8, 1, -1);
+#else
         this->extremeGaugeEffect =
             g_EffectManager.SpawnEffectInFixedSlot(
                 EFFECT_EXTREME_GAUGE, D3DXVECTOR3_PTR(&this->position), 8, 1, -1);
+#endif
     }
     if (this->extremeGaugeEffect != NULL)
     {
@@ -1440,7 +1478,15 @@ i32 Player::UpdateDeathAndRespawn()
                 this->deathbombEffect->active = 0;
                 this->deathbombEffect = NULL;
             }
-            g_EffectManager.SpawnEffectInFixedSlot(EFFECT_PLAYER_DEATH_OR_BOMB_RING, D3DXVECTOR3_PTR(&this->position), 3, 1, 0xFF4040FF);
+#ifdef TH08_MULTI
+            SpawnPlayerOwnedEffect(
+                this, EFFECT_PLAYER_DEATH_OR_BOMB_RING,
+                D3DXVECTOR3_PTR(&this->position), 3, 1, 0xFF4040FF);
+#else
+            g_EffectManager.SpawnEffectInFixedSlot(
+                EFFECT_PLAYER_DEATH_OR_BOMB_RING,
+                D3DXVECTOR3_PTR(&this->position), 3, 1, 0xFF4040FF);
+#endif
             g_EffectManager.SpawnEffect(EFFECT_DEATH_OR_BOMB_PARTICLE, D3DXVECTOR3_PTR(&this->position), 16, -1);
             g_SoundPlayer.PlaySoundPositionedByIdx(SOUND_BULLET_0_LOUD, this->position.x);
             *reinterpret_cast<u32 *>(&g_GameManager.flags) &=

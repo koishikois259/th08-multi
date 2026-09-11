@@ -21,14 +21,14 @@ result has been reproduced; compiling successfully is not gameplay acceptance.
 | Independent Focus and human-youkai gauge | CODE | P1-only Focus was observed without changing P2 Focus; per-slot gauge accessors are used | Observe both gauges changing independently in HUD |
 | Independent bombs | PASS | P2 bomb changed the synchronized resource view from 3/3 to 3/2 while P1 remained 3 | Exercise simultaneous and deathbomb cases |
 | Independent collision and graze | CODE | Bullets, lasers, and enemy contact call each physical player's collision functions; bullets carry separate P1/P2 graze latches; state tests cover combined stage reward and per-stage reset | Observe one-player-only hit/graze and verify the stage reward uses the P1+P2 sum |
-| Shared score | CODE | One canonical `ZunGlobals::score` is included in the deterministic state hash and displayed by both peers | Raise score and compare both HUDs frame-for-frame |
-| Shared point count and maximum point value | CODE | Point collection updates the canonical count/value; threshold life goes to the actual collector | Collect point items on each player and compare both HUDs |
+| Shared score | CODE | One canonical `ZunGlobals::score` is included in the deterministic state hash, displayed by both peers, and preserved across stage setup | Raise score, cross a stage boundary, and compare both HUDs frame-for-frame |
+| Shared point count and maximum point value | CODE | Point collection updates the canonical count/value; the HUD shows `POINT current/next MAX value`; reaching the threshold awards one life to each non-capped player | Collect point items through a threshold and compare both players' lives and HUDs |
 | Shared Time and Last Spell threshold | CODE | Time uses one canonical current/total value; the deathbomb window reads the shared threshold | Reach threshold, hit only one player, and observe partner control plus local bomb spend |
 | Nearest-player item attraction and pickup | CODE | Eligible physical collectors are resolved by squared distance with deterministic P1 tie-break; Time-rise targeting now uses the same rule | Place each item type near P1, near P2, and at an exact tie |
 | Power/life/bomb item goes only to collector | CODE | Collection functions mutate the resolved collector's slot only | Observe all three item types on both players |
 | Nearest living player enemy/Boss targeting | CODE | bullet/laser aim, ECL operands, movement bias, and minimum-distance gates use the nearest physical player | Observe aimed patterns after swapping which player is closer |
-| Spirit mode and TH06-style revival | CODE | State tests cover Focus/no-shoot/overlap, 90-frame completion, cancel, and reserve-life rejection | Exhaust one player, revive them, then repeat with P1/P2 reversed |
-| Game over only when both are unable | CODE | spirit transition tests and `BothPlayersUnableToContinue` gate exist | Exhaust both players in one two-process run |
+| Spirit mode and TH06-style revival | CODE | State tests cover Focus/no-shoot/overlap, 90-frame completion, cancel, and reserve-life rejection; stage setup reapplies persistent spirit presence | Exhaust one player, cross a stage boundary without revival, then revive them; repeat with P1/P2 reversed |
+| Game over only when both are unable | CODE | spirit transition tests and `BothPlayersUnableToContinue` gate exist; stage transitions no longer initialize a spirit as physical | Exhaust one player while the other remains active, then exhaust both in one two-process run |
 | Final lives/bombs bonus sums both players | CODE | Stage-clear calculation and detail rows read P1+P2 independent resources | Complete Stage 6 and compare the displayed bonus with both players' remaining resources |
 | Replay disabled in multiplayer | CODE | Multiplayer launch forces non-replay gameplay and hides multiplayer replay flow | Complete/end a run and confirm no replay-save prompt |
 | Packet loss/jitter tolerance | PASS | Two local processes stayed alive and responsive with every 10th UDP packet dropped plus 4-18 ms jitter | Cross-machine WAN envelope |
@@ -40,7 +40,8 @@ The multiplayer right-side HUD has these intended rows:
 
 - Player, Spell, Power, and Graze: P1 and P2 values side by side; blue is P1,
   pink is P2, and `*` marks the local player.
-- Point: shared point-item count and shared maximum point-item value.
+- Point: shared point-item count, next shared life threshold, and shared maximum
+  point-item value, displayed as `POINT current/next MAX value`.
 - Time: shared current/required Time plus shared total Time.
 - Score and high score: the existing canonical shared displays.
 - Human-youkai gauge: numeric P1 and P2 values below the standard resource
