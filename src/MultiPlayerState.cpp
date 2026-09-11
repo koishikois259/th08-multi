@@ -209,9 +209,9 @@ void MultiPlayerState::EnterSpirit(MultiPlayerSlot slot)
                   (0x9e3779b9u * (static_cast<u32>(slot) + 1u)) ^
                   (0x85ebca6bu * (static_cast<u32>(slots[slot].deaths) + 1u));
     randomValue = NextSpiritRandom(randomValue);
-    speed = 0.55f +
+    speed = 0.66f +
             static_cast<f32>((randomValue >> 8) & 0xffu) *
-                (0.40f / 255.0f);
+                (0.48f / 255.0f);
     slots[slot].spiritVelocity.x =
         g_SpiritDirections[randomValue & 15u].x * speed;
     slots[slot].spiritVelocity.y =

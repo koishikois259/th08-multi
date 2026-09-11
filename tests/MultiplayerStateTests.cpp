@@ -206,8 +206,8 @@ void TestSpiritDriftIsDeterministicAndBounces()
             first.GetSlot(MULTI_PLAYER_P1).spiritVelocity.x +
         first.GetSlot(MULTI_PLAYER_P1).spiritVelocity.y *
             first.GetSlot(MULTI_PLAYER_P1).spiritVelocity.y;
-    Expect(speedSquared >= 0.55f * 0.55f &&
-               speedSquared <= 0.95f * 0.95f + 0.0001f,
+    Expect(speedSquared >= 0.66f * 0.66f &&
+               speedSquared <= 1.14f * 1.14f + 0.0001f,
            "spirit launch speed stays in the slow range");
 
     first.UpdateSpiritPosition(

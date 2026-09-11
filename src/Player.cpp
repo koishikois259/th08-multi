@@ -1609,6 +1609,17 @@ i32 Player::UpdateDeathAndRespawn()
                 MultiPlayerSlot slot = GetMultiPlayerSlot(this);
                 g_MultiPlayerState.EnterSpirit(slot);
                 this->playerState = PLAYER_STATE_SPIRIT;
+                if (this->focusEffect != NULL)
+                {
+                    this->focusEffect->active = 0;
+                    this->focusEffect = NULL;
+                }
+                if (this->extremeGaugeEffect != NULL)
+                {
+                    this->extremeGaugeEffect->active = 0;
+                    this->extremeGaugeEffect = NULL;
+                }
+                this->focusMode = PLAYER_FOCUS_MODE_UNINITIALIZED;
                 MULTI_PLAYER_SET_BOMBS(this, (i32)MULTI_PLAYER_PRIMARY_SHT(this)->initialBombCount);
                 this->mainVm.color1.a = 80;
                 if (g_MultiPlayerState.BothPlayersUnableToContinue())
