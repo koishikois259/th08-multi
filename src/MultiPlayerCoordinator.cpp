@@ -10,7 +10,7 @@
 namespace th08
 {
 
-const u32 TH08_MULTI_BUILD_FINGERPRINT = 0x00010006;
+const u32 TH08_MULTI_BUILD_FINGERPRINT = 0x00010007;
 
 MultiPlayerCoordinator g_MultiPlayerCoordinator;
 

@@ -1176,6 +1176,31 @@ ChainCallbackResult EffectManager::OnUpdate(EffectManager *effectManager)
                 effect->active = 0;
                 continue;
             }
+#ifdef TH08_MULTI
+            if (g_MultiPlayerState.IsEnabled() &&
+                effect->unconsumedDword344 >= MULTI_PLAYER_P1 + 1 &&
+                effect->unconsumedDword344 <= MULTI_PLAYER_P2 + 1)
+            {
+                MultiPlayerSlot owner = static_cast<MultiPlayerSlot>(
+                    effect->unconsumedDword344 - 1);
+                if (g_MultiPlayerState.IsSpirit(owner))
+                {
+                    Player *spirit = owner == MULTI_PLAYER_P1
+                                         ? &g_Player
+                                         : &g_Player2;
+                    effect->position = spirit->position;
+
+                    // Radial effects bake their center into vector5 and only
+                    // rebuild geometry when verticesDirty is set. Synchronize
+                    // both representations after the effect's own callback.
+                    if (effect->vertices != NULL)
+                    {
+                        effect->vector5 = spirit->position;
+                        effect->verticesDirty = 1;
+                    }
+                }
+            }
+#endif
             effect->timer++;
         }
 
