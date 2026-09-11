@@ -33,12 +33,29 @@ DIFFABLE_STATIC(i32, g_GuiMessageStageMode);
 DIFFABLE_STATIC(u16, g_GuiMessageInputCurrent);
 DIFFABLE_STATIC(u16, g_GuiMessageInputPrevious);
 DIFFABLE_STATIC(i32, g_GuiMessageScreenEffectDuration);
-DIFFABLE_STATIC_ARRAY(i32, MAX_STAGES, g_GuiStageClearBonuses);
+DIFFABLE_STATIC_ARRAY_ASSIGN(i32, MAX_STAGES, g_GuiStageClearBonuses) = {
+    1000000, 1500000, 2000000, 2500000, 2500000,
+    3000000, 4000000, 6000000, 6660000,
+};
 struct GuiMessageTextColorSet
 {
     u32 colors[4];
 };
-DIFFABLE_STATIC_ARRAY(GuiMessageTextColorSet, SHOT_ALL, g_GuiMessageTextColors);
+DIFFABLE_STATIC_ARRAY_ASSIGN(
+    GuiMessageTextColorSet, SHOT_ALL, g_GuiMessageTextColors) = {
+    {{0x00e8f0ff, 0x00f0e8ff, 0x00ffe8f0, 0x00ffe8f0}},
+    {{0x00e8f0ff, 0x00f0e8ff, 0x00ffe8f0, 0x00ffe8f0}},
+    {{0x00e8f0ff, 0x00f0e8ff, 0x00ffe8f0, 0x00ffe8f0}},
+    {{0x00e8f0ff, 0x00f0e8ff, 0x00ffe8f0, 0x00ffe8f0}},
+    {{0x00e8f0ff, 0x00f0e8ff, 0x00ffe8f0, 0x00ffe8f0}},
+    {{0x00e8f0ff, 0x00f0e8ff, 0x00ffe8f0, 0x00ffe8f0}},
+    {{0x00e8f0ff, 0x00f0e8ff, 0x00ffe8f0, 0x00ffe8f0}},
+    {{0x00e8f0ff, 0x00f0e8ff, 0x00ffe8f0, 0x00ffe8f0}},
+    {{0x00e8f0ff, 0x00f0e8ff, 0x00ffe8f0, 0x00ffe8f0}},
+    {{0x00e8f0ff, 0x00f0e8ff, 0x00ffe8f0, 0x00ffe8f0}},
+    {{0x00e8f0ff, 0x00f0e8ff, 0x00ffe8f0, 0x00ffe8f0}},
+    {{0x00e8f0ff, 0x00f0e8ff, 0x00ffe8f0, 0x00ffe8f0}},
+};
 
 DIFFABLE_STATIC_ARRAY_ASSIGN(
     GuiStageMusicContextSet, GUI_STAGE_MUSIC_CONTEXT_COUNT, g_GuiStageMusicContexts) = {

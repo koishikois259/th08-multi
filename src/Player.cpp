@@ -36,14 +36,11 @@ static Effect *SpawnPlayerOwnedEffect(Player *player, i32 effectId,
     Effect *effect;
     if (player == &g_Player2)
     {
-        // The retail fixed pool only has slots 0..13. Keep P1's original
-        // ownership and reserve the otherwise-unused final slot for P2's
-        // focus marker; other P2 tracking effects use the dynamic pool.
-        if (retailSlot == 2)
-            effect = g_EffectManager.SpawnEffectInFixedSlot(
-                effectId, position, 13, unused, color);
-        else
-            effect = g_EffectManager.SpawnEffect(effectId, position, 1, color);
+        // Fixed storage occupies array indices 640..652: only slots 0..12
+        // participate in EffectManager::OnUpdate.  P2 therefore uses the
+        // dynamic pool for tracking effects while retaining the same retail
+        // effect template and white focus-aura ANM script.
+        effect = g_EffectManager.SpawnEffect(effectId, position, 1, color);
     }
     else
     {
