@@ -1,4 +1,4 @@
-# th08-multi v0.2 local/network setup
+# th08-multi v0.21 local/network setup
 
 The multiplayer fork reads `th08_multi.ini` from the executable's working
 directory. Copy `th08_multi.ini.example` to that name on both computers.
@@ -15,7 +15,7 @@ input_delay=3
 ```
 
 Allow inbound UDP port 17708 in the host firewall and forward the same UDP
-port when connecting through a router. Direct IPv4 connections are the v0.2
+port when connecting through a router. Direct IPv4 connections are the v0.21
 scope; relay and automatic NAT traversal are not included.
 
 ## Guest
@@ -47,9 +47,9 @@ difficulty choices. On the character-select screen P1 and P2 independently
 move and confirm their own team cursor; identical teams are allowed and play
 starts after both cursors are locked. Both players control their own characters
 once gameplay starts. Either player can open or close the in-game pause menu.
-The v0.2 multiplayer menu supports Story and Extra runs; Practice and Spell
+The v0.21 multiplayer menu supports Story and Extra runs; Practice and Spell
 Practice remain single-player-only.
 
 The internal replay bookkeeping object remains present because retail enemy
 logic depends on it, but multiplayer replay selection and saving are disabled
-for v0.2.
+for v0.21.
