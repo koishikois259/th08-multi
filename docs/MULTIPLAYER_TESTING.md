@@ -1,10 +1,10 @@
-# th08-multi v0.1 manual network testing
+# th08-multi v0.2 manual network testing
 
 `th08-multi-launcher.exe` writes `th08_multi.ini` and starts
 `th08-multi.exe`. Keep both executables in the same directory as the legally
 obtained TH08 1.00d data files.
 
-The distributable `th08-multi-v0.1-patch.zip` contains no original game data.
+The distributable `th08-multi-v0.2-patch.zip` contains no original game data.
 Extract all of its files directly into a Japanese TH08 1.00d directory, then
 start `th08-multi-launcher.exe`. The original `th08.exe` remains untouched.
 
@@ -29,7 +29,7 @@ On the Guest PC:
 5. Choose **Save and launch**.
 
 The game window title reports listening, connecting, connected, team-select,
-playing, and network-error states. Both computers must use the same v0.1 build
+playing, and network-error states. Both computers must use the same v0.2 build
 and the same Japanese TH08 1.00d game data.
 
 ## Internet test
@@ -37,7 +37,7 @@ and the same Japanese TH08 1.00d game data.
 The Host must forward the selected UDP port on the router to the Host PC's LAN
 IPv4 address and allow the same UDP port through the local firewall. The Guest
 enters the Host network's public IPv4 address. The launcher does not provide
-relay, matchmaking, automatic port forwarding, or NAT traversal in v0.1.
+relay, matchmaking, automatic port forwarding, or NAT traversal in v0.2.
 
 Never expose file-sharing services or unrelated ports. Only the configured
 game UDP port is required.

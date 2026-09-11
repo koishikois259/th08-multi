@@ -1040,7 +1040,7 @@ void __fastcall GameManager::GameplaySetupThread(void *unused)
     }
 
     // ReplayManager also owns frame-event bookkeeping used directly by enemy
-    // code. Keep its internal recorder alive in multiplayer; v0.1 suppresses
+    // code. Keep its internal recorder alive in multiplayer; multiplayer suppresses
     // exposing save/playback rather than removing this runtime dependency.
     if (!g_GameManager.flags.isReplay)
         ReplayManager::RegisterChain(0, "replay/th8_00.rpy");
