@@ -346,6 +346,47 @@ void RestoreMultiPlayerPresenceForStage()
     }
 }
 
+void UpdateMultiPlayerSpiritMotion(Player *player)
+{
+    MultiPlayerPosition position;
+    f32 oldX;
+    f32 oldY;
+    f32 deltaX;
+    f32 deltaY;
+    i32 i;
+
+    if (!g_MultiPlayerState.IsEnabled() ||
+        !g_MultiPlayerState.IsSpirit(GetMultiPlayerSlot(player)))
+        return;
+
+    oldX = player->position.x;
+    oldY = player->position.y;
+    position.x = oldX;
+    position.y = oldY;
+    g_MultiPlayerState.UpdateSpiritPosition(
+        GetMultiPlayerSlot(player),
+        &position,
+        g_GameManager.playerMovementTopLeftPos.x,
+        g_GameManager.playerMovementTopLeftPos.y,
+        g_GameManager.playerMovementTopLeftPos.x +
+            g_GameManager.playerMovementAreaSize.x,
+        g_GameManager.playerMovementTopLeftPos.y +
+            g_GameManager.playerMovementAreaSize.y);
+    player->position.x = position.x;
+    player->position.y = position.y;
+
+    // Options do not run their normal formation update while their owner is a
+    // spirit. Move the frozen formation by the same amount so it cannot be
+    // left behind at the death position.
+    deltaX = position.x - oldX;
+    deltaY = position.y - oldY;
+    for (i = 0; i < 4; ++i)
+    {
+        player->optionStates[i].position.x += deltaX;
+        player->optionStates[i].position.y += deltaY;
+    }
+}
+
 u32 ComputeCurrentMultiPlayerStateHash()
 {
     MultiPlayerPosition positions[MULTI_PLAYER_COUNT];

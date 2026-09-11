@@ -181,6 +181,53 @@ void TestCombinedStageGrazeAndReset()
            "new stage retains P2 run graze");
 }
 
+void TestSpiritDriftIsDeterministicAndBounces()
+{
+    MultiPlayerState first;
+    MultiPlayerState second;
+    MultiPlayerPosition firstPosition = { 100.0f, 200.0f };
+    MultiPlayerPosition secondPosition = firstPosition;
+    MultiPlayerPosition edgePosition = { 375.8f, 200.0f };
+    f32 speedSquared;
+
+    first.Reset(true, 0, 1, 2, 3, 0);
+    second.Reset(true, 0, 1, 2, 3, 0);
+    first.frameNumber = second.frameNumber = 1234;
+    first.EnterSpirit(MULTI_PLAYER_P1);
+    second.EnterSpirit(MULTI_PLAYER_P1);
+
+    Expect(first.GetSlot(MULTI_PLAYER_P1).spiritVelocity.x ==
+               second.GetSlot(MULTI_PLAYER_P1).spiritVelocity.x &&
+           first.GetSlot(MULTI_PLAYER_P1).spiritVelocity.y ==
+               second.GetSlot(MULTI_PLAYER_P1).spiritVelocity.y,
+           "spirit launch velocity is deterministic");
+    speedSquared =
+        first.GetSlot(MULTI_PLAYER_P1).spiritVelocity.x *
+            first.GetSlot(MULTI_PLAYER_P1).spiritVelocity.x +
+        first.GetSlot(MULTI_PLAYER_P1).spiritVelocity.y *
+            first.GetSlot(MULTI_PLAYER_P1).spiritVelocity.y;
+    Expect(speedSquared >= 0.55f * 0.55f &&
+               speedSquared <= 0.95f * 0.95f + 0.0001f,
+           "spirit launch speed stays in the slow range");
+
+    first.UpdateSpiritPosition(
+        MULTI_PLAYER_P1, &firstPosition, 8.0f, 16.0f, 376.0f, 432.0f);
+    second.UpdateSpiritPosition(
+        MULTI_PLAYER_P1, &secondPosition, 8.0f, 16.0f, 376.0f, 432.0f);
+    Expect(firstPosition.x == secondPosition.x &&
+               firstPosition.y == secondPosition.y,
+           "spirit movement remains deterministic");
+
+    first.GetSlot(MULTI_PLAYER_P1).spiritVelocity.x = 0.75f;
+    first.GetSlot(MULTI_PLAYER_P1).spiritVelocity.y = 0.0f;
+    first.UpdateSpiritPosition(
+        MULTI_PLAYER_P1, &edgePosition, 8.0f, 16.0f, 376.0f, 432.0f);
+    Expect(edgePosition.x <= 376.0f,
+           "spirit remains inside the playfield after collision");
+    Expect(first.GetSlot(MULTI_PLAYER_P1).spiritVelocity.x < 0.0f,
+           "spirit reflects from the playfield edge");
+}
+
 void TestStateHash()
 {
     MultiPlayerState state;
@@ -241,6 +288,7 @@ int main()
     TestRevivalRequiresEveryInteractionCondition();
     TestGameOverRequiresBothPlayersUnable();
     TestCombinedStageGrazeAndReset();
+    TestSpiritDriftIsDeterministicAndBounces();
     TestStateHash();
     TestEverySharedHudResourceAffectsStateHash();
 

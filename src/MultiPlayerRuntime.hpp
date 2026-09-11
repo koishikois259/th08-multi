@@ -47,6 +47,7 @@ bool AllMultiPlayersHaveFullPower();
 
 void SyncP1MultiPlayerResourcesFromGame();
 void RestoreMultiPlayerPresenceForStage();
+void UpdateMultiPlayerSpiritMotion(Player *player);
 u32 ComputeCurrentMultiPlayerStateHash();
 MultiPlayerReviveResult UpdateMultiPlayerRevival(Player *rescuer);
 

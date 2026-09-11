@@ -56,6 +56,7 @@ struct MultiPlayerSlotState
     i32 deaths;
     i32 bombsUsed;
     i32 reviveProgressFrames;
+    MultiPlayerPosition spiritVelocity;
     u32 team;
     MultiPlayerPresence presence;
     MultiPlayerInputFrame input;
@@ -104,6 +105,13 @@ class MultiPlayerState
         const MultiPlayerPosition positions[MULTI_PLAYER_COUNT]) const;
 
     void EnterSpirit(MultiPlayerSlot slot);
+    void UpdateSpiritPosition(
+        MultiPlayerSlot slot,
+        MultiPlayerPosition *position,
+        f32 left,
+        f32 top,
+        f32 right,
+        f32 bottom);
     MultiPlayerReviveResult UpdateRevival(
         MultiPlayerSlot rescuer,
         bool playersOverlap,

@@ -1243,6 +1243,7 @@ ChainCallbackResult Player::OnUpdate(Player *player)
 #ifdef TH08_MULTI
     if (g_MultiPlayerState.IsEnabled() && player->playerState == PLAYER_STATE_SPIRIT)
     {
+        UpdateMultiPlayerSpiritMotion(player);
         player->mainVm.color1.a = 80;
         g_AnmManager->ExecuteScript(&player->mainVm);
         return CHAIN_CALLBACK_RESULT_CONTINUE;

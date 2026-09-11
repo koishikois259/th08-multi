@@ -45,6 +45,25 @@ MultiPlayerSlot OtherSlot(MultiPlayerSlot slot)
     return slot == MULTI_PLAYER_P1 ? MULTI_PLAYER_P2 : MULTI_PLAYER_P1;
 }
 
+u32 NextSpiritRandom(u32 value)
+{
+    value ^= value << 13;
+    value ^= value >> 17;
+    value ^= value << 5;
+    return value;
+}
+
+const MultiPlayerPosition g_SpiritDirections[16] = {
+    {1.0000000f, 0.0000000f}, {0.9238795f, 0.3826834f},
+    {0.7071068f, 0.7071068f}, {0.3826834f, 0.9238795f},
+    {0.0000000f, 1.0000000f}, {-0.3826834f, 0.9238795f},
+    {-0.7071068f, 0.7071068f}, {-0.9238795f, 0.3826834f},
+    {-1.0000000f, 0.0000000f}, {-0.9238795f, -0.3826834f},
+    {-0.7071068f, -0.7071068f}, {-0.3826834f, -0.9238795f},
+    {0.0000000f, -1.0000000f}, {0.3826834f, -0.9238795f},
+    {0.7071068f, -0.7071068f}, {0.9238795f, -0.3826834f},
+};
+
 } // namespace
 
 void MultiPlayerInputFrame::Reset()
@@ -80,6 +99,8 @@ void MultiPlayerSlotState::Reset(u32 selectedTeam, i32 initialLives, i32 initial
     deaths = 0;
     bombsUsed = 0;
     reviveProgressFrames = 0;
+    spiritVelocity.x = 0.0f;
+    spiritVelocity.y = 0.0f;
     team = selectedTeam;
     presence = MULTI_PLAYER_PHYSICAL;
     input.Reset();
@@ -179,8 +200,61 @@ MultiPlayerSlot MultiPlayerState::ResolveNearestPhysicalPlayer(
 
 void MultiPlayerState::EnterSpirit(MultiPlayerSlot slot)
 {
+    u32 randomValue;
+    f32 speed;
+
     slots[slot].presence = MULTI_PLAYER_SPIRIT;
     slots[slot].reviveProgressFrames = 0;
+    randomValue = frameNumber ^
+                  (0x9e3779b9u * (static_cast<u32>(slot) + 1u)) ^
+                  (0x85ebca6bu * (static_cast<u32>(slots[slot].deaths) + 1u));
+    randomValue = NextSpiritRandom(randomValue);
+    speed = 0.55f +
+            static_cast<f32>((randomValue >> 8) & 0xffu) *
+                (0.40f / 255.0f);
+    slots[slot].spiritVelocity.x =
+        g_SpiritDirections[randomValue & 15u].x * speed;
+    slots[slot].spiritVelocity.y =
+        g_SpiritDirections[randomValue & 15u].y * speed;
+}
+
+void MultiPlayerState::UpdateSpiritPosition(
+    MultiPlayerSlot slot,
+    MultiPlayerPosition *position,
+    f32 left,
+    f32 top,
+    f32 right,
+    f32 bottom)
+{
+    MultiPlayerPosition &velocity = slots[slot].spiritVelocity;
+
+    if (!enabled || !IsSpirit(slot) || position == NULL)
+        return;
+
+    position->x += velocity.x;
+    position->y += velocity.y;
+
+    if (position->x < left)
+    {
+        position->x = left + (left - position->x);
+        velocity.x = -velocity.x;
+    }
+    else if (position->x > right)
+    {
+        position->x = right - (position->x - right);
+        velocity.x = -velocity.x;
+    }
+
+    if (position->y < top)
+    {
+        position->y = top + (top - position->y);
+        velocity.y = -velocity.y;
+    }
+    else if (position->y > bottom)
+    {
+        position->y = bottom - (position->y - bottom);
+        velocity.y = -velocity.y;
+    }
 }
 
 MultiPlayerReviveResult MultiPlayerState::UpdateRevival(
@@ -217,6 +291,8 @@ MultiPlayerReviveResult MultiPlayerState::UpdateRevival(
     --rescuerState.lives;
     spiritState.presence = MULTI_PLAYER_PHYSICAL;
     spiritState.reviveProgressFrames = 0;
+    spiritState.spiritVelocity.x = 0.0f;
+    spiritState.spiritVelocity.y = 0.0f;
     return MULTI_REVIVE_COMPLETED;
 }
 
@@ -243,6 +319,8 @@ u32 MultiPlayerState::ComputeStateHash(
         hash = MixHash(hash, static_cast<u32>(slot.deaths));
         hash = MixHash(hash, static_cast<u32>(slot.bombsUsed));
         hash = MixHash(hash, static_cast<u32>(slot.reviveProgressFrames));
+        hash = MixHash(hash, FloatBits(slot.spiritVelocity.x));
+        hash = MixHash(hash, FloatBits(slot.spiritVelocity.y));
         hash = MixHash(hash, slot.input.current);
         hash = MixHash(hash, slot.input.previous);
         hash = MixHash(hash, FloatBits(positions[i].x));
