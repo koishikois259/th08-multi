@@ -2375,21 +2375,29 @@ ZunResult Gui::ActualAddedCallback()
         }
     }
 
+    if (IsInitialStageLoad()
+#ifdef TH08_MULTI
+        || g_MultiPlayerState.IsEnabled()
+#endif
+    )
+    {
+        for (k = 0; k < 16; k++)
+            this->frontAnm->SetAndExecuteScriptIdx(&this->impl->frontVms[k], k);
+    }
+
 #ifdef TH08_MULTI
     if (g_MultiPlayerState.IsEnabled())
     {
+        // The co-op setup handshake can register a reused GUI after the retail
+        // "initial stage" flag has already changed. All original sidebar art
+        // and the boss name plate live in these front VMs, so initialize them
+        // above on every co-op GUI load, then populate the current name sprite.
         if (g_MultiPendingEnemyNameSprite >= 0)
             CopyEnemyNameTexture(g_MultiPendingEnemyNameSprite);
         else
             CopyCurrentStageEnemyNameTexture();
     }
 #endif
-
-    if (IsInitialStageLoad())
-    {
-        for (k = 0; k < 16; k++)
-            this->frontAnm->SetAndExecuteScriptIdx(&this->impl->frontVms[k], k);
-    }
 
     this->frameCounter = 0;
     this->bossPresent = false;
