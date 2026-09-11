@@ -100,6 +100,14 @@ ChainCallbackResult Supervisor::OnUpdate(Supervisor *s)
         return CHAIN_CALLBACK_RESULT_EXIT_GAME_SUCCESS;
     }
 
+#ifdef TH08_MULTI
+    // Stage setup runs on a worker thread and can take several seconds on a
+    // remote peer. Keep servicing and resending the UDP session while the
+    // simulation is paused so the connected timeout cannot turn an ordinary
+    // stage load into an apparent crash.
+    g_MultiPlayerCoordinator.Pump(timeGetTime());
+#endif
+
     if (s->startupThreadState != SupervisorStartupThreadState_Idle)
     {
         if (s->startupThreadState == SupervisorStartupThreadState_Failed)
@@ -120,7 +128,6 @@ ChainCallbackResult Supervisor::OnUpdate(Supervisor *s)
     g_SoundPlayer.UpdateFades();
 
 #ifdef TH08_MULTI
-    g_MultiPlayerCoordinator.Pump(timeGetTime());
     if (g_MultiPlayerCoordinator.IsGameplayActive() &&
         g_MultiPlayerCoordinator.IsSessionFailed())
     {

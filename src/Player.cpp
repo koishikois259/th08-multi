@@ -53,6 +53,31 @@ static Effect *SpawnPlayerOwnedEffect(Player *player, i32 effectId,
     return effect;
 }
 
+static void ProtectOtherPlayerDuringLastSpellFailure(Player *hitPlayer)
+{
+    Player *otherPlayer;
+    MultiPlayerSlot otherSlot;
+
+    if (!g_MultiPlayerState.IsEnabled() || !g_Spellcard.IsActive() ||
+        !Spellcard::IsLastSpell(g_Spellcard.spellCardNumber))
+        return;
+
+    otherPlayer = hitPlayer == &g_Player ? &g_Player2 : &g_Player;
+    otherSlot = GetMultiPlayerSlot(otherPlayer);
+    if (!g_MultiPlayerState.IsPhysical(otherSlot) ||
+        otherPlayer->playerState != PLAYER_STATE_ALIVE)
+        return;
+
+    // A stage Last Spell is one shared capture attempt. The first collision
+    // owns the retail dissolve/failure sequence; immediately protecting the
+    // partner prevents a same-frame second collision from starting another
+    // special-bomb callback against the same Spellcard and boss objects.
+    // Match the retail dissolve owner's 200-frame invulnerability window.
+    otherPlayer->timer = 200;
+    otherPlayer->bombInputLockFrames = 200;
+    otherPlayer->playerState = PLAYER_STATE_INVULNERABLE;
+}
+
 static u8 GetPlayerRenderAlpha(Player *player, u8 originalAlpha)
 {
     const f32 fadeRadius = 48.0f;
@@ -656,6 +681,9 @@ void Player::Die()
     g_EffectManager.SpawnEffect(EFFECT_DEATH_OR_BOMB_PARTICLE, D3DXVECTOR3_PTR(&this->position), 16, -1);
     this->playerState = PLAYER_STATE_DYING;
     this->timer = 0;
+#ifdef TH08_MULTI
+    ProtectOtherPlayerDuringLastSpellFailure(this);
+#endif
     g_SoundPlayer.PlaySoundPositionedByIdx(SOUND_PICHUN, this->position.x);
     g_ReplayManager->frameEventFlags |= REPLAY_FRAME_EVENT_PLAYER_DYING_STARTED;
 
