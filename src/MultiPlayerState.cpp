@@ -178,6 +178,12 @@ bool MultiPlayerState::IsSpirit(MultiPlayerSlot slot) const
     return slots[slot].presence == MULTI_PLAYER_SPIRIT;
 }
 
+bool MultiPlayerState::CanReceiveSharedLifeExtend(
+    MultiPlayerSlot slot, i32 maximumLives) const
+{
+    return IsPhysical(slot) && slots[slot].lives < maximumLives;
+}
+
 bool MultiPlayerState::BothPlayersUnableToContinue() const
 {
     return enabled && !IsPhysical(MULTI_PLAYER_P1) && !IsPhysical(MULTI_PLAYER_P2);

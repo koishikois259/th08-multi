@@ -130,7 +130,8 @@ static void CollectSharedPointExtend()
 
     for (i = 0; i < MULTI_PLAYER_COUNT; ++i)
     {
-        if (GetMultiPlayerLives(players[i]) >= 8)
+        MultiPlayerSlot slot = GetMultiPlayerSlot(players[i]);
+        if (!g_MultiPlayerState.CanReceiveSharedLifeExtend(slot, 8))
             continue;
         AddMultiPlayerLives(players[i], 1);
         awarded = true;

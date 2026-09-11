@@ -159,6 +159,28 @@ void TestGameOverRequiresBothPlayersUnable()
     Expect(state.BothPlayersUnableToContinue(), "two spirit players end the run");
 }
 
+void TestSharedLifeExtendOnlyTargetsPhysicalPlayers()
+{
+    MultiPlayerState state;
+    state.Reset(true, 0, 1, 2, 3, 0);
+
+    Expect(state.CanReceiveSharedLifeExtend(MULTI_PLAYER_P1, 8),
+           "physical P1 can receive a shared point extend");
+    Expect(state.CanReceiveSharedLifeExtend(MULTI_PLAYER_P2, 8),
+           "physical P2 can receive a shared point extend");
+
+    state.EnterSpirit(MULTI_PLAYER_P1);
+    state.GetSlot(MULTI_PLAYER_P1).lives = 0;
+    Expect(!state.CanReceiveSharedLifeExtend(MULTI_PLAYER_P1, 8),
+           "spirit player cannot receive a shared point extend");
+    Expect(state.CanReceiveSharedLifeExtend(MULTI_PLAYER_P2, 8),
+           "surviving player still receives a shared point extend");
+
+    state.GetSlot(MULTI_PLAYER_P2).lives = 8;
+    Expect(!state.CanReceiveSharedLifeExtend(MULTI_PLAYER_P2, 8),
+           "life-capped physical player cannot receive another extend");
+}
+
 void TestContinueRestoresBothPlayersWithFullPower()
 {
     MultiPlayerState state;
@@ -336,6 +358,7 @@ int main()
     TestNoRevivalWithoutReserveLife();
     TestRevivalRequiresEveryInteractionCondition();
     TestGameOverRequiresBothPlayersUnable();
+    TestSharedLifeExtendOnlyTargetsPhysicalPlayers();
     TestContinueRestoresBothPlayersWithFullPower();
     TestCombinedStageGrazeAndReset();
     TestSpiritDriftIsDeterministicAndBounces();

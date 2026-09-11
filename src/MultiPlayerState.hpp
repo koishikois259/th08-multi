@@ -97,6 +97,7 @@ class MultiPlayerState
     const MultiPlayerInputFrame &GetInput(MultiPlayerSlot slot) const;
     bool IsPhysical(MultiPlayerSlot slot) const;
     bool IsSpirit(MultiPlayerSlot slot) const;
+    bool CanReceiveSharedLifeExtend(MultiPlayerSlot slot, i32 maximumLives) const;
     bool BothPlayersUnableToContinue() const;
     void ResetStageCounters();
     i32 GetCombinedGrazeInStage() const;

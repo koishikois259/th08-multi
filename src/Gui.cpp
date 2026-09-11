@@ -985,6 +985,17 @@ void Gui::UpdateStageElements()
                 this->impl->frontVms[12].SetInterrupt(1);
                 this->impl->bossLifeBarState = 1;
                 this->bossUIOpacity = 0;
+#ifdef TH08_MULTI
+                if (g_MultiPlayerState.IsEnabled())
+                {
+                    // The retail frame waits for the entrance VM to report
+                    // stopped before the bar width starts following boss HP.
+                    // That VM can remain active in the co-op render path,
+                    // leaving a permanently zero-width bar. Keep its visual
+                    // interrupt, but allow the shared life value to animate.
+                    this->impl->bossLifeBarState = 2;
+                }
+#endif
             }
             else
             {
