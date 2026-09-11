@@ -850,7 +850,22 @@ i32 EnemyManager::OnUpdate()
             D3DXVECTOR3 markerPosition;
 
             if (!g_Gui.IsDialoguePresent() && !enemy->bossSlot)
+            {
+#ifdef TH08_MULTI
+                if (g_MultiPlayerState.IsEnabled() &&
+                    reinterpret_cast<EnemyFlag1Bits *>(&enemy->flags1)->damageable &&
+                    !g_Gui.IsBossPresent())
+                {
+                    // A boss object is reused across multiple life bars. Retail
+                    // scripts only announce the object once, while phase death
+                    // hides the HUD. Re-open it when the next damageable phase
+                    // starts so every life bar (and its name plate) is visible.
+                    Gui::CopyCurrentStageEnemyNameTexture();
+                    g_Gui.SetBossPresent(true);
+                }
+#endif
                 g_Gui.SetBossLifeBarTarget((f32)enemy->life / (f32)enemy->maxLife);
+            }
 
             if (reinterpret_cast<EnemyFlag1Bits *>(&enemy->flags1)->boss < 4)
             {

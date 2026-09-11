@@ -78,6 +78,8 @@ DIFFABLE_STATIC_ARRAY_ASSIGN(const char *, 12, g_GuiLoadingAnmPaths) = {
 };
 
 #ifdef TH08_MULTI
+static i32 g_MultiPendingEnemyNameSprite = -1;
+
 static void DrawMultiPlayerHudPair(
     f32 y, const char *label, i32 p1Value, i32 p2Value)
 {
@@ -980,7 +982,11 @@ void Gui::UpdateStageElements()
     {
         if (this->bossPresent)
         {
-            if (this->impl->bossLifeBarState == 0)
+            if (this->impl->bossLifeBarState == 0
+#ifdef TH08_MULTI
+                || (g_MultiPlayerState.IsEnabled() && this->impl->bossLifeBarState == 3)
+#endif
+            )
             {
                 this->impl->frontVms[12].SetInterrupt(1);
                 this->impl->bossLifeBarState = 1;
@@ -1297,7 +1303,11 @@ void Gui::DrawGameScene()
     }
 
     vm = &this->impl->frontVms[13];
-    if (g_Supervisor.IsHUDRedrawEnabled() || vm->currentInstruction != NULL || g_GuiFullPowerModeFrames != 0)
+    if (
+#ifdef TH08_MULTI
+        g_MultiPlayerState.IsEnabled() ||
+#endif
+        g_Supervisor.IsHUDRedrawEnabled() || vm->currentInstruction != NULL || g_GuiFullPowerModeFrames != 0)
     {
         for (yPos = 0.0f; yPos < 464.0f; yPos += 32.0f)
         {
@@ -1848,11 +1858,14 @@ void __fastcall Gui::CopyEnemyNameTexture(i32 spriteIdx)
          g_Gui.stageTextAnm->rawData == NULL ||
          g_Gui.stageTextAnm->sprites == NULL))
     {
+        g_MultiPendingEnemyNameSprite = spriteIdx;
         g_GameErrorContext.Log(
-            "multi: skipped enemy-name copy during released GUI resource state (stage=%d sprite=%d)\n",
+            "multi: deferred enemy-name copy during released GUI resource state (stage=%d sprite=%d)\n",
             g_GameManager.currentStage, spriteIdx);
         return;
     }
+    if (g_MultiPlayerState.IsEnabled())
+        g_MultiPendingEnemyNameSprite = -1;
 #endif
 
     destRect.left = (i32)g_Gui.stageTextAnm->GetSprite(10)->startPixelInclusive.x;
@@ -2361,6 +2374,16 @@ ZunResult Gui::ActualAddedCallback()
                 return ZUN_ERROR;
         }
     }
+
+#ifdef TH08_MULTI
+    if (g_MultiPlayerState.IsEnabled())
+    {
+        if (g_MultiPendingEnemyNameSprite >= 0)
+            CopyEnemyNameTexture(g_MultiPendingEnemyNameSprite);
+        else
+            CopyCurrentStageEnemyNameTexture();
+    }
+#endif
 
     if (IsInitialStageLoad())
     {
