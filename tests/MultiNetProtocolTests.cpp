@@ -99,7 +99,7 @@ void TestHandshakeAndDisconnectGuards()
     u8 wire[256];
     u32 wireSize;
 
-    hello.buildFingerprint = 0x00020022;
+    hello.buildFingerprint = 0x00020023;
     hello.clientNonce = 0x12345678;
     hello.requestedInputDelay = 3;
     hello.selectedTeam = 2;
