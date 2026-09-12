@@ -72,7 +72,7 @@ Use [the manual network testing guide](MULTIPLAYER_TESTING.md) and the bundled
   both window titles reported `connected (select teams in game / delay 3)`.
 - The v0.31 six-file patch archive includes the GitHub source and release URLs
   in its README and has SHA-256
-  `62d5964abc76495b7e32ed4416f5773515473aa673a282bec44fa262f150882f`.
+  `2c2f2d4dda92816bfdee650456000cc5b34c60cce3af1d68ee8b260c83b9d640`.
 - Installation into the verified `th08-origin` directory preserved the original
   `th08.exe` hash, all installed payload hashes matched, and the installed
   launcher remained alive during its startup smoke test.
