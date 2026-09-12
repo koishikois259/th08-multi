@@ -1,10 +1,10 @@
-th08-multi v0.3 联机补丁
-=======================
+th08-multi v0.31 联机补丁
+========================
 
 适用版本：东方永夜抄 日文原版 1.00d。
 
 GitHub 源码：https://github.com/koishikois259/th08-multi
-v0.3 发布页：https://github.com/koishikois259/th08-multi/releases/tag/v0.3
+v0.31 发布页：https://github.com/koishikois259/th08-multi/releases/tag/v0.31
 
 安装：
 1. 将补丁压缩包内的所有文件直接解压到原版游戏目录。
@@ -20,9 +20,14 @@ v0.3 发布页：https://github.com/koishikois259/th08-multi/releases/tag/v0.3
 加密。启动器会自动监听全部本地 IPv4 接口；如需 Windows 防火墙规则，
 请只允许预期使用的网络，并尽量限制为对方地址。
 
-双方必须使用完全相同的 v0.3 补丁和日文原版 1.00d 数据。联机模式
+双方必须使用完全相同的 v0.31 补丁和日文原版 1.00d 数据。联机模式
 不支持 Replay。连接与异常状态会显示在游戏窗口标题栏，诊断信息写入
 游戏目录的 log.txt。
+
+v0.31 修复内容：
+- 修复 4、5、6、EX 面对话及符卡间对话的立绘轨迹残影。
+- 加固对话立绘、ANM、P1/P2、子 ECL 和换面资源的释放所有权，降低
+  后三面换面或对话期间因悬空指针、重复释放导致崩溃的风险。
 
 卸载：关闭游戏后删除以下补丁文件即可，原版游戏不受影响：
 - th08-multi.exe

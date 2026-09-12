@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create and optionally install the data-free th08-multi v0.3 patch."""
+"""Create and optionally install the data-free th08-multi v0.31 patch."""
 
 from __future__ import annotations
 
@@ -11,10 +11,10 @@ import zipfile
 
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_OUTPUT = ROOT.parent / "th08-multi-v0.3-patch.zip"
+DEFAULT_OUTPUT = ROOT.parent / "th08-multi-v0.31-patch.zip"
 EXPECTED_TH08_SIZE = 840_704
 EXPECTED_TH08_SHA256 = "330fbdbf58a710829d65277b4f312cfbb38d5448b3df523e79350b879213d924"
-ZIP_TIMESTAMP = (2026, 9, 12, 0, 0, 0)
+ZIP_TIMESTAMP = (2026, 9, 13, 0, 0, 0)
 
 PAYLOAD_SOURCES = {
     "th08-multi.exe": ROOT / "build" / "th08-multi.exe",
