@@ -132,6 +132,12 @@ static i32 GetMultiPlayerAnmSlot(Player *player)
     return ANM_FILE_SLOT_PLAYER_P2;
 }
 
+static bool ShouldShareP1PlayerAnm(Player *player)
+{
+    return player == &g_Player2 &&
+           GetMultiPlayerShotType(&g_Player) == GetMultiPlayerShotType(&g_Player2);
+}
+
 #define MULTI_PLAYER_ANM_SLOT(player) GetMultiPlayerAnmSlot(player)
 #define MULTI_PLAYER_PRIMARY_SHT(player) ((player)->primaryShtFile)
 #define MULTI_PLAYER_SECONDARY_SHT(player) ((player)->secondaryShtFile)
@@ -1882,7 +1888,27 @@ ZunResult Player::AddedCallback(Player *player)
             return ZUN_ERROR;
         if (Player::LoadShtFile(&player->secondaryShtFile, g_Player2ShtFile[MULTI_PLAYER_SHOT_TYPE(player)]) != ZUN_SUCCESS)
             return ZUN_ERROR;
-        player->anmFile = g_AnmManager->PreloadAnm(MULTI_PLAYER_ANM_SLOT(player), g_PlayerAnmFilenames[MULTI_PLAYER_SHOT_TYPE(player)]);
+#ifdef TH08_MULTI
+        if (ShouldShareP1PlayerAnm(player))
+        {
+            // P1 has already completed its preload before P2's added callback
+            // runs. Reloading the same slot here releases P1's sprite array
+            // after P1's VMs have captured pointers into it. player00.anm is
+            // particularly prone to receiving a different allocation on the
+            // second load, causing the duplicate Border Team startup crash.
+            player->anmFile = g_AnmManager->GetAnm(ANM_FILE_SLOT_PLAYER);
+        }
+        else
+        {
+            player->anmFile = g_AnmManager->PreloadAnm(
+                MULTI_PLAYER_ANM_SLOT(player),
+                g_PlayerAnmFilenames[MULTI_PLAYER_SHOT_TYPE(player)]);
+        }
+#else
+        player->anmFile = g_AnmManager->PreloadAnm(
+            MULTI_PLAYER_ANM_SLOT(player),
+            g_PlayerAnmFilenames[MULTI_PLAYER_SHOT_TYPE(player)]);
+#endif
         if (player->anmFile == NULL)
             return ZUN_ERROR;
     }

@@ -924,6 +924,27 @@ ZunResult GuiImpl::DrawDialogue()
     vertices[2].diffuse = vertices[3].diffuse = 0x90000000;
     vertices[0].w = vertices[1].w = vertices[2].w = vertices[3].w = 1.0f;
 
+#ifdef TH08_MULTI
+    if (g_MultiPlayerState.IsEnabled())
+    {
+        // The message format has one logical current speaker. Retail draws all
+        // four portrait VMs to preserve cross-fade animations, but a retained
+        // exit VM can remain visible after later-stage face resources switch.
+        // Draw only the current speaker in multiplayer so a stale player or
+        // boss portrait cannot survive into the next line or overlap its
+        // replacement. A null sprite guard also keeps malformed transitional
+        // VM state out of the Direct3D draw path.
+        if (this->message.currentPortraitIndex < 4 &&
+            this->message.portraits[this->message.currentPortraitIndex]
+                    .loadedSprite != NULL)
+        {
+            g_AnmManager->DrawNoRotation(
+                &this->message.portraits[this->message.currentPortraitIndex]);
+        }
+    }
+    else
+    {
+#endif
     if (this->message.portraits[GUI_PORTRAIT_PLAYER_PRIMARY].pos.z >=
         this->message.portraits[GUI_PORTRAIT_PLAYER_SECONDARY].pos.z)
     {
@@ -947,6 +968,9 @@ ZunResult GuiImpl::DrawDialogue()
         g_AnmManager->DrawNoRotation(&this->message.portraits[GUI_PORTRAIT_ENEMY_SECONDARY]);
         g_AnmManager->DrawNoRotation(&this->message.portraits[GUI_PORTRAIT_ENEMY_PRIMARY]);
     }
+#ifdef TH08_MULTI
+    }
+#endif
 
     g_AnmManager->FlushVertexBuffer();
 
