@@ -100,6 +100,133 @@ static bool AreEnemyNameSpritesReady(i32 spriteIdx)
         static_cast<UINT_PTR>(highestSpriteIdx + 1) * sizeof(AnmLoadedSprite));
 }
 
+static i32 CountAnmItems(const AnmLoaded *anm, bool scripts)
+{
+    const AnmRawEntry *entry;
+    i32 count;
+    i32 i;
+
+    if (anm == NULL || anm->rawData == NULL || anm->totalEntries <= 0 ||
+        anm->totalEntries > 64 || anm->numberEntriesToBeLoaded != 0)
+        return -1;
+
+    entry = anm->rawData;
+    count = 0;
+    for (i = 0; i < anm->totalEntries; ++i)
+    {
+        count += scripts ? entry->numScripts : entry->numSprites;
+        if (count < 0 || count > 4096)
+            return -1;
+        if (i + 1 < anm->totalEntries)
+        {
+            if (entry->nextOffset < sizeof(AnmRawEntry))
+                return -1;
+            entry = reinterpret_cast<const AnmRawEntry *>(
+                reinterpret_cast<const u8 *>(entry) + entry->nextOffset);
+        }
+    }
+    return count;
+}
+
+static AnmLoaded *GetDialoguePortraitAnm(i32 portraitIndex)
+{
+    switch (portraitIndex)
+    {
+    case GUI_PORTRAIT_PLAYER_PRIMARY:
+        return g_Spellcard.playerFaceAnm0;
+    case GUI_PORTRAIT_PLAYER_SECONDARY:
+        return g_Spellcard.playerFaceAnm1;
+    case GUI_PORTRAIT_ENEMY_PRIMARY:
+        return g_Spellcard.enemyFaceAnm0;
+    case GUI_PORTRAIT_ENEMY_SECONDARY:
+        return g_Spellcard.enemyFaceAnm1;
+    default:
+        return NULL;
+    }
+}
+
+static bool IsDialoguePortraitVmOwnerReady(const AnmVm *vm,
+                                           i32 portraitIndex)
+{
+    AnmLoaded *anm = GetDialoguePortraitAnm(portraitIndex);
+
+    return vm != NULL && anm != NULL && vm->anmFile == anm &&
+           anm->rawData != NULL && anm->numberEntriesToBeLoaded == 0;
+}
+
+static bool IsDialoguePortraitVmReady(const AnmVm *vm, i32 portraitIndex)
+{
+    i32 spriteCount;
+    UINT_PTR firstSprite;
+    UINT_PTR endSprite;
+    UINT_PTR loadedSprite;
+
+    if (!IsDialoguePortraitVmOwnerReady(vm, portraitIndex) ||
+        vm->loadedSprite == NULL ||
+        vm->anmFile->sprites == NULL || vm->anmFile->rawData == NULL ||
+        vm->anmFile->numberEntriesToBeLoaded != 0)
+        return false;
+
+    spriteCount = CountAnmItems(vm->anmFile, false);
+    if (spriteCount <= 0)
+        return false;
+    firstSprite = reinterpret_cast<UINT_PTR>(vm->anmFile->sprites);
+    endSprite = firstSprite +
+                static_cast<UINT_PTR>(spriteCount) * sizeof(AnmLoadedSprite);
+    loadedSprite = reinterpret_cast<UINT_PTR>(vm->loadedSprite);
+    return loadedSprite >= firstSprite &&
+           loadedSprite + sizeof(AnmLoadedSprite) <= endSprite;
+}
+
+static bool SetDialoguePortraitSprite(GuiMsgVm *message, i32 portraitIndex,
+                                      i32 spriteIndex)
+{
+    AnmLoaded *anm;
+    i32 spriteCount;
+
+    if (message == NULL || portraitIndex < 0 || portraitIndex >= 4)
+        return false;
+    anm = GetDialoguePortraitAnm(portraitIndex);
+    spriteCount = CountAnmItems(anm, false);
+    if (anm == NULL || anm->sprites == NULL || spriteIndex < 0 ||
+        spriteIndex >= spriteCount)
+        return false;
+    return anm->SetSprite(&message->portraits[portraitIndex], spriteIndex) ==
+           ZUN_SUCCESS;
+}
+
+static bool SetDialoguePortraitScript(GuiMsgVm *message, i32 portraitIndex,
+                                      i32 scriptIndex)
+{
+    AnmLoaded *anm;
+    i32 scriptCount;
+
+    if (message == NULL || portraitIndex < 0 || portraitIndex >= 4)
+        return false;
+    anm = GetDialoguePortraitAnm(portraitIndex);
+    scriptCount = CountAnmItems(anm, true);
+    if (anm == NULL || anm->scripts == NULL || scriptIndex < 0 ||
+        scriptIndex >= scriptCount)
+        return false;
+    anm->SetAndExecuteScriptIdx(&message->portraits[portraitIndex], scriptIndex);
+    return true;
+}
+
+static i32 AbortInvalidDialoguePortrait(GuiMsgVm *message, const char *operation,
+                                        i32 portraitIndex, i32 resourceIndex)
+{
+    g_GameErrorContext.Log(
+        "multi: stopped invalid dialogue portrait operation stage=%d op=%s portrait=%d resource=%d\n",
+        g_GameManager.currentStage, operation, portraitIndex, resourceIndex);
+    if (message != NULL)
+    {
+        message->currentMsgIdx = -1;
+        message->currentInstr = NULL;
+        message->currentPortraitIndex = 0xff;
+    }
+    return -1;
+}
+
 static void DrawMultiPlayerHudPair(
     f32 y, const char *label, i32 p1Value, i32 p2Value)
 {
@@ -387,6 +514,14 @@ i32 GuiImpl::RunMsg()
 
         case GUI_MSG_CONFIGURE_ALL_PORTRAITS:
             portraitArgs = &this->message.currentInstr->args.configureAllPortraits;
+#ifdef TH08_MULTI
+            if (g_MultiPlayerState.IsEnabled() &&
+                (portraitArgs->portraitIndex < 0 ||
+                 portraitArgs->portraitIndex >= 4))
+                return AbortInvalidDialoguePortrait(
+                    &this->message, "configure-all-index",
+                    portraitArgs->portraitIndex, -1);
+#endif
             if (this->message.currentPortraitIndex !=
                 portraitArgs->portraitIndex)
             {
@@ -408,22 +543,46 @@ i32 GuiImpl::RunMsg()
                 .pendingInterrupt = 3;
             this->message.currentPortraitIndex =
                 portraitArgs->portraitIndex;
-            if (portraitArgs->spriteIndices[0] >= 0)
-                g_Spellcard.playerFaceAnm0->SetSprite(
-                    &this->message.portraits[GUI_PORTRAIT_PLAYER_PRIMARY],
-                    portraitArgs->spriteIndices[0]);
-            if (portraitArgs->spriteIndices[1] >= 0)
-                g_Spellcard.playerFaceAnm1->SetSprite(
-                    &this->message.portraits[GUI_PORTRAIT_PLAYER_SECONDARY],
-                    portraitArgs->spriteIndices[1]);
-            if (portraitArgs->spriteIndices[2] >= 0)
-                g_Spellcard.enemyFaceAnm0->SetSprite(
-                    &this->message.portraits[GUI_PORTRAIT_ENEMY_PRIMARY],
-                    portraitArgs->spriteIndices[2]);
-            if (portraitArgs->spriteIndices[3] >= 0)
-                g_Spellcard.enemyFaceAnm1->SetSprite(
-                    &this->message.portraits[GUI_PORTRAIT_ENEMY_SECONDARY],
-                    portraitArgs->spriteIndices[3]);
+            for (j = 0; j < 4; ++j)
+            {
+                if (portraitArgs->spriteIndices[j] < 0)
+                    continue;
+#ifdef TH08_MULTI
+                if (g_MultiPlayerState.IsEnabled())
+                {
+                    if (!SetDialoguePortraitSprite(
+                            &this->message, j,
+                            portraitArgs->spriteIndices[j]))
+                        return AbortInvalidDialoguePortrait(
+                            &this->message, "configure-all", j,
+                            portraitArgs->spriteIndices[j]);
+                    continue;
+                }
+#endif
+                switch (j)
+                {
+                case GUI_PORTRAIT_PLAYER_PRIMARY:
+                    g_Spellcard.playerFaceAnm0->SetSprite(
+                        &this->message.portraits[j],
+                        portraitArgs->spriteIndices[j]);
+                    break;
+                case GUI_PORTRAIT_PLAYER_SECONDARY:
+                    g_Spellcard.playerFaceAnm1->SetSprite(
+                        &this->message.portraits[j],
+                        portraitArgs->spriteIndices[j]);
+                    break;
+                case GUI_PORTRAIT_ENEMY_PRIMARY:
+                    g_Spellcard.enemyFaceAnm0->SetSprite(
+                        &this->message.portraits[j],
+                        portraitArgs->spriteIndices[j]);
+                    break;
+                case GUI_PORTRAIT_ENEMY_SECONDARY:
+                    g_Spellcard.enemyFaceAnm1->SetSprite(
+                        &this->message.portraits[j],
+                        portraitArgs->spriteIndices[j]);
+                    break;
+                }
+            }
             this->message.textColorIndex =
                 portraitArgs->portraitIndex;
             this->message.resetDialogueLines = 1;
@@ -431,6 +590,15 @@ i32 GuiImpl::RunMsg()
 
         case GUI_MSG_CONFIGURE_PORTRAIT:
             portraitSpriteArgs = &this->message.currentInstr->args.configurePortrait;
+#ifdef TH08_MULTI
+            if (g_MultiPlayerState.IsEnabled() &&
+                (portraitSpriteArgs->portraitIndex < 0 ||
+                 portraitSpriteArgs->portraitIndex >= 4))
+                return AbortInvalidDialoguePortrait(
+                    &this->message, "configure-index",
+                    portraitSpriteArgs->portraitIndex,
+                    portraitSpriteArgs->spriteIndex);
+#endif
             if (this->message.currentPortraitIndex !=
                 portraitSpriteArgs->portraitIndex)
             {
@@ -455,6 +623,21 @@ i32 GuiImpl::RunMsg()
                 portraitSpriteArgs->portraitIndex;
             if (portraitSpriteArgs->spriteIndex >= 0)
             {
+#ifdef TH08_MULTI
+                if (g_MultiPlayerState.IsEnabled())
+                {
+                    if (!SetDialoguePortraitSprite(
+                            &this->message,
+                            portraitSpriteArgs->portraitIndex,
+                            portraitSpriteArgs->spriteIndex))
+                        return AbortInvalidDialoguePortrait(
+                            &this->message, "configure",
+                            portraitSpriteArgs->portraitIndex,
+                            portraitSpriteArgs->spriteIndex);
+                }
+                else
+                {
+#endif
                 switch (portraitSpriteArgs->portraitIndex)
                 {
                 case GUI_PORTRAIT_PLAYER_PRIMARY:
@@ -478,6 +661,9 @@ i32 GuiImpl::RunMsg()
                         portraitSpriteArgs->spriteIndex);
                     break;
                 }
+#ifdef TH08_MULTI
+                }
+#endif
             }
             this->message.textColorIndex =
                 portraitSpriteArgs->portraitIndex;
@@ -486,6 +672,21 @@ i32 GuiImpl::RunMsg()
 
         case GUI_MSG_SET_PORTRAIT_ANM_SCRIPT:
             args = &this->message.currentInstr->args;
+#ifdef TH08_MULTI
+            if (g_MultiPlayerState.IsEnabled())
+            {
+                if (!SetDialoguePortraitScript(
+                        &this->message,
+                        args->portraitAnmScript.portraitIndex,
+                        args->portraitAnmScript.scriptIndex))
+                    return AbortInvalidDialoguePortrait(
+                        &this->message, "script",
+                        args->portraitAnmScript.portraitIndex,
+                        args->portraitAnmScript.scriptIndex);
+            }
+            else
+            {
+#endif
             switch (args->portraitAnmScript.portraitIndex)
             {
             case GUI_PORTRAIT_PLAYER_PRIMARY:
@@ -509,7 +710,12 @@ i32 GuiImpl::RunMsg()
                     args->portraitAnmScript.scriptIndex);
                 break;
             }
+#ifdef TH08_MULTI
+            }
+#endif
             if (this->message.portraits[args->portraitAnmScript.portraitIndex]
+                    .loadedSprite != NULL &&
+                this->message.portraits[args->portraitAnmScript.portraitIndex]
                     .loadedSprite->widthPx > 128.0f)
                 this->message.portraits[args->portraitAnmScript.portraitIndex]
                     .pos2.x = -112.0f;
@@ -520,6 +726,21 @@ i32 GuiImpl::RunMsg()
 
         case GUI_MSG_SET_PORTRAIT_SPRITE:
             args = &this->message.currentInstr->args;
+#ifdef TH08_MULTI
+            if (g_MultiPlayerState.IsEnabled())
+            {
+                if (!SetDialoguePortraitSprite(
+                        &this->message,
+                        args->portraitSprite.portraitIndex,
+                        args->portraitSprite.spriteIndex))
+                    return AbortInvalidDialoguePortrait(
+                        &this->message, "sprite",
+                        args->portraitSprite.portraitIndex,
+                        args->portraitSprite.spriteIndex);
+            }
+            else
+            {
+#endif
             switch (args->portraitSprite.portraitIndex)
             {
             case GUI_PORTRAIT_PLAYER_PRIMARY:
@@ -543,7 +764,12 @@ i32 GuiImpl::RunMsg()
                     args->portraitSprite.spriteIndex);
                 break;
             }
+#ifdef TH08_MULTI
+            }
+#endif
             if (this->message.portraits[args->portraitSprite.portraitIndex]
+                    .loadedSprite != NULL &&
+                this->message.portraits[args->portraitSprite.portraitIndex]
                     .loadedSprite->widthPx > 256.0f)
             {
                 this->message.portraits[args->portraitSprite.portraitIndex]
@@ -552,6 +778,8 @@ i32 GuiImpl::RunMsg()
                     .pos2.y = -50.0f;
             }
             else if (this->message.portraits[args->portraitSprite.portraitIndex]
+                         .loadedSprite != NULL &&
+                     this->message.portraits[args->portraitSprite.portraitIndex]
                          .loadedSprite->widthPx > 128.0f)
             {
                 this->message.portraits[args->portraitSprite.portraitIndex]
@@ -750,6 +978,14 @@ i32 GuiImpl::RunMsg()
 
         case GUI_MSG_SHOW_INTRO_TEXT:
             args = &this->message.currentInstr->args;
+#ifdef TH08_MULTI
+            if (g_MultiPlayerState.IsEnabled())
+            {
+                if (CountAnmItems(g_Spellcard.enemyFaceAnm0, true) <= 1)
+                    return AbortInvalidDialoguePortrait(
+                        &this->message, "intro-script", 2, 1);
+            }
+#endif
             g_Spellcard.enemyFaceAnm0->SetAndExecuteScriptIdx(
                 &this->message.introLines[0], 1);
             this->message.framesElapsedDuringPause = 0;
@@ -863,13 +1099,71 @@ i32 GuiImpl::RunMsg()
     this->message.timer++;
 
 run_scripts:
+#ifdef TH08_MULTI
+    if (g_MultiPlayerState.IsEnabled())
+    {
+        for (j = 0; j < 4; ++j)
+        {
+            if (this->message.portraits[j].anmFile == NULL)
+                continue;
+            if (!IsDialoguePortraitVmOwnerReady(
+                    &this->message.portraits[j], j))
+            {
+                g_GameErrorContext.Log(
+                    "multi: reset stale dialogue portrait stage=%d portrait=%d\n",
+                    g_GameManager.currentStage, j);
+                memset(&this->message.portraits[j], 0, sizeof(AnmVm));
+                this->message.portraits[j].activeSpriteIndex = -1;
+                if (this->message.currentPortraitIndex == j)
+                    this->message.currentPortraitIndex = 0xff;
+                continue;
+            }
+            g_AnmManager->ExecuteScript(&this->message.portraits[j]);
+        }
+
+    }
+    else
+    {
+#endif
     g_AnmManager->ExecuteScript(&this->message.portraits[GUI_PORTRAIT_PLAYER_PRIMARY]);
     g_AnmManager->ExecuteScript(&this->message.portraits[GUI_PORTRAIT_PLAYER_SECONDARY]);
     g_AnmManager->ExecuteScript(&this->message.portraits[GUI_PORTRAIT_ENEMY_PRIMARY]);
     g_AnmManager->ExecuteScript(&this->message.portraits[GUI_PORTRAIT_ENEMY_SECONDARY]);
+#ifdef TH08_MULTI
+    }
+#endif
     g_AnmManager->ExecuteScript(&this->message.dialogueLines[0]);
     g_AnmManager->ExecuteScript(&this->message.dialogueLines[1]);
+#ifdef TH08_MULTI
+    if (g_MultiPlayerState.IsEnabled())
+    {
+        if (this->message.introLines[0].anmFile != NULL)
+        {
+            if (this->message.introLines[0].anmFile ==
+                    g_Spellcard.enemyFaceAnm0 &&
+                g_Spellcard.enemyFaceAnm0 != NULL &&
+                g_Spellcard.enemyFaceAnm0->rawData != NULL &&
+                g_Spellcard.enemyFaceAnm0->numberEntriesToBeLoaded == 0)
+            {
+                g_AnmManager->ExecuteScript(&this->message.introLines[0]);
+            }
+            else
+            {
+                g_GameErrorContext.Log(
+                    "multi: reset stale dialogue intro stage=%d\n",
+                    g_GameManager.currentStage);
+                memset(&this->message.introLines[0], 0, sizeof(AnmVm));
+                this->message.introLines[0].activeSpriteIndex = -1;
+            }
+        }
+    }
+    else
+    {
+#endif
     g_AnmManager->ExecuteScript(&this->message.introLines[0]);
+#ifdef TH08_MULTI
+    }
+#endif
     g_AnmManager->ExecuteScript(&this->message.introLines[1]);
 
     if (this->message.timer < 60 &&
@@ -935,8 +1229,9 @@ ZunResult GuiImpl::DrawDialogue()
         // replacement. A null sprite guard also keeps malformed transitional
         // VM state out of the Direct3D draw path.
         if (this->message.currentPortraitIndex < 4 &&
-            this->message.portraits[this->message.currentPortraitIndex]
-                    .loadedSprite != NULL)
+            IsDialoguePortraitVmReady(
+                &this->message.portraits[this->message.currentPortraitIndex],
+                this->message.currentPortraitIndex))
         {
             g_AnmManager->DrawNoRotation(
                 &this->message.portraits[this->message.currentPortraitIndex]);
@@ -2582,6 +2877,33 @@ void Gui::FreeMsgFile(void)
         ZUN_FREE(this->impl->message.msgFile);
     }
 }
+
+#ifdef TH08_MULTI
+void Gui::ResetDialoguePortraitsForResourceRelease()
+{
+    i32 i;
+
+    if (this->impl == NULL)
+        return;
+
+    // Portrait VMs retain pointers into the owning ANM's script and sprite
+    // allocations. Enemy-face ANMs are replaced on every stage transition,
+    // so invalidate every retained VM before those allocations are released.
+    // Merely hiding the VM is insufficient: ExecuteScript can still follow a
+    // stale currentInstruction on the next dialogue tick.
+    for (i = 0; i < 4; ++i)
+    {
+        memset(&this->impl->message.portraits[i], 0, sizeof(AnmVm));
+        this->impl->message.portraits[i].activeSpriteIndex = -1;
+    }
+    for (i = 0; i < 2; ++i)
+    {
+        memset(&this->impl->message.introLines[i], 0, sizeof(AnmVm));
+        this->impl->message.introLines[i].activeSpriteIndex = -1;
+    }
+    this->impl->message.currentPortraitIndex = 0xff;
+}
+#endif
 
 // FUNCTION: th08 0x439810
 void Gui::MsgRead(i32 messageIndex)

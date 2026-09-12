@@ -487,38 +487,51 @@ ZunResult Spellcard::Init()
 #ifdef TH08_MULTI
             if (g_MultiPlayerState.IsEnabled())
             {
-                switch (GetMultiPlayerShotType(&g_Player2))
+                if (GetMultiPlayerShotType(&g_Player2) ==
+                    GetMultiPlayerShotType(&g_Player))
                 {
-                default:
-                    this->player2FaceAnm0 = g_AnmManager->PreloadAnm(
-                        ANM_FILE_SLOT_FACE_PLAYER2_PRIMARY, "face_rm00.anm");
-                    this->player2FaceAnm1 = g_AnmManager->PreloadAnm(
-                        ANM_FILE_SLOT_FACE_PLAYER2_SECONDARY, "face_yk00.anm");
-                    break;
-                case SHOT_MARISA_ALICE:
-                case SHOT_MARISA:
-                case SHOT_ALICE:
-                    this->player2FaceAnm0 = g_AnmManager->PreloadAnm(
-                        ANM_FILE_SLOT_FACE_PLAYER2_PRIMARY, "face_mr00.anm");
-                    this->player2FaceAnm1 = g_AnmManager->PreloadAnm(
-                        ANM_FILE_SLOT_FACE_PLAYER2_SECONDARY, "face_al00.anm");
-                    break;
-                case SHOT_SAKUYA_REMILIA:
-                case SHOT_SAKUYA:
-                case SHOT_REMILIA:
-                    this->player2FaceAnm0 = g_AnmManager->PreloadAnm(
-                        ANM_FILE_SLOT_FACE_PLAYER2_PRIMARY, "face_sk00.anm");
-                    this->player2FaceAnm1 = g_AnmManager->PreloadAnm(
-                        ANM_FILE_SLOT_FACE_PLAYER2_SECONDARY, "face_rs00.anm");
-                    break;
-                case SHOT_YOUMU_YUYUKO:
-                case SHOT_YOUMU:
-                case SHOT_YUYUKO:
-                    this->player2FaceAnm0 = g_AnmManager->PreloadAnm(
-                        ANM_FILE_SLOT_FACE_PLAYER2_PRIMARY, "face_ym00.anm");
-                    this->player2FaceAnm1 = g_AnmManager->PreloadAnm(
-                        ANM_FILE_SLOT_FACE_PLAYER2_SECONDARY, "face_yy00.anm");
-                    break;
+                    // Identical teams use the same immutable portrait ANMs.
+                    // Loading a second copy wastes two D3D8 texture owners and
+                    // increases pressure precisely on the later stages that
+                    // also load two enemy portrait files.
+                    this->player2FaceAnm0 = this->playerFaceAnm0;
+                    this->player2FaceAnm1 = this->playerFaceAnm1;
+                }
+                else
+                {
+                    switch (GetMultiPlayerShotType(&g_Player2))
+                    {
+                    default:
+                        this->player2FaceAnm0 = g_AnmManager->PreloadAnm(
+                            ANM_FILE_SLOT_FACE_PLAYER2_PRIMARY, "face_rm00.anm");
+                        this->player2FaceAnm1 = g_AnmManager->PreloadAnm(
+                            ANM_FILE_SLOT_FACE_PLAYER2_SECONDARY, "face_yk00.anm");
+                        break;
+                    case SHOT_MARISA_ALICE:
+                    case SHOT_MARISA:
+                    case SHOT_ALICE:
+                        this->player2FaceAnm0 = g_AnmManager->PreloadAnm(
+                            ANM_FILE_SLOT_FACE_PLAYER2_PRIMARY, "face_mr00.anm");
+                        this->player2FaceAnm1 = g_AnmManager->PreloadAnm(
+                            ANM_FILE_SLOT_FACE_PLAYER2_SECONDARY, "face_al00.anm");
+                        break;
+                    case SHOT_SAKUYA_REMILIA:
+                    case SHOT_SAKUYA:
+                    case SHOT_REMILIA:
+                        this->player2FaceAnm0 = g_AnmManager->PreloadAnm(
+                            ANM_FILE_SLOT_FACE_PLAYER2_PRIMARY, "face_sk00.anm");
+                        this->player2FaceAnm1 = g_AnmManager->PreloadAnm(
+                            ANM_FILE_SLOT_FACE_PLAYER2_SECONDARY, "face_rs00.anm");
+                        break;
+                    case SHOT_YOUMU_YUYUKO:
+                    case SHOT_YOUMU:
+                    case SHOT_YUYUKO:
+                        this->player2FaceAnm0 = g_AnmManager->PreloadAnm(
+                            ANM_FILE_SLOT_FACE_PLAYER2_PRIMARY, "face_ym00.anm");
+                        this->player2FaceAnm1 = g_AnmManager->PreloadAnm(
+                            ANM_FILE_SLOT_FACE_PLAYER2_SECONDARY, "face_yy00.anm");
+                        break;
+                    }
                 }
                 if (this->player2FaceAnm0 == NULL || this->player2FaceAnm1 == NULL)
                     return ZUN_ERROR;
@@ -537,8 +550,17 @@ ZunResult Spellcard::Init()
 #ifdef TH08_MULTI
             if (g_MultiPlayerState.IsEnabled())
             {
-                this->player2FaceAnm0 = g_AnmManager->GetAnm(ANM_FILE_SLOT_FACE_PLAYER2_PRIMARY);
-                this->player2FaceAnm1 = g_AnmManager->GetAnm(ANM_FILE_SLOT_FACE_PLAYER2_SECONDARY);
+                if (GetMultiPlayerShotType(&g_Player2) ==
+                    GetMultiPlayerShotType(&g_Player))
+                {
+                    this->player2FaceAnm0 = this->playerFaceAnm0;
+                    this->player2FaceAnm1 = this->playerFaceAnm1;
+                }
+                else
+                {
+                    this->player2FaceAnm0 = g_AnmManager->GetAnm(ANM_FILE_SLOT_FACE_PLAYER2_PRIMARY);
+                    this->player2FaceAnm1 = g_AnmManager->GetAnm(ANM_FILE_SLOT_FACE_PLAYER2_SECONDARY);
+                }
             }
 #endif
         }
@@ -1768,6 +1790,10 @@ ChainCallbackResult Spellcard::OnDraw(Spellcard *spellcard)
 // FUNCTION: th08 0x00418050
 ZunResult Spellcard::DeletedCallback(Spellcard *spellcard)
 {
+#ifdef TH08_MULTI
+    if (g_MultiPlayerState.IsEnabled())
+        g_Gui.ResetDialoguePortraitsForResourceRelease();
+#endif
     if (!IsDisableResourceReload())
     {
         g_AnmManager->ReleaseAnm(ANM_FILE_SLOT_FACE_ENEMY_PRIMARY);

@@ -315,6 +315,9 @@ struct Gui
     i32 IsStageFinished();
     i32 IsDialogueSkippable();
     void FreeMsgFile();
+#ifdef TH08_MULTI
+    void ResetDialoguePortraitsForResourceRelease();
+#endif
     void ShowBonusScore(i32 score);
     void ShowPopupText(i32 value, i32 displayMode);
     void ShowSpellcardBonus(i32 bonus);
