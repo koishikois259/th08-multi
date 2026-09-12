@@ -1,513 +1,131 @@
-# 東方永夜抄 ～ Imperishable Night
-
-<p align="center">
-  <img
-    src="resources/title-screen.png"
-    width="640"
-    alt="Original Japanese TH08 1.00d title screen">
-</p>
-
-<p align="center">
-  <img src="resources/progress.svg" alt="TH08 exact-source and playable-platform progress">
-</p>
-
-> [!IMPORTANT]
-> 🌙 The authored reconstruction is complete, and the Linux port is playable.
-> Download [TH08 Reconstruction v0.2.0 — Native Linux 64-bit](https://github.com/N0zoM1z0/th08/releases/latest);
-> active ELF64 source lives on
-> [`port/portable-64bit`](https://github.com/N0zoM1z0/th08/tree/port/portable-64bit).
-> Windows and macOS ports remain in progress.
-
-## TL;DR
-
-| I want to... | Start here |
-| --- | --- |
-| Check reconstruction progress | [Repository status](#repository-status) |
-| Understand how AI agents work on the project | [AI agent workflow](#ai-agent-workflow) |
-| Read our accuracy and readability philosophy | [What we mean by semantic reconstruction](#what-we-mean-by-semantic-reconstruction) |
-| Contribute | [Contributing](#contributing) |
-| Play or build a port | [Platform guides](#platform-guides) |
-| Test the two-player Windows fork | [Trusted LAN/VPN setup](docs/MULTIPLAYER_SETUP.md) |
-| Reproduce the exact comparison | [Exact reconstruction](#exact-reconstruction) |
-| Browse the technical documentation | [Project map](#project-map) |
-| Review upstream history and attribution | [Credits and provenance](#credits-and-provenance) |
-
-## Repository status
-
-This repository reconstructs the original Japanese
-`東方永夜抄 ～ Imperishable Night` version 1.00d executable. Every one of the
-1,107 authored functions now has source. Strict comparison currently accepts
-1,106 of them, covering 459,396 of 459,757 authored bytes.
-
-| Area | Status | Current position |
-| --- | --- | --- |
-| Authored source | **Complete** | 1,107 / 1,107 functions are present in source |
-| Strict authored comparison | **99.92% by bytes** | 1,106 / 1,107 functions are accepted as exact |
-| Whole executable | **In progress** | PE layout, linked runtime/library code, and one authored near match remain |
-| Web | **Playable** | Public WebAssembly/WebGL 2 build |
-| Linux | **Playable** | Native i386; x86_64/AArch64 work on `port/portable-64bit` |
-| Windows | **In progress** | Native startup stabilization and redistributable packaging are underway |
-| macOS | **In progress** | Native backend and packaging are planned |
-
-Exact reconstruction and playable ports are separate milestones. The progress
-bar counts authored bytes accepted by strict comparison; the platform cards
-show where the reconstructed source is currently playable.
-
-The remaining exact-reconstruction work is the last authored near match,
-whole-image layout, and the compiler/runtime and D3DX code linked into the
-original game. The repository ledgers are the canonical source for live
-counts.
-
-The Windows two-player fork is limited to trusted private LAN or trusted VPN
-sessions. Its UDP protocol is not authenticated or encrypted and must not be
-exposed directly to the public Internet. See [SECURITY.md](SECURITY.md) before
-opening a firewall rule.
-
-## AI agent workflow
-
-All new engineering in this continuation—reverse engineering, source matching,
-semantic recovery, tooling, documentation, and porting—is carried out by AI
-coding agents. The human maintainer sets the direction, decides what is
-published or merged, and supplies the legally obtained target and game data.
-The imported GensokyoClub history retains its original authorship and
-contribution record.
-
-Our premise in 2026 is that frontier coding agents can sustain native-code
-reconstruction when they work with durable project memory, bounded tasks,
-strong tools, and fast empirical feedback. Each agent contribution begins as a
-testable hypothesis. The verified target and toolchain provide the verdict.
-
-The most important design rule is simple: **the repository is the project's
-shared memory.** Personal memory and chat sessions are temporary workspaces.
-Durable knowledge, experience, and lessons belong in forms that the next
-contributor can find, review, rerun, and improve: source, ledgers, focused
-evidence notes, scripts, tests, guards, and reusable skills.
-
-```mermaid
-flowchart LR
-    H["Human<br/>scope & release"]:::human --> A["Fresh AI agent<br/>cold start"]:::agent
-    K[("Repository memory<br/>rules · ledgers · handoff<br/>skills · evidence · guards")]:::memory --> A
-    A --> E["Bounded task<br/>+ TH08 evidence"]:::evidence
-    E --> I["Natural C++<br/>ABI / VC7 shape intact"]:::work
-    I --> F{"Focused VC7<br/>exact?"}:::gate
-    F -->|Mismatch| D["Diagnose<br/>and refine"]:::reject --> I
-    F -->|Exact| O["Required aggregate<br/>+ portable Oracles"]:::oracle
-    O --> G{"All gates<br/>pass?"}:::gate
-    G -->|Refine| D
-    G -->|Pass| R["Promote evidence, unknowns,<br/>guards & lessons into repo"]:::memory
-    R --> Q["Commit & push<br/>auditable checkpoint"]:::done
-    R -.->|reusable knowledge| K
-
-    classDef human fill:#fff1c2,stroke:#b7791f,color:#3b2f0b,stroke-width:2px;
-    classDef agent fill:#ede9fe,stroke:#7c3aed,color:#2e1065,stroke-width:2px;
-    classDef memory fill:#dbeafe,stroke:#2563eb,color:#172554,stroke-width:2px;
-    classDef evidence fill:#cffafe,stroke:#0891b2,color:#083344,stroke-width:2px;
-    classDef work fill:#fef3c7,stroke:#d97706,color:#451a03,stroke-width:2px;
-    classDef oracle fill:#dcfce7,stroke:#16a34a,color:#052e16,stroke-width:2px;
-    classDef gate fill:#f3f4f6,stroke:#4b5563,color:#111827,stroke-width:2px;
-    classDef reject fill:#fee2e2,stroke:#dc2626,color:#450a0a,stroke-width:2px;
-    classDef done fill:#ccfbf1,stroke:#0f766e,color:#042f2e,stroke-width:2px;
-```
-
-The “Oracle” in that diagram is a stack of reproducible checks. We pin the
-exact Japanese 1.00d executable by size and SHA-256, compare the smallest
-affected VC7 function or object, and verify relocations alongside instruction
-bytes. A shared change then triggers a clean, single-job rebuild of every
-configured comparison object and a replay of the whole accepted ledger.
-Normal VC7 linking, modern Linux builds, fixed-layout checks, available runtime
-tests, and repository CI cover different classes of regression. “Exact” is a
-recorded, comparator-backed repository state.
-
-Repository memory is part of the working architecture. Each durable result has
-a canonical home:
-
-- [AGENTS.md](AGENTS.md) holds the target, ABI, safety, and acceptance rules.
-- The CSV/TOML ledgers and status scripts hold live mappings and accepted
-  results; prose provides context for these canonical records.
-- [The current handoff](docs/RE_HANDOFF.md) says what is complete, what is
-  blocked, and what should happen next.
-- [Task-specific skills](.agents/skills/) and
-  [the knowledge map](docs/KNOWLEDGE_BASE.md) preserve tool recipes, VC7 source
-  patterns, evidence boundaries, and lessons from failed experiments.
-- Focused evidence documents explain why a name, layout, function boundary, or
-  compiler shape was accepted, while CI guards completed surfaces against
-  regression.
-
-That structure makes agents interchangeable while keeping writes controlled.
-A fresh agent can verify the target, read the tracked state, run the live
-reports, and resume from a clean checkout with the repository as its complete
-starting context. Reconstruction writes and Wine/VC7 matching remain
-single-writer and serial, keeping edits, object freshness, and shared toolchain
-state deterministic while making handoffs inexpensive.
-
-The architecture treats every model inference as falsifiable: tasks stay
-small, failed experiments feed the knowledge base, uncertainty remains
-explicit, and each checkpoint carries the evidence needed to reproduce it.
-That is what AI reconstruction means in this project.
-
-## What we mean by semantic reconstruction
-
-Matching the executable establishes the first requirement. Semantic
-reconstruction then recovers the game concepts hidden behind object offsets,
-anonymous fields, bare masks, and numbered interpreter cases and puts those
-meanings back into the C++.
-
-Accuracy comes first. We add a type or name only when TH08 itself supports it
-through reads, writes, callers, or state transitions. TH06, TH07, and the
-inherited upstream names are useful corroboration; the Japanese TH08 1.00d
-target has final authority. Uncertain meanings remain explicitly documented as
-unknowns.
-
-Equivalent-looking C++ expressions can produce different VC7 code. Under
-`/Ob0`, even a small helper or a reordered `switch` can change the output. The
-accepted formulation preserves the target-shaped expression or case order
-whenever exact emission depends on it.
-
-Every semantic batch is checked in both directions. The VC7 comparison makes
-sure accepted target bytes stay exact; the modern builds make sure the same
-source still works as portable C++. Shared changes are rebuilt on Linux and
-checked against the fixed-layout verifier, with relevant runtime tests used
-when they are available.
-
-To measure the semantic pass, we audited the repository against
-[GensokyoClub/th06](https://github.com/GensokyoClub/th06) and
-[some100/th07](https://github.com/some100/th07). The first table compares
-protocols that recur across the three engines; the second looks at the residue
-a reader encounters in the target-side C++.
-
-| Protocol surface | This TH08 reconstruction | GensokyoClub/th06 | some100/th07 |
-| --- | ---: | ---: | ---: |
-| Primary ECL opcodes | **184 / 184 named** | 136 / 136 named | 159 / 159 named |
-| ECL operand selectors | **101 / 101 named** | 25 named values | 74 / 74 named |
-| Stage/background stream opcodes | **35 / 35 named** | 6 named values | 31 / 31 named |
-| Named ECL timeline opcodes | **17 / 17** | 0 / 13 | 0 / 13 |
-| Stage interpolation modes | **8** | no separate selector | 7 |
-| Named replay event bits | **11 / 11 observed** | no comparable domain | 0 / 7 observed |
-| Screen-effect modes | **8** | 3 | 5 |
-| Descriptive sound IDs | **46 / 46-value domain** | 16 of 32 entries | 23 sparse entries |
-| Behavior-named effect IDs | **40** | 0 | 0 |
-| Audio command operations | **8 plus `NONE`** | no separate enum | 7 |
-
-| Target-side source audit | This TH08 reconstruction | GensokyoClub/th06 | some100/th07 |
-| --- | ---: | ---: | ---: |
-| C/C++ files / lines | 98 / 61,315 | 95 / 31,361 | 75 / 42,979 |
-| Numeric `case` labels | **74 (12.1 per 10k lines)** | 95 (30.3 per 10k) | 96 (22.3 per 10k) |
-| Decompiler-style local names | **0** | 581 | 389 |
-| Generic `param_N` names | **0** | 7 | 144 |
-| Anonymous identifiers found by the same debt scan | **0** | 284 | 78 |
-| `LAB_...` labels | **0** | 2 | 27 |
-| `offsetof` layout assertions | **700** | 0 | 0 |
-| Type-size assertions | **135** | 83 | 68 |
-| Automated semantic protocol guard | **yes** | no | no |
-
-On balance, TH08 outperforms both references in overall readability coverage,
-especially across complete script protocols, object naming, and layout
-documentation. There are two useful exceptions. TH07 currently communicates
-ANM behavior better: it has names for shared opcodes 25 and 31, fewer neutral
-opcode names, and a broader file/script/sprite catalogue. TH06 has the widest
-typed ECL packet overlay, with 26 packet structures against six target-backed
-families in TH08; TH07 largely keeps a generic argument array. These are real
-advantages in the reference sources and good directions for further work.
-TH08 promotes the same ideas once its own target evidence and exact VC7 shape
-support them.
-
-The remaining 74 numeric `case` labels are option-array indices, damage or life
-quantities, or per-file animation IDs whose visual meaning remains ambiguous.
-The audit used target-side C/C++ only (excluding TH08's modern port), with TH06
-at `cc475a0b` and TH07 at `84963b2e`. The [semantic reconstruction
-record](docs/SEMANTIC_RECONSTRUCTION.md) gives the counting rules, full commit
-IDs, exceptions, and Oracle results.
-
-The final pass cold-built all 75 configured comparison objects and reproduced
-all **1,106 / 1,106 accepted exact functions**. The normal VC7 image linked,
-and the full Linux i386 build and fixed-layout check passed. The [semantic
-reconstruction record](docs/SEMANTIC_RECONSTRUCTION.md) has the full evidence
-trail, the exact-safe source-shape rules, the unknowns we kept, and the results
-for each batch.
-
-## Contributing
-
-Contributions are welcome. We are especially interested in:
-
-- evidence-backed exact reconstruction and whole-image layout work;
-- reliable native Windows startup and replacement of the D3DX debug dependency
-  with a redistributable component;
-- a native macOS window, input, audio, renderer, and packaging backend;
-- Linux renderer fixes, MIDI support, and testing on additional hardware;
-- browser correctness, performance, and compatibility work in
-  [N0zoM1z0/th08-web](https://github.com/N0zoM1z0/th08-web).
-
-Before changing reconstruction state, read [AGENTS.md](AGENTS.md),
-[the reverse-engineering workflow](docs/RE_WORKFLOW.md), and
-[the current handoff](docs/RE_HANDOFF.md). Exact-match contributions must be
-supported by reproducible comparison against the specified target. Keep the
-original executable, DAT archives, extracted retail assets, private analysis
-databases, and credentials outside the repository.
-
-## Platform guides
-
-The ports compile the reconstructed game code for modern systems. Players
-provide the original game data from a legally obtained copy of TH08.
-
-### Web
-
-**Status: Playable**
-
-<p align="center">
-  <a href="https://th08-web.pages.dev/">
-    <img
-      src="https://raw.githubusercontent.com/N0zoM1z0/th08-web/main/resources/th08-web-social-preview.jpg"
-      width="800"
-      alt="TH08 Web source-built browser port and Imperishable Night title screen">
-  </a>
-</p>
-
-[Play in the browser](https://th08-web.pages.dev/) ·
-[source and documentation](https://github.com/N0zoM1z0/th08-web) ·
-[latest release](https://github.com/N0zoM1z0/th08-web/releases/latest) ·
-[engineering the Web port](https://github.com/N0zoM1z0/th08-web/blob/main/docs/WEB_PORTING.md)
-
-TH08 Web compiles the reconstructed C++ directly to WebAssembly and runs it in
-a browser worker. It uses WebGL 2, Web Audio, browser-local files, and
-IndexedDB-backed saves.
-
-Select `th08.dat` and `thbgm.dat` from a legal TH08 installation in the
-launcher. `th08.dat` remains in volatile session memory; `thbgm.dat` is
-range-read from its browser `File` object. Both files stay on the player's
-machine and outside persistent browser storage. Chrome has the best observed
-frame pacing; Firefox is also supported and is usually slower.
-
-### Linux
-
-**Status: Playable**
-
-- [Download the latest native Linux release](https://github.com/N0zoM1z0/th08/releases/latest)
-- [Download, installation, and player guide](docs/PLAY_LINUX.md)
-- [Native Linux porting architecture and validation](docs/LINUX_PORTING.md)
-- [Native 64-bit branch, build, and validation](https://github.com/N0zoM1z0/th08/blob/port/portable-64bit/docs/PORTABLE_64BIT.md)
-- [Portable Linux build workflow](.github/workflows/portable-linux.yml)
-
-On Debian or Ubuntu, build and run against the original game-data directory:
-
-```bash
-scripts/setup-modern-linux.sh "/path/to/the/original/TH08 directory"
-```
-
-For later runs, use the incremental launcher:
-
-```bash
-scripts/play-modern-linux.sh "/path/to/the/original/TH08 directory"
-```
-
-The latest release includes x86_64, i386, and experimental AArch64 portable
-packages. Extract the package for your architecture and pass the original data
-directory:
-
-```bash
-./run-th08.sh "/path/to/the/original/TH08 directory"
-```
-
-The native i386 ELF has been tested under WSLg and in a Kali Linux x86-64
-virtual machine. It reads `th08.dat` and `thbgm.dat` directly and runs
-independently of the original `th08.exe`. Settings, scores, replays, and
-backups stay in the selected data directory.
-
-The native-layout x86_64 PIE is the recommended Linux package. Its source is on
-[`port/portable-64bit`](https://github.com/N0zoM1z0/th08/tree/port/portable-64bit).
-It has been played through a Lunatic Stage 1–6A route, including the ending,
-results, and return to title, plus Stage 4A/6B Practice runs under WSLg. The
-AArch64 build and loader have been verified, but it still needs a gameplay run
-on real hardware.
-
-<p align="center">
-  <img
-    src="https://raw.githubusercontent.com/N0zoM1z0/th08/port/portable-64bit/resources/portable64-kaguya-lunatic.png"
-    width="800"
-    alt="Native x86_64 TH08 running Kaguya's Lunatic Princess spell under WSLg">
-</p>
-
-> Maintainer bias, openly declared: Kaguya is my favorite, and
-> **竹取飛翔 ～ Lunatic Princess** is my favorite track. XD
-
-<p align="center">
-  <img
-    src="resources/kali-linux-port.gif"
-    width="800"
-    alt="TH08 native Linux reconstruction starting and running on Kali Linux">
-</p>
-
-The portable window uses the project-owned
-[`resources/modern-icon.png`](resources/modern-icon.png). On software-rendered
-systems, a fresh configuration's fullscreen FPS/vsync calibration can be slow;
-reusing an existing `th08.cfg` is optional.
-
-#### Earlier Linux renderer regression
-
-An early Linux build sometimes tiled a dynamic text texture across the outer
-frame and HUD during the Stage 4-to-5 transition, most visibly as repeated
-`Yakumo Yukari` text. It also had missing enemy/boss art and incomplete effects.
-The native-layout and renderer fixes produced clean final x86_64 full-route and
-Practice runs. We keep the screenshot as a useful regression sample; reports
-from additional drivers and desktops are welcome.
-
-<p align="center">
-  <img
-    src="resources/linux-stage5-texture-tiling.png"
-    width="640"
-    alt="Historical Linux Stage 5 dynamic text texture tiling regression">
-</p>
-
-### Windows
-
-**Status: In progress**
-
-See the [native Windows guide](docs/PLAY_WINDOWS.md) for the current build and
-release requirements. The source produces a 32-bit MinGW bring-up executable.
-Current work focuses on reliable native startup and replacing the DirectX SDK
-debug DLL with redistributable components before publishing a supported
-Windows release.
-
-The goal is a self-contained native build that accepts any legal TH08 data
-directory and ships with redistributable components.
-
-### macOS
-
-**Status: In progress**
-
-See the [native macOS guide](docs/PLAY_MACOS.md) for the current plan. Native
-window, input, audio, rendering, packaging, and real-hardware validation are
-the remaining milestones.
-
-## Exact reconstruction
-
-The exact target is one binary: the original Japanese TH08 version 1.00d. A
-localized, patched, trial, or earlier executable is a different target.
-
-This repository is a history-preserving continuation of
-[GensokyoClub/th08](https://github.com/GensokyoClub/th08). Its complete Git
-history was imported rather than squashed, preserving the original authorship
-and contribution record.
-
-### Target executable
-
-Supply your own original executable as `resources/th08.exe`:
-
-| Property | Required value |
-| --- | --- |
-| Version | Original Japanese 1.00d |
-| Size | `840,704` bytes |
-| SHA-256 | `330fbdbf58a710829d65277b4f312cfbb38d5448b3df523e79350b879213d924` |
-| PE image base | `0x00400000` |
-| Entry point | `0x004A619E` |
-
-The executable and game data remain copyrighted assets supplied privately by
-each contributor. Verify the private target before analysis or comparison:
-
-```bash
-python3 scripts/verify-target.py
-```
-
-### Build and compare
-
-Initialize the third-party submodules, then create the Visual Studio .NET
-2002/DirectX 8 environment. On Linux or macOS:
-
-```bash
-git submodule update --init --recursive
-./scripts/create_th08_prefix
-python3 ./scripts/build.py
-```
-
-The prefix helper uses Wine by default. Set `WINE` before invoking it when a
-different compatible runner is required. On Windows, use the setup script
-directly:
-
-```text
-python scripts/create_devenv.py scripts/dls scripts/prefix
-python scripts/build.py
-```
-
-See [Build and exact matching](docs/BUILD_MATCHING.md) for dependencies,
-build modes, reccmp, objdiff, and acceptance rules.
-
-### Analysis and live progress
-
-IDA MCP follows whichever database is active in the GUI, so TH08 analysis
-begins with [the documented database attestation](docs/IDA_MCP.md).
-Target-safe headless tools and the repository's target-pinned analysis scripts
-cover other analysis sessions.
-
-Read current figures directly from the ledgers:
-
-```bash
-python3 scripts/analysis/report-reconstruction-status.py --summary
-```
-
-Exact-match status comes from an accepted, reproducible comparison against the
-verified target. Source mappings, generated progress artwork, successful
-builds, and `config/implemented.csv` serve their own tracking and build roles.
-Generated source-presence and strict-match figures are recorded in
-[docs/PROGRESS.md](docs/PROGRESS.md).
-
-## Project map
-
-- [TH08 Web browser port and engineering documentation](https://github.com/N0zoM1z0/th08-web)
-- [Linux download, installation, and play guide](docs/PLAY_LINUX.md)
-- [Native Windows user guide and status](docs/PLAY_WINDOWS.md)
-- [Native macOS user guide and status](docs/PLAY_MACOS.md)
-- [Architecture and binary inventory](docs/ARCHITECTURE.md)
-- [Reverse-engineering workflow](docs/RE_WORKFLOW.md)
-- [Semantic reconstruction and two-oracle acceptance](docs/SEMANTIC_RECONSTRUCTION.md)
-- [IDA and analysis safety](docs/IDA_MCP.md)
-- [Build and exact matching](docs/BUILD_MATCHING.md)
-- [Playable reconstruction ports](docs/PORTING.md)
-- [Native Linux playable reconstruction](docs/LINUX_PORTING.md)
-- [Tool selection and command recipes](docs/TOOLS.md)
-- [Reusable knowledge map and contribution policy](docs/KNOWLEDGE_BASE.md)
-- [Current handoff and next milestones](docs/RE_HANDOFF.md)
-- [Generated reconstruction progress](docs/PROGRESS.md)
-- [Agent operating rules](AGENTS.md)
-
-## Credits and provenance
-
-This repository preserves the public
-[GensokyoClub/th08](https://github.com/GensokyoClub/th08) history through
-[`7ad3792`](https://github.com/N0zoM1z0/th08/commit/7ad379297baf4ff07f117747ea4edf8c7ed739d4),
-the merge of upstream pull request #77 on August 10, 2026. The independent
-continuation begins at its direct child,
-[`001bf3e`](https://github.com/N0zoM1z0/th08/commit/001bf3e9c91cc35b79c7a0e36b3565b86f494362),
-on August 13, 2026. The imported commits retain their original author and
-committer metadata. The upstream project also credits @EstexNT for porting its
-`var_order` pragma to MSVC7.
-
-Work after that boundary has been developed from the imported public source,
-the legally obtained Japanese TH08 1.00d executable, and other public
-references. This project has had no access to, and does not incorporate, later
-private GensokyoClub work.
-
-The imported snapshot was published under the
-[MIT License](https://github.com/N0zoM1z0/th08/blob/7ad379297baf4ff07f117747ea4edf8c7ed739d4/LICENSE),
-and this continuation remains under the same license. [LICENSE](LICENSE)
-preserves the original copyright notice and records the continuation
-separately.
-
-The upstream project's [current public
-notice](https://github.com/GensokyoClub/th08) places its active reconstruction
-in private development in response to AI decompilations and ports. This
-project's engineering is predominantly agent-produced and is developed in the
-open, so the two projects now have different contribution models.
-Accordingly, this work is maintained as an independent continuation rather
-than as a stream of upstream pull requests, while preserving upstream history,
-credit, and license terms.
-
-The [N0zoM1z0/th07 reconstruction](https://github.com/N0zoM1z0/th07) supplies
-this repository's workflow, structure, target gates, matching, and
-documentation model. [GensokyoClub/th06](https://github.com/GensokyoClub/th06)
-provides adjacent-engine corroboration, while TH08 target evidence retains
-final authority.
-
-## License
-
-Repository code and documentation are provided under the included MIT License.
-Rights to the original game, executable, and game data remain with their
-respective owners.
+th08-multi v0.31 联机补丁
+========================
+
+一、项目性质与权利声明
+----------------------
+
+th08-multi 是基于《东方永夜抄 ～ Imperishable Night》的非官方二次创作
+联机项目，与上海爱丽丝幻乐团、ZUN 及任何官方发行方均无隶属、授权或
+合作关系，请勿将本项目误认为官方作品或官方更新。
+
+“东方Project”、《东方永夜抄》及其角色、美术、音乐、文字和其他原作内容
+的权利归原权利人所有。本项目不授予用户复制或传播原版游戏内容的权利。
+使用者必须自行合法取得《东方永夜抄》日文原版 1.00d。
+
+东方Project 二次创作指南：
+https://touhou-project.news/guidelines_en/
+
+二、支持版本
+------------
+
+仅支持《东方永夜抄》日文原版 1.00d：
+- th08.exe 文件大小：840704 字节
+- th08.exe SHA-256：
+  330fbdbf58a710829d65277b4f312cfbb38d5448b3df523e79350b879213d924
+
+汉化版、体验版、其他版本或经过修改的游戏数据不在支持范围内。
+联机双方必须使用完全相同的 v0.31 补丁和相同版本的原版游戏数据。
+
+三、补丁内容与分发边界
+----------------------
+
+本补丁压缩包只包含：
+- th08-multi.exe
+- th08-multi-launcher.exe
+- th08_multi.ini.example
+- th08-multi-README.txt
+- th08-multi-LICENSE.txt
+- SHA256SUMS.txt
+
+补丁不包含原版 th08.exe、th08.dat、thbgm.dat、音乐、美术素材、存档或
+Replay。请勿将上述原版文件、从原作提取的素材或他人的存档重新打包进
+本补丁，也不要发布包含这些内容的整合游戏包。
+
+SHA256SUMS.txt 用于核对补丁内部各文件。整个 ZIP 的 SHA-256 以对应
+GitHub Release 页面公布的值为准。
+
+四、安装与启动
+--------------
+
+1. 备份自己的存档和配置。
+2. 将补丁压缩包内全部文件解压到合法取得的日文原版 1.00d 游戏目录。
+3. 保留原版 th08.exe、th08.dat 和 thbgm.dat；补丁不会覆盖 th08.exe。
+4. 双方分别运行 th08-multi-launcher.exe。
+5. 启动器会显示 Local IPv4，不提供 Bind local IPv4 输入栏。主机选择
+   Host；客机选择 Guest，并填写主机的局域网、可信 VPN 或受控隧道地址。
+6. 双方设置相同的 Input delay，然后分别点击 Connect。
+7. 双方均显示 Connected 后，由 Host 点击 Start both games；两侧游戏
+   会在同一启动指令后进入游戏。
+
+GitHub 源码：
+https://github.com/koishikois259/th08-multi
+
+v0.31 发布页：
+https://github.com/koishikois259/th08-multi/releases/tag/v0.31
+
+五、网络与安全限制
+------------------
+
+本项目仅面向互相信任的两名玩家在可信局域网、可信 VPN 或具有访问控制
+的临时内网穿透环境中使用，默认端口为 UDP 17708。协议不提供身份认证、
+数据加密、抗重放或恶意对端防护，不应直接暴露给公共互联网，也不要与
+不可信玩家连接。
+
+启动器会监听全部本地 IPv4 接口。Windows 防火墙规则应限制在预期网络
+和可信对端；使用内网穿透时应采用临时映射，只向对方提供连接信息，并在
+测试结束后关闭映射。连接地址、外网 IP 和隧道端口也可能属于隐私信息。
+
+六、功能范围与已知限制
+----------------------
+
+- P1、P2 独立选择队伍，允许选择相同队伍。
+- 联机模式暂不支持 Replay。
+- 连接及异常状态显示在游戏窗口标题栏，诊断信息写入游戏目录 log.txt。
+- 本项目仍处于测试阶段；请保留存档备份，并优先在可信环境测试。
+
+v0.31 主要修复：
+- 修复 4、5、6、EX 面对话及符卡间对话的立绘轨迹残影。
+- 加固对话立绘、ANM、P1/P2、子 ECL 和换面资源的释放所有权，降低
+  后三面换面或对话期间因悬空指针、重复释放导致崩溃的风险。
+
+七、源码、许可证与致谢
+----------------------
+
+项目源码依据仓库根目录 LICENSE 中的 MIT License 发布。MIT License 仅
+适用于项目贡献者有权授权的源码与改动，不适用于东方Project 原作、原版
+游戏文件或其他第三方素材。补丁内附 th08-multi-LICENSE.txt；复制、修改
+或再分发源码时必须保留许可证和版权声明。
+
+本项目基于以下公开项目和设计参考：
+- TH08 源码重构：https://github.com/N0zoM1z0/th08
+- th06_multi_net：https://github.com/RUEEE/th06_multi_net
+- Microsoft Detours：https://github.com/microsoft/Detours
+
+感谢原项目作者、历史贡献者及测试人员。各第三方项目仍适用其各自许可证。
+
+八、问题与安全报告
+------------------
+
+一般 Bug 可通过 GitHub Issues 报告。报告崩溃时请提供版本、关卡、复现
+步骤和异常代码；上传日志、截图或转储前请删除外网 IP、用户名、个人路径
+等隐私信息。严禁上传 th08.exe、DAT、音乐、美术素材、存档或其他原版
+游戏内容。
+
+安全问题不要公开披露。如仓库已启用 GitHub Private vulnerability
+reporting，请使用该入口；否则请先私下联系维护者，不要在公开 Issue 中
+发布利用细节。项目按 MIT License “AS IS” 条款提供，不
+承诺无错误、无崩溃或适合任何特定用途。
+
+九、卸载
+--------
+
+关闭游戏后，删除以下补丁文件即可；原版游戏文件不受影响：
+- th08-multi.exe
+- th08-multi-launcher.exe
+- th08_multi.ini
+- th08_multi.ini.example
+- th08-multi-README.txt
+- th08-multi-LICENSE.txt
+- SHA256SUMS.txt
+
+如需保留联机设置，请在卸载前备份 th08_multi.ini。
