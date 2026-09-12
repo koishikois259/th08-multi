@@ -2645,6 +2645,43 @@ ZunResult AnmManager::ServicePreloadedAnims()
 
 void AnmManager::ReleaseAnm(i32 anmIdx)
 {
+#ifdef TH08_MULTI
+    AnmLoaded releasedAnm;
+
+    if (anmIdx < 0 || anmIdx >= ARRAY_SIZE(this->anmFiles))
+    {
+        return;
+    }
+
+    if (this->anmFiles[anmIdx].rawData == NULL)
+        return;
+
+    // Detach the slot before releasing any of its allocations.  Stage changes
+    // replace several ANMs while the preload service and deleted callbacks are
+    // still active.  Leaving the live slot populated until the final memset
+    // lets a nested/repeated release observe the same owners a second time.
+    releasedAnm = this->anmFiles[anmIdx];
+    memset(&this->anmFiles[anmIdx], 0, sizeof(AnmLoaded));
+
+    // These are non-owning render caches.  Both can point into releasedAnm, so
+    // force the following draw to bind fresh state instead of comparing with a
+    // texture or sprite that has just been destroyed.
+    this->ClearTexture();
+    this->ClearSprite();
+
+    if (releasedAnm.textures != NULL)
+    {
+        for (int i = 0; i < releasedAnm.totalEntries; i++)
+        {
+            this->ReleaseAnmEntry(&releasedAnm.textures[i]);
+        }
+    }
+
+    g_ZunMemory.Free(releasedAnm.textures);
+    g_ZunMemory.Free(releasedAnm.sprites);
+    g_ZunMemory.Free(releasedAnm.scripts);
+    g_ZunMemory.Free(releasedAnm.rawData);
+#else
     if (anmIdx < 0 || anmIdx >= ARRAY_SIZE(this->anmFiles))
     {
         return;
@@ -2664,10 +2701,31 @@ void AnmManager::ReleaseAnm(i32 anmIdx)
 
         memset(&this->anmFiles[anmIdx], 0, sizeof(AnmLoaded));
     }
+#endif
 }
 
 void AnmManager::ReleaseAnmEntry(AnmEntry *entry)
 {
+#ifdef TH08_MULTI
+    IDirect3DTexture8 *texture;
+    u8 *rawData;
+
+    if (entry == NULL)
+        return;
+
+    if (entry->texture != NULL)
+    {
+        texture = entry->texture;
+        entry->texture = NULL;
+        texture->Release();
+    }
+    if (entry->rawData != NULL)
+    {
+        rawData = entry->rawData;
+        entry->rawData = NULL;
+        g_ZunMemory.Free(rawData);
+    }
+#else
     if (entry->texture != NULL)
     {
         entry->texture->Release();
@@ -2678,6 +2736,7 @@ void AnmManager::ReleaseAnmEntry(AnmEntry *entry)
         g_ZunMemory.Free(entry->rawData);
         /* there should be a entry->rawData = NULL */
     }
+#endif
 }
 
 void AnmLoaded::LoadSprite(i32 spriteIdx, AnmLoadedSprite *loadedSprite)
