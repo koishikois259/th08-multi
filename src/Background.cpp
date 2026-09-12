@@ -8,6 +8,9 @@
 #include "GameManager.hpp"
 #include "Player.hpp"
 #include "Supervisor.hpp"
+#ifdef TH08_MULTI
+#include "MultiPlayerState.hpp"
+#endif
 
 namespace th08
 {
@@ -730,6 +733,9 @@ ChainCallbackResult Background::OnDrawHighPrio(Background *background)
     Effect *effect;
     ZunRect rect;
     ZunColor fogColor;
+#ifdef TH08_MULTI
+    bool redrawFrozenStage;
+#endif
 
     background->specialEffectPointCount = 0;
     for (i = 0; i < 16; i++)
@@ -769,6 +775,22 @@ ChainCallbackResult Background::OnDrawHighPrio(Background *background)
     }
     g_Supervisor.d3dDevice->SetViewport(&g_Supervisor.viewport);
 
+#ifdef TH08_MULTI
+    // Retail keeps the previous playfield contents while dialogue is active.
+    // Multiplayer only draws the current speaker portrait, so retaining that
+    // backbuffer leaves pixels from the preceding portrait/animation behind.
+    // Repaint the frozen stage every dialogue frame: simulation remains
+    // paused, but the playfield again supplies a clean base for GUI drawing.
+    redrawFrozenStage = g_MultiPlayerState.IsEnabled() &&
+                        g_Gui.IsDialoguePresent();
+    if (redrawFrozenStage)
+    {
+        g_Supervisor.d3dDevice->Clear(
+            0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER,
+            background->skyFog.color.d3dColor | COLOR_ALPHA_MASK, 1.0f, 0);
+    }
+#endif
+
     if (background->tint.a > 0)
     {
         g_AnmManager->SetMixColor(background->tint.d3dColor);
@@ -779,7 +801,11 @@ ChainCallbackResult Background::OnDrawHighPrio(Background *background)
     background->tint.b = 0x80;
 
     if (background->spellBackgroundState <= SPELL_BACKGROUND_FADING_IN &&
-        !g_Gui.IsDialoguePresent())
+        (!g_Gui.IsDialoguePresent()
+#ifdef TH08_MULTI
+         || redrawFrozenStage
+#endif
+        ))
     {
         if (background->stageVm0.activeSpriteIndex > 0)
         {
@@ -838,7 +864,11 @@ ChainCallbackResult Background::OnDrawHighPrio(Background *background)
     }
 
     if (background->spellBackgroundState <= SPELL_BACKGROUND_FADING_IN &&
-        !g_Gui.IsDialoguePresent())
+        (!g_Gui.IsDialoguePresent()
+#ifdef TH08_MULTI
+         || redrawFrozenStage
+#endif
+        ))
     {
         background->RenderObjects(0);
         background->RenderObjects(1);
@@ -857,7 +887,11 @@ ChainCallbackResult Background::OnDrawLowPrio(Background *background)
     f32 zValue;
 
     if (background->spellBackgroundState <= SPELL_BACKGROUND_FADING_IN &&
-        !g_Gui.IsDialoguePresent())
+        (!g_Gui.IsDialoguePresent()
+#ifdef TH08_MULTI
+         || g_MultiPlayerState.IsEnabled()
+#endif
+        ))
     {
         background->RenderObjects(2);
         background->RenderObjects(3);
