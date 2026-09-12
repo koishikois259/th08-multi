@@ -197,15 +197,12 @@ ChainCallbackResult Supervisor::OnUpdate(Supervisor *s)
 #ifdef TH08_MULTI
         if (g_MultiPlayerCoordinator.ShouldSynchronizeInputs())
         {
-            u16 p1Input;
-            u16 p2Input;
-            if (!g_MultiPlayerCoordinator.AcquireGameplayInputs(
-                    Controller::GetInput(), &p1Input, &p2Input))
-                return CHAIN_CALLBACK_RESULT_BREAK;
-            g_LastFrameInput = g_CurFrameInput;
-            g_CurFrameInput = p1Input;
-            if (g_MultiPlayerCoordinator.IsGameplayActive())
-                g_CurFrameInput |= p2Input & (TH_BUTTON_MENU | TH_BUTTON_SKIP);
+            // Frame skipping is a local presentation/timing decision.  Do
+            // not consume a lockstep input frame here: the peer may not skip
+            // the same rendered frame, which would make each process apply a
+            // different subset of the otherwise synchronized inputs.  Pump()
+            // above still receives and retransmits packets while simulation
+            // is paused; input is captured on the next real simulation tick.
         }
         else
             g_CurFrameInput |= Controller::GetInput();

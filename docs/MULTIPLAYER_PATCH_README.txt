@@ -1,10 +1,10 @@
-th08-multi v0.26 联机补丁
+th08-multi v0.3 联机补丁
 =======================
 
 适用版本：东方永夜抄 日文原版 1.00d。
 
 GitHub 源码：https://github.com/koishikois259/th08-multi
-v0.26 发布页：https://github.com/koishikois259/th08-multi/releases/tag/v0.26
+v0.3 发布页：https://github.com/koishikois259/th08-multi/releases/tag/v0.3
 
 安装：
 1. 将补丁压缩包内的所有文件直接解压到原版游戏目录。
@@ -20,7 +20,7 @@ v0.26 发布页：https://github.com/koishikois259/th08-multi/releases/tag/v0.26
 加密。启动器会自动监听全部本地 IPv4 接口；如需 Windows 防火墙规则，
 请只允许预期使用的网络，并尽量限制为对方地址。
 
-双方必须使用完全相同的 v0.26 补丁和日文原版 1.00d 数据。联机模式
+双方必须使用完全相同的 v0.3 补丁和日文原版 1.00d 数据。联机模式
 不支持 Replay。连接与异常状态会显示在游戏窗口标题栏，诊断信息写入
 游戏目录的 log.txt。
 
