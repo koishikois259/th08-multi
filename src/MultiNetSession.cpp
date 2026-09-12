@@ -133,7 +133,7 @@ bool MultiNetSession::OpenHost(u16 localPort, const char *bindAddress,
         return false;
     }
     localAddress = bindAddress != NULL ? inet_addr(bindAddress) : INADDR_NONE;
-    if (localAddress == INADDR_NONE || localAddress == htonl(INADDR_ANY))
+    if (localAddress == INADDR_NONE)
     {
         state = MULTI_NET_STATE_ERROR;
         error = MULTI_NET_ERROR_ADDRESS;
@@ -180,8 +180,7 @@ bool MultiNetSession::OpenGuest(u16 localPort, const char *bindAddress,
     }
     address = inet_addr(hostAddress);
     localAddress = inet_addr(bindAddress);
-    if (address == INADDR_NONE || localAddress == INADDR_NONE ||
-        localAddress == htonl(INADDR_ANY))
+    if (address == INADDR_NONE || localAddress == INADDR_NONE)
     {
         state = MULTI_NET_STATE_ERROR;
         error = MULTI_NET_ERROR_ADDRESS;

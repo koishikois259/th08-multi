@@ -11,7 +11,6 @@ enum LauncherControlId
     IDC_MODE_HOST = 1001,
     IDC_MODE_GUEST,
     IDC_HOST_ADDRESS,
-    IDC_BIND_ADDRESS,
     IDC_HOST_PORT,
     IDC_LOCAL_PORT,
     IDC_INPUT_DELAY,
@@ -39,7 +38,7 @@ enum LauncherPacketType
 };
 
 static const unsigned long LAUNCHER_PACKET_MAGIC = 0x54384D4C;
-static const unsigned long LAUNCHER_PROTOCOL_VERSION = 0x00020025;
+static const unsigned long LAUNCHER_PROTOCOL_VERSION = 0x00020026;
 static const int LAUNCHER_PACKET_SIZE = 16;
 static const UINT_PTR LAUNCHER_TIMER_ID = 1;
 static const UINT LAUNCHER_TIMER_INTERVAL_MS = 100;
@@ -146,15 +145,12 @@ static void LoadSettings(HWND window)
 {
     char mode[16];
     char host[64];
-    char bindAddress[64];
     unsigned int hostPort;
     unsigned int localPort;
     unsigned int inputDelay;
 
     GetPrivateProfileStringA("network", "mode", "host", mode, sizeof(mode), g_iniPath);
     GetPrivateProfileStringA("network", "host", "127.0.0.1", host, sizeof(host), g_iniPath);
-    GetPrivateProfileStringA("network", "bind_address", "127.0.0.1",
-                             bindAddress, sizeof(bindAddress), g_iniPath);
     hostPort = GetPrivateProfileIntA("network", "host_port", 17708, g_iniPath);
     localPort = GetPrivateProfileIntA(
         "network", "local_port", lstrcmpiA(mode, "guest") == 0 ? 0 : 17708, g_iniPath);
@@ -164,7 +160,6 @@ static void LoadSettings(HWND window)
         window, IDC_MODE_HOST, IDC_MODE_GUEST,
         lstrcmpiA(mode, "guest") == 0 ? IDC_MODE_GUEST : IDC_MODE_HOST);
     SetDlgItemTextA(window, IDC_HOST_ADDRESS, host);
-    SetDlgItemTextA(window, IDC_BIND_ADDRESS, bindAddress);
     SetIntegerControl(window, IDC_HOST_PORT, hostPort);
     SetIntegerControl(window, IDC_LOCAL_PORT, localPort);
     SetIntegerControl(window, IDC_INPUT_DELAY, inputDelay);
@@ -173,7 +168,6 @@ static void LoadSettings(HWND window)
 static bool SaveSettings(HWND window)
 {
     char host[64];
-    char bindAddress[64];
     char number[32];
     const char *mode;
     unsigned int hostPort;
@@ -184,16 +178,6 @@ static bool SaveSettings(HWND window)
     isHost = IsDlgButtonChecked(window, IDC_MODE_HOST) == BST_CHECKED;
     mode = isHost ? "host" : "guest";
     GetDlgItemTextA(window, IDC_HOST_ADDRESS, host, sizeof(host));
-    GetDlgItemTextA(window, IDC_BIND_ADDRESS, bindAddress, sizeof(bindAddress));
-    if (bindAddress[0] == '\0' || inet_addr(bindAddress) == INADDR_NONE ||
-        inet_addr(bindAddress) == htonl(INADDR_ANY))
-    {
-        MessageBoxA(window,
-                    "Bind IPv4 must be one specific local address, such as 127.0.0.1 or the displayed LAN/VPN address. 0.0.0.0 is not allowed.",
-                    "Invalid network setting", MB_OK | MB_ICONWARNING);
-        SetFocus(GetDlgItem(window, IDC_BIND_ADDRESS));
-        return false;
-    }
     if (!isHost && (host[0] == '\0' || inet_addr(host) == INADDR_NONE))
     {
         MessageBoxA(window, "Guest mode requires a valid Host IPv4 address.",
@@ -212,7 +196,7 @@ static bool SaveSettings(HWND window)
     wsprintfA(number, "%u", hostPort);
     if (!WritePrivateProfileStringA("network", "mode", mode, g_iniPath) ||
         !WritePrivateProfileStringA("network", "host", host, g_iniPath) ||
-        !WritePrivateProfileStringA("network", "bind_address", bindAddress, g_iniPath) ||
+        !WritePrivateProfileStringA("network", "bind_address", "0.0.0.0", g_iniPath) ||
         !WritePrivateProfileStringA("network", "host_port", number, g_iniPath))
     {
         MessageBoxA(window, "Could not write th08_multi.ini next to the launcher.",
@@ -287,7 +271,6 @@ static void SetConnectionControls(HWND window)
     EnableWindow(GetDlgItem(window, IDC_MODE_HOST), !active);
     EnableWindow(GetDlgItem(window, IDC_MODE_GUEST), !active);
     EnableWindow(GetDlgItem(window, IDC_HOST_ADDRESS), !active);
-    EnableWindow(GetDlgItem(window, IDC_BIND_ADDRESS), !active);
     EnableWindow(GetDlgItem(window, IDC_HOST_PORT), !active);
     EnableWindow(GetDlgItem(window, IDC_LOCAL_PORT), !active);
     EnableWindow(GetDlgItem(window, IDC_INPUT_DELAY), !active);
@@ -378,14 +361,12 @@ static bool StartLauncherConnection(HWND window)
     unsigned int localPort;
     unsigned int inputDelay;
     char hostText[64];
-    char bindText[64];
     char statusText[192];
 
     if (!SaveSettings(window))
         return false;
     g_isHost = IsDlgButtonChecked(window, IDC_MODE_HOST) == BST_CHECKED;
     GetDlgItemTextA(window, IDC_HOST_ADDRESS, hostText, sizeof(hostText));
-    GetDlgItemTextA(window, IDC_BIND_ADDRESS, bindText, sizeof(bindText));
     if (!ReadIntegerControl(window, IDC_HOST_PORT, 1, 65535, "Host port", &hostPort) ||
         !ReadIntegerControl(window, IDC_LOCAL_PORT, g_isHost ? 1 : 0, 65535,
                             "Local port", &localPort) ||
@@ -408,7 +389,7 @@ static bool StartLauncherConnection(HWND window)
 
     ZeroMemory(&localAddress, sizeof(localAddress));
     localAddress.sin_family = AF_INET;
-    localAddress.sin_addr.s_addr = inet_addr(bindText);
+    localAddress.sin_addr.s_addr = htonl(INADDR_ANY);
     localAddress.sin_port = htons(static_cast<unsigned short>(localPort));
     if (bind(g_launcherSocket, reinterpret_cast<const sockaddr *>(&localAddress),
              sizeof(localAddress)) == SOCKET_ERROR)
@@ -608,9 +589,57 @@ static void PumpLauncherConnection(HWND window)
     }
 }
 
+static void GetLocalIpv4Text(char *output, int outputSize)
+{
+    WSADATA data;
+    char hostName[256];
+    struct hostent *host;
+    int index;
+    bool found;
+
+    lstrcpynA(output, "Local IPv4: unavailable", outputSize);
+    if (WSAStartup(MAKEWORD(1, 1), &data) != 0)
+        return;
+    if (gethostname(hostName, sizeof(hostName)) != 0)
+    {
+        WSACleanup();
+        return;
+    }
+    host = gethostbyname(hostName);
+    if (host == NULL)
+    {
+        WSACleanup();
+        return;
+    }
+
+    lstrcpynA(output, "Local IPv4: ", outputSize);
+    found = false;
+    for (index = 0; index < 3 && host->h_addr_list[index] != NULL; ++index)
+    {
+        struct in_addr address;
+        const char *addressText;
+        CopyMemory(&address, host->h_addr_list[index], sizeof(address));
+        addressText = inet_ntoa(address);
+        if (addressText == NULL)
+            continue;
+        if (found && lstrlenA(output) + 2 < outputSize)
+            lstrcatA(output, ", ");
+        if (lstrlenA(output) + lstrlenA(addressText) + 1 < outputSize)
+        {
+            lstrcatA(output, addressText);
+            found = true;
+        }
+    }
+    if (!found)
+        lstrcpynA(output, "Local IPv4: unavailable", outputSize);
+    WSACleanup();
+}
+
 static LRESULT CALLBACK LauncherWindowProc(
     HWND window, UINT message, WPARAM wParam, LPARAM lParam)
 {
+    char localAddressText[256];
+
     switch (message)
     {
     case WM_CREATE:
@@ -627,41 +656,39 @@ static LRESULT CALLBACK LauncherWindowProc(
         CreateLauncherControl(window, "EDIT", "", WS_BORDER | WS_TABSTOP | ES_AUTOHSCROLL,
                                150, 54, 220, 24, IDC_HOST_ADDRESS);
 
-        CreateLauncherControl(window, "STATIC", "Bind local IPv4:", 0,
-                              20, 94, 125, 20, 0);
-        CreateLauncherControl(window, "EDIT", "", WS_BORDER | WS_TABSTOP | ES_AUTOHSCROLL,
-                              150, 90, 220, 24, IDC_BIND_ADDRESS);
-
         CreateLauncherControl(window, "STATIC", "Host UDP port:", 0,
-                              20, 130, 125, 20, 0);
+                              20, 94, 125, 20, 0);
         CreateLauncherControl(window, "EDIT", "", WS_BORDER | WS_TABSTOP | ES_NUMBER,
-                              150, 126, 90, 24, IDC_HOST_PORT);
+                              150, 90, 90, 24, IDC_HOST_PORT);
 
         CreateLauncherControl(window, "STATIC", "Local UDP port:", 0,
-                              20, 166, 125, 20, 0);
+                              20, 130, 125, 20, 0);
         CreateLauncherControl(window, "EDIT", "", WS_BORDER | WS_TABSTOP | ES_NUMBER,
-                              150, 162, 90, 24, IDC_LOCAL_PORT);
+                              150, 126, 90, 24, IDC_LOCAL_PORT);
         CreateLauncherControl(window, "STATIC", "Host: same as host port. Guest: 0 is automatic.", 0,
-                              250, 166, 255, 20, 0);
+                              250, 130, 255, 20, 0);
 
         CreateLauncherControl(window, "STATIC", "Input delay (1-12):", 0,
-                              20, 202, 125, 20, 0);
+                              20, 166, 125, 20, 0);
         CreateLauncherControl(window, "EDIT", "", WS_BORDER | WS_TABSTOP | ES_NUMBER,
-                              150, 198, 90, 24, IDC_INPUT_DELAY);
+                              150, 162, 90, 24, IDC_INPUT_DELAY);
         CreateLauncherControl(window, "STATIC", "Use the same value on both PCs; start with 3.", 0,
-                              250, 202, 255, 20, 0);
+                              250, 166, 255, 20, 0);
 
+        GetLocalIpv4Text(localAddressText, sizeof(localAddressText));
+        CreateLauncherControl(window, "STATIC", localAddressText, 0,
+                              20, 202, 485, 20, 0);
         CreateLauncherControl(
             window, "STATIC",
-            "Trusted LAN/VPN only. Bind the matching local IPv4; never forward this port publicly.",
-            0, 20, 238, 485, 20, 0);
+            "UDP listens on all local IPv4 interfaces; connect only to a trusted peer.",
+            0, 20, 226, 485, 20, 0);
 
         CreateLauncherControl(window, "BUTTON", "Connect", BS_DEFPUSHBUTTON | WS_TABSTOP,
-                              250, 294, 110, 30, IDC_CONNECT);
+                              250, 258, 110, 30, IDC_CONNECT);
         CreateLauncherControl(window, "BUTTON", "Start both games", BS_PUSHBUTTON | WS_TABSTOP,
-                              370, 294, 135, 30, IDC_LAUNCH);
+                              370, 258, 135, 30, IDC_LAUNCH);
         CreateLauncherControl(window, "STATIC", "", SS_LEFT,
-                              20, 300, 220, 40, IDC_STATUS);
+                              20, 264, 220, 40, IDC_STATUS);
         LoadSettings(window);
         SetConnectionControls(window);
         SetTimer(window, LAUNCHER_TIMER_ID, LAUNCHER_TIMER_INTERVAL_MS, NULL);
@@ -755,7 +782,7 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR, int showCommand)
         return 1;
 
     window = CreateWindowExA(
-        0, windowClass.lpszClassName, "th08-multi v0.25 Network Launcher",
+        0, windowClass.lpszClassName, "th08-multi v0.26 Network Launcher",
         WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
         CW_USEDEFAULT, CW_USEDEFAULT, 540, 386,
         NULL, NULL, instance, NULL);

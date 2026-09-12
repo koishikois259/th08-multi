@@ -8,23 +8,24 @@ directory. Copy `th08_multi.ini.example` to that name on both computers.
 ```ini
 [network]
 mode=host
-bind_address=192.168.1.20
+bind_address=0.0.0.0
 host_port=17708
 local_port=17708
 input_delay=3
 
 ```
 
-Replace `bind_address` with the Host PC's exact LAN or trusted-VPN IPv4. If a
-firewall rule is needed, restrict UDP 17708 to the Windows Private profile and
-the Guest's LAN/VPN address. Never forward this port on a router.
+The launcher writes `bind_address=0.0.0.0` automatically and displays the
+computer's detected addresses in its `Local IPv4:` row. There is no Bind input
+field. If a firewall rule is needed, restrict UDP 17708 to the intended
+network and trusted peer.
 
 ## Guest
 
 ```ini
 [network]
 mode=guest
-bind_address=192.168.1.21
+bind_address=0.0.0.0
 host=192.168.1.20
 host_port=17708
 local_port=0
@@ -32,10 +33,10 @@ input_delay=3
 
 ```
 
-Replace `bind_address` with the Guest PC's exact LAN/VPN IPv4 and `host` with
-the Host's address on that same trusted network. `0.0.0.0` is deliberately
-rejected. Keep `127.0.0.1` only for two-process testing on one PC. The
-negotiated delay is the larger of the two requested values.
+The launcher manages `bind_address`; the Guest only enters the Host's address
+on the network or tunnel used for the session. Keep `127.0.0.1` as the Host
+address only for two-process testing on one PC. The negotiated delay is the
+larger of the two requested values.
 
 This protocol has no peer authentication or encryption. Use it only with a
 person you trust on a private LAN or trusted VPN; public-Internet connections
@@ -56,9 +57,9 @@ difficulty choices. On the character-select screen P1 and P2 independently
 move and confirm their own team cursor; identical teams are allowed and play
 starts after both cursors are locked. Both players control their own characters
 once gameplay starts. Either player can open or close the in-game pause menu.
-The v0.25 multiplayer menu supports Story and Extra runs; Practice and Spell
+The v0.26 multiplayer menu supports Story and Extra runs; Practice and Spell
 Practice remain single-player-only.
 
 The internal replay bookkeeping object remains present because retail enemy
 logic depends on it, but multiplayer replay selection and saving are disabled
-for v0.25.
+for v0.26.

@@ -1,4 +1,4 @@
-# th08-multi v0.25 validation ledger
+# th08-multi v0.26 validation ledger
 
 This ledger separates implemented code, automated rule checks, and observed
 two-process gameplay. An item is accepted only after the relevant observable
@@ -53,7 +53,7 @@ input to native DirectX game windows. Do not mark the HUD complete until both
 Host and Guest views have been inspected.
 
 Use [the manual network testing guide](MULTIPLAYER_TESTING.md) and the bundled
-`th08-multi-launcher.exe` only for trusted LAN/VPN two-PC tests.
+`th08-multi-launcher.exe` only for trusted-peer two-PC tests.
 
 ## Launcher acceptance
 
@@ -70,9 +70,9 @@ Use [the manual network testing guide](MULTIPLAYER_TESTING.md) and the bundled
 - The launcher process remained alive during its startup smoke test.
 - Fresh copies placed in the local Host/Guest fixtures connected successfully;
   both window titles reported `connected (select teams in game / delay 3)`.
-- The v0.25 six-file patch archive includes the GitHub source and release URLs
+- The v0.26 six-file patch archive includes the GitHub source and release URLs
   in its README and has SHA-256
-  `17b880425f0f529d8ab65304002baaba11f66b83c312fbfcd50361ecd7cc5c17`.
+  `ccaff8925c2c94fb555f66cfc7fa64d2241bb357b9ed5091938b2089dd44e7ea`.
 - Installation into the verified `th08-origin` directory preserved the original
   `th08.exe` hash, all installed payload hashes matched, and the installed
   launcher remained alive during its startup smoke test.

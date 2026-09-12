@@ -2042,7 +2042,7 @@ ChainCallbackResult TitleScreen::OnUpdateMultiPlayerCharacterSelect()
     this->stateTimer++;
     this->stateTimer2++;
     wsprintfA(windowTitle,
-              "th08-multi v0.25 - team select (P1=%d%s / P2=%d%s)",
+              "th08-multi v0.26 - team select (P1=%d%s / P2=%d%s)",
               this->cursor, (this->multiTeamReadyMask & 1) != 0 ? " READY" : "",
               this->cursor2, (this->multiTeamReadyMask & 2) != 0 ? " READY" : "");
     SetWindowTextA(g_Supervisor.hwndGameWindow, windowTitle);

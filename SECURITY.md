@@ -7,11 +7,10 @@ solely for two people who trust each other on the same private LAN or through
 a trusted VPN. It is not designed or tested for direct public-Internet use.
 
 The UDP protocol does not encrypt traffic, authenticate a peer's identity, or
-protect against a malicious peer. Do not forward its UDP port on a router, do
-not bind it to `0.0.0.0`, and do not permit it through a Public-profile
-firewall rule. Select the exact LAN or VPN IPv4 address in the launcher and
-restrict any firewall exception to the corresponding private network or VPN
-peer addresses.
+protect against a malicious peer. The v0.26 launcher intentionally binds to
+`0.0.0.0` so LAN, VPN, and tunnel adapters work without manual adapter
+selection. Consequently, restrict any firewall exception to the intended
+network and trusted peer addresses, and never connect to an untrusted peer.
 
 ## Reporting a vulnerability
 
