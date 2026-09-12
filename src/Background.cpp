@@ -1037,6 +1037,39 @@ ZunResult Background::RegisterChain(i32 stageIndex)
 // FUNCTION: th08 0x409c20
 ZunResult Background::DeletedCallback(Background *background)
 {
+#ifdef TH08_MULTI
+    AnmVm *stageObjectVms;
+    RawStageHeader *stageData;
+    ZunBool releaseStageResources;
+
+    releaseStageResources = !IsDisableResourceReload();
+    stageObjectVms = background->stageObjectVms;
+    stageData = releaseStageResources ? background->stageData : NULL;
+
+    // Detach every non-owning view before either backing allocation is
+    // released.  Stage object VMs retain script and sprite pointers into the
+    // stage ANM, while stageObjects/script/instances point inside stageData.
+    background->stageObjectVms = NULL;
+    background->stageAnmFile = NULL;
+    background->stageObjects = NULL;
+    background->stageObjectInstances = NULL;
+    background->stageScript = NULL;
+    background->stageQuadCount = 0;
+    background->stageObjectCount = 0;
+    if (releaseStageResources)
+        background->stageData = NULL;
+
+    // Destroy VM storage before releasing the ANM allocations referenced by
+    // those VMs.  Owners were detached above, so a nested callback is a no-op.
+    if (stageObjectVms != NULL)
+        g_ZunMemory.Free(stageObjectVms);
+    if (releaseStageResources)
+    {
+        g_AnmManager->ReleaseAnm(ANM_FILE_SLOT_STAGE_BACKGROUND);
+        if (stageData != NULL)
+            g_ZunMemory.Free(stageData);
+    }
+#else
     if (!IsDisableResourceReload())
     {
         g_AnmManager->ReleaseAnm(ANM_FILE_SLOT_STAGE_BACKGROUND);
@@ -1051,15 +1084,24 @@ ZunResult Background::DeletedCallback(Background *background)
         g_ZunMemory.Free(background->stageData);
         background->stageData = NULL;
     }
+#endif
     return ZUN_SUCCESS;
 }
 
 // FUNCTION: th08 0x409ca0
 void Background::CutChain()
 {
+#ifdef TH08_MULTI
+    // Stop both draw consumers before the calc-chain deleted callback releases
+    // their stage VM and ANM backing storage.
+    g_Chain.Cut(&g_BackgroundDrawChainHighPrio);
+    g_Chain.Cut(&g_BackgroundDrawChainLowPrio);
+    g_Chain.Cut(&g_BackgroundCalcChain);
+#else
     g_Chain.Cut(&g_BackgroundCalcChain);
     g_Chain.Cut(&g_BackgroundDrawChainHighPrio);
     g_Chain.Cut(&g_BackgroundDrawChainLowPrio);
+#endif
 }
 
 // FUNCTION: th08 0x409ce0

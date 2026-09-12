@@ -59,11 +59,23 @@ ZunResult EclManager::Load(char *path)
 
 void EclManager::Unload()
 {
+#ifdef TH08_MULTI
+    EclRawHeader *eclFile;
+
+    // subTable is an interior pointer into eclFile.  Detach both views before
+    // freeing the owner so callbacks cannot observe a half-unloaded manager.
+    eclFile = this->eclFile;
+    this->eclFile = NULL;
+    this->subTable = NULL;
+    if (eclFile != NULL)
+        g_ZunMemory.Free(eclFile);
+#else
     if (this->eclFile != NULL)
     {
         g_ZunMemory.Free(this->eclFile);
     }
     this->eclFile = NULL;
+#endif
 }
 
 ZunResult EclManager::CallEclSub(EnemyEclContext *context, i16 subId)

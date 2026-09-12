@@ -1539,8 +1539,20 @@ ZunResult EnemyManager::DeletedCallback(EnemyManager *enemyManager)
     for (; i < 0x1E0; ++i, enemy++)
     {
         enemy->ReleaseChildEclBlocks();
+#ifdef TH08_MULTI
+        // The instruction is an interior pointer into EclManager::eclFile.
+        enemy->mainEclContextStorage.currentInstr = NULL;
+#endif
     }
 
+#ifdef TH08_MULTI
+    // These fields are non-owning views of AnmManager slots.  Clear them after
+    // all enemy/child contexts have stopped and before releasing the slots.
+    enemyManager->enemyAnm = NULL;
+    enemyManager->alternateEnemyAnm = NULL;
+    for (i = 0; i < ARRAY_SIZE_SIGNED(enemyManager->timelines); ++i)
+        enemyManager->timelines[i].instruction = NULL;
+#endif
     if (!IsDisableResourceReload())
     {
         g_AnmManager->ReleaseAnm(ANM_FILE_SLOT_ENEMY_STAGE);
@@ -1565,9 +1577,18 @@ ZunResult EnemyManager::DeletedCallback(EnemyManager *enemyManager)
 // FUNCTION: th08 0x42ef70
 void EnemyManager::CutChain()
 {
+#ifdef TH08_MULTI
+    // Draw callbacks traverse enemy VMs backed by both enemy ANM slots.  Remove
+    // those consumers before the calc-chain deleted callback releases ANM and
+    // ECL ownership.
+    g_Chain.Cut(&g_EnemyManagerDrawChainHighPrio);
+    g_Chain.Cut(&g_EnemyManagerDrawChainLowPrio);
+    g_Chain.Cut(&g_EnemyManagerCalcChain);
+#else
     g_Chain.Cut(&g_EnemyManagerCalcChain);
     g_Chain.Cut(&g_EnemyManagerDrawChainHighPrio);
     g_Chain.Cut(&g_EnemyManagerDrawChainLowPrio);
+#endif
 }
 
 // FUNCTION: th08 0x42efb0
