@@ -62,7 +62,19 @@ void __fastcall CopyBulletAnmVmCore(AnmVm *dst, const AnmVm *src);
 void __fastcall SelectBulletSprite(AnmVm *dst, AnmVm *base, AnmVm *sizeSource, i32 offset);
 
 
-void __fastcall fsincos(f32 *sine, f32 *cosine, f32 angle) {}
+void __fastcall fsincos(f32 *sine, f32 *cosine, f32 angle)
+{
+#ifdef TH08_MULTI
+    // The retail executable supplies this x87 helper from its runtime library.
+    // Multiplayer builds compile from source, so calculate the laser direction
+    // here; otherwise the body and cancellation effects use undefined offsets.
+    f32 computedSine;
+    f32 computedCosine;
+    sincos(angle, computedSine, computedCosine);
+    *sine = computedSine;
+    *cosine = computedCosine;
+#endif
+}
 
 // FUNCTION: th08 0x42a410
 BulletSpawnDescriptor::BulletSpawnDescriptor()
