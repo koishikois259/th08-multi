@@ -15,8 +15,8 @@ On the Host PC:
 
 1. Start `th08-multi-launcher.exe`.
 2. Select **Host**.
-3. Set **Bind local IPv4** to the exact Host LAN/VPN address displayed by the
-   launcher. Do not use `0.0.0.0`.
+3. Set **Bind local IPv4** to the exact IPv4 assigned to the Host's LAN/VPN
+   adapter. Do not use `0.0.0.0`.
 4. Set Host UDP port and Local UDP port to the same value. The default is
    `17708`, and the Guest uses the Host bind address.
 5. Choose **Connect** and wait for the status to report `Connected`.

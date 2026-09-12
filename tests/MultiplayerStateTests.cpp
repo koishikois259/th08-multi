@@ -109,6 +109,8 @@ void TestSpiritRevival()
         state.UpdateRevival(MULTI_PLAYER_P1, true, true, false) == MULTI_REVIVE_COMPLETED,
         "frame 90 completes revival");
     Expect(state.IsPhysical(MULTI_PLAYER_P2), "spirit becomes physical");
+    Expect(state.GetSlot(MULTI_PLAYER_P2).power == 128,
+           "revived spirit returns at full power");
     Expect(state.GetSlot(MULTI_PLAYER_P1).lives == 1, "rescuer spends one reserve life");
 }
 

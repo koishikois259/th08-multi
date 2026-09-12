@@ -541,6 +541,8 @@ MultiPlayerReviveResult UpdateMultiPlayerRevival(Player *rescuer)
     {
         if (rescuerSlot == MULTI_PLAYER_P1)
             g_GameManager.SetLives(g_MultiPlayerState.GetSlot(MULTI_PLAYER_P1).lives);
+        SetMultiPlayerPower(spirit, 128);
+        g_Gui.flags.powerDisplayUpdateFrames = 2;
         spirit->playerState = PLAYER_STATE_SPAWNING;
         spirit->timer = 0;
         spirit->mainVm.scale.x = 3.0f;

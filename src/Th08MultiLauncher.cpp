@@ -608,57 +608,9 @@ static void PumpLauncherConnection(HWND window)
     }
 }
 
-static void GetLocalIpv4Text(char *output, int outputSize)
-{
-    WSADATA data;
-    char hostName[256];
-    struct hostent *host;
-    int index;
-    bool found;
-
-    lstrcpynA(output, "Local IPv4: unavailable", outputSize);
-    if (WSAStartup(MAKEWORD(1, 1), &data) != 0)
-        return;
-    if (gethostname(hostName, sizeof(hostName)) != 0)
-    {
-        WSACleanup();
-        return;
-    }
-    host = gethostbyname(hostName);
-    if (host == NULL)
-    {
-        WSACleanup();
-        return;
-    }
-
-    lstrcpynA(output, "Local IPv4: ", outputSize);
-    found = false;
-    for (index = 0; index < 3 && host->h_addr_list[index] != NULL; ++index)
-    {
-        struct in_addr address;
-        const char *addressText;
-        CopyMemory(&address, host->h_addr_list[index], sizeof(address));
-        addressText = inet_ntoa(address);
-        if (addressText == NULL)
-            continue;
-        if (found && lstrlenA(output) + 2 < outputSize)
-            lstrcatA(output, ", ");
-        if (lstrlenA(output) + lstrlenA(addressText) + 1 < outputSize)
-        {
-            lstrcatA(output, addressText);
-            found = true;
-        }
-    }
-    if (!found)
-        lstrcpynA(output, "Local IPv4: unavailable", outputSize);
-    WSACleanup();
-}
-
 static LRESULT CALLBACK LauncherWindowProc(
     HWND window, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    char localAddressText[256];
-
     switch (message)
     {
     case WM_CREATE:
@@ -699,13 +651,10 @@ static LRESULT CALLBACK LauncherWindowProc(
         CreateLauncherControl(window, "STATIC", "Use the same value on both PCs; start with 3.", 0,
                               250, 202, 255, 20, 0);
 
-        GetLocalIpv4Text(localAddressText, sizeof(localAddressText));
-        CreateLauncherControl(window, "STATIC", localAddressText, 0,
-                              20, 238, 485, 20, 0);
         CreateLauncherControl(
             window, "STATIC",
             "Trusted LAN/VPN only. Bind the matching local IPv4; never forward this port publicly.",
-            0, 20, 262, 485, 20, 0);
+            0, 20, 238, 485, 20, 0);
 
         CreateLauncherControl(window, "BUTTON", "Connect", BS_DEFPUSHBUTTON | WS_TABSTOP,
                               250, 294, 110, 30, IDC_CONNECT);

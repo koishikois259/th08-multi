@@ -312,6 +312,7 @@ MultiPlayerReviveResult MultiPlayerState::UpdateRevival(
     rescuerState.reviveProgressFrames = 0;
     --rescuerState.lives;
     spiritState.presence = MULTI_PLAYER_PHYSICAL;
+    spiritState.power = 128;
     spiritState.reviveProgressFrames = 0;
     spiritState.spiritVelocity.x = 0.0f;
     spiritState.spiritVelocity.y = 0.0f;
