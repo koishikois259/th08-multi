@@ -515,9 +515,13 @@ int __fastcall PopEclContext(
     if (enemy->activeEclCallStackDepth < 0)
     {
         contextIndex = enemy->activeEclContext->childContextSlot - 1;
+#ifdef TH08_MULTI
+        enemy->ReleaseChildEclBlock(contextIndex);
+#else
         if (enemy->childEclBlocks[contextIndex] != NULL)
             g_ZunMemory.Free(enemy->childEclBlocks[contextIndex]);
         enemy->childEclBlocks[contextIndex] = NULL;
+#endif
         enemy->activeEclCallStack =
             reinterpret_cast<EnemyEclContext *>(
                 &enemy->mainEclCallStackStorage[0]);

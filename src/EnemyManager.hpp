@@ -337,6 +337,9 @@ struct Enemy
     void ReleaseAttachedEffects();
     void UpdateMovement();
     void UpdateShotAndAnm();
+#ifdef TH08_MULTI
+    bool ReleaseChildEclBlock(i32 slot);
+#endif
     void ReleaseChildEclBlocks();
     void ResetBulletRankInfluence();
     i32 HasParentChain();

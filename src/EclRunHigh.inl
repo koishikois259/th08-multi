@@ -646,10 +646,15 @@ enter_subroutine:
     case ECL_OPCODE_SET_CHILD_ECL:
     {
         lhsInt = TH08_ECL_READ_I(ctx, 0);
+#ifdef TH08_MULTI
+        if (!TH08_ECL_CONTEXT_ENEMY(ctx)->ReleaseChildEclBlock(lhsInt))
+            break;
+#else
         if (TH08_ECL_CONTEXT_ENEMY(ctx)->childEclBlocks[lhsInt])
             g_ZunMemory.Free(
                 TH08_ECL_CONTEXT_ENEMY(ctx)->childEclBlocks[lhsInt]);
         TH08_ECL_CONTEXT_ENEMY(ctx)->childEclBlocks[lhsInt] = 0;
+#endif
 
         if (TH08_ECL_READ_I(ctx, 1) >= 0)
         {

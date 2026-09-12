@@ -479,6 +479,9 @@ i32 Enemy::HandleLifeCallback()
                 (this->timerCallbackThresholdFrames - (i32)this->bossTimer) / 60;
             this->timerCallbackThresholdFrames = -1;
 
+#ifdef TH08_MULTI
+            this->ReleaseChildEclBlocks();
+#else
             for (work = 0; work < 4; work++)
             {
                 if (this->childEclBlocks[work] != NULL)
@@ -487,6 +490,7 @@ i32 Enemy::HandleLifeCallback()
                     this->childEclBlocks[work] = NULL;
                 }
             }
+#endif
 
             this->ResetBulletRankInfluence();
             this->activeEclCallStackDepth = 0;
@@ -694,6 +698,9 @@ i32 Enemy::HandleTimerCallback()
         }
     }
 
+#ifdef TH08_MULTI
+    this->ReleaseChildEclBlocks();
+#else
     for (selectedOrK = 0; selectedOrK < 4; selectedOrK++)
     {
         if (this->childEclBlocks[selectedOrK] != NULL)
@@ -702,6 +709,7 @@ i32 Enemy::HandleTimerCallback()
             this->childEclBlocks[selectedOrK] = NULL;
         }
     }
+#endif
 
     this->bulletSpawnDescriptor = g_EnemyManager.spawnTemplate.bulletSpawnDescriptor;
     this->shootIntervalFrames = 0;
@@ -722,8 +730,49 @@ void __fastcall PrepareSpellcardForTimerCallback(Spellcard *spellcard)
 }
 
 // FUNCTION: th08 0x42bc90
+#ifdef TH08_MULTI
+bool Enemy::ReleaseChildEclBlock(i32 slot)
+{
+    EnemyChildEclBlock *block;
+    i32 i;
+
+    if (slot < 0 || slot >= ARRAY_SIZE_SIGNED(this->childEclBlocks))
+    {
+        g_GameErrorContext.Log(
+            "multi: rejected invalid child ECL slot stage=%d slot=%d\n",
+            g_GameManager.currentStage, slot);
+        return false;
+    }
+
+    block = this->childEclBlocks[slot];
+    this->childEclBlocks[slot] = NULL;
+    if (block == NULL)
+        return true;
+
+    // Slots are independent owners. If corrupted state aliases one allocation
+    // into multiple slots, detach every alias before freeing it once.
+    for (i = 0; i < ARRAY_SIZE_SIGNED(this->childEclBlocks); ++i)
+    {
+        if (this->childEclBlocks[i] == block)
+        {
+            g_GameErrorContext.Log(
+                "multi: detached duplicate child ECL owner stage=%d slot=%d alias=%d\n",
+                g_GameManager.currentStage, slot, i);
+            this->childEclBlocks[i] = NULL;
+        }
+    }
+
+    g_ZunMemory.Free(block);
+    return true;
+}
+#endif
+
 void Enemy::ReleaseChildEclBlocks()
 {
+#ifdef TH08_MULTI
+    for (i32 i = 0; i < ARRAY_SIZE_SIGNED(this->childEclBlocks); ++i)
+        this->ReleaseChildEclBlock(i);
+#else
     for (i32 i = 0; i < 4; i++)
     {
         if (this->childEclBlocks[i] != NULL)
@@ -732,6 +781,7 @@ void Enemy::ReleaseChildEclBlocks()
             this->childEclBlocks[i] = NULL;
         }
     }
+#endif
 }
 
 // FUNCTION: th08 0x42bcf0

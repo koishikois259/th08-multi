@@ -655,6 +655,9 @@ i32 EnemyManager::OnUpdate()
             enemy->timerCallbackThresholdFrames = -1;
             for (deathPosition = 0; deathPosition < 4; ++deathPosition)
                 enemy->lifeCallbackThresholds[deathPosition] = -1;
+#ifdef TH08_MULTI
+            enemy->ReleaseChildEclBlocks();
+#else
             for (deathPosition = 0; deathPosition < 4; ++deathPosition)
             {
                 if (enemy->childEclBlocks[deathPosition] != 0)
@@ -663,6 +666,7 @@ i32 EnemyManager::OnUpdate()
                     enemy->childEclBlocks[deathPosition] = 0;
                 }
             }
+#endif
 
             if (enemy->HasAttachedEnemy())
             {
