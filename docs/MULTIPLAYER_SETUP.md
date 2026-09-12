@@ -56,9 +56,9 @@ difficulty choices. On the character-select screen P1 and P2 independently
 move and confirm their own team cursor; identical teams are allowed and play
 starts after both cursors are locked. Both players control their own characters
 once gameplay starts. Either player can open or close the in-game pause menu.
-The v0.24 multiplayer menu supports Story and Extra runs; Practice and Spell
+The v0.25 multiplayer menu supports Story and Extra runs; Practice and Spell
 Practice remain single-player-only.
 
 The internal replay bookkeeping object remains present because retail enemy
 logic depends on it, but multiplayer replay selection and saving are disabled
-for v0.24.
+for v0.25.

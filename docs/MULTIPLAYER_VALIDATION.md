@@ -1,4 +1,4 @@
-# th08-multi v0.24 validation ledger
+# th08-multi v0.25 validation ledger
 
 This ledger separates implemented code, automated rule checks, and observed
 two-process gameplay. An item is accepted only after the relevant observable
@@ -70,9 +70,9 @@ Use [the manual network testing guide](MULTIPLAYER_TESTING.md) and the bundled
 - The launcher process remained alive during its startup smoke test.
 - Fresh copies placed in the local Host/Guest fixtures connected successfully;
   both window titles reported `connected (select teams in game / delay 3)`.
-- The v0.24 six-file patch archive includes the GitHub source and release URLs
+- The v0.25 six-file patch archive includes the GitHub source and release URLs
   in its README and has SHA-256
-  `58f18aa489fac430e87febcf9967d46c276c4b2d57d202f37ea01b78b55c8e6c`.
+  `17b880425f0f529d8ab65304002baaba11f66b83c312fbfcd50361ecd7cc5c17`.
 - Installation into the verified `th08-origin` directory preserved the original
   `th08.exe` hash, all installed payload hashes matched, and the installed
   launcher remained alive during its startup smoke test.

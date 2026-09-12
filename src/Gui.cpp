@@ -79,6 +79,26 @@ DIFFABLE_STATIC_ARRAY_ASSIGN(const char *, 12, g_GuiLoadingAnmPaths) = {
 
 #ifdef TH08_MULTI
 static i32 g_MultiPendingEnemyNameSprite = -1;
+static bool g_MultiEnemyNameDeferLogged = false;
+
+static bool AreEnemyNameSpritesReady(i32 spriteIdx)
+{
+    AnmLoaded *stageTextAnm = g_Gui.stageTextAnm;
+    i32 highestSpriteIdx = spriteIdx > 10 ? spriteIdx : 10;
+
+    if (spriteIdx < 0 || highestSpriteIdx > 255 || stageTextAnm == NULL ||
+        stageTextAnm->rawData == NULL || stageTextAnm->sprites == NULL ||
+        stageTextAnm->numberEntriesToBeLoaded != 0)
+        return false;
+
+    // During a synchronized stage transition, the retained GUI can briefly
+    // still reference the released stage-text sprite allocation.  Retail does
+    // not copy a boss name in that interval, but either co-op peer can request
+    // one. Validate the entire span used by CopyEnemyNameTexture first.
+    return !IsBadReadPtr(
+        stageTextAnm->sprites,
+        static_cast<UINT_PTR>(highestSpriteIdx + 1) * sizeof(AnmLoadedSprite));
+}
 
 static void DrawMultiPlayerHudPair(
     f32 y, const char *label, i32 p1Value, i32 p2Value)
@@ -1063,6 +1083,10 @@ void Gui::UpdateStageElements()
     }
 
     g_AnmManager->ExecuteScriptArray(this->impl->frontVms, 16);
+#ifdef TH08_MULTI
+    if (g_MultiPlayerState.IsEnabled() && g_MultiPendingEnemyNameSprite >= 0)
+        CopyEnemyNameTexture(g_MultiPendingEnemyNameSprite);
+#endif
     g_AnmManager->ExecuteScriptArray(this->impl->stageTextVms, 4);
     if (!g_GameManager.flags.isSpellPractice && this->impl->stageTextVms[0].color1.a)
         g_AnmManager->ExecuteScriptArray(&this->impl->clockIntroVm, 1);
@@ -1903,19 +1927,23 @@ void __fastcall Gui::CopyEnemyNameTexture(i32 spriteIdx)
     RECT srcRect;
 
 #ifdef TH08_MULTI
-    if (g_MultiPlayerState.IsEnabled() &&
-        (g_Gui.stageTextAnm == NULL ||
-         g_Gui.stageTextAnm->rawData == NULL ||
-         g_Gui.stageTextAnm->sprites == NULL))
+    if (g_MultiPlayerState.IsEnabled() && !AreEnemyNameSpritesReady(spriteIdx))
     {
         g_MultiPendingEnemyNameSprite = spriteIdx;
-        g_GameErrorContext.Log(
-            "multi: deferred enemy-name copy during released GUI resource state (stage=%d sprite=%d)\n",
-            g_GameManager.currentStage, spriteIdx);
+        if (!g_MultiEnemyNameDeferLogged)
+        {
+            g_GameErrorContext.Log(
+                "multi: deferred enemy-name copy until GUI sprites are ready (stage=%d sprite=%d)\n",
+                g_GameManager.currentStage, spriteIdx);
+            g_MultiEnemyNameDeferLogged = true;
+        }
         return;
     }
     if (g_MultiPlayerState.IsEnabled())
+    {
         g_MultiPendingEnemyNameSprite = -1;
+        g_MultiEnemyNameDeferLogged = false;
+    }
 #endif
 
     destRect.left = (i32)g_Gui.stageTextAnm->GetSprite(10)->startPixelInclusive.x;
