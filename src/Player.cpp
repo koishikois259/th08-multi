@@ -138,6 +138,20 @@ static bool ShouldShareP1PlayerAnm(Player *player)
            GetMultiPlayerShotType(&g_Player) == GetMultiPlayerShotType(&g_Player2);
 }
 
+static i32 GetOwnedMultiPlayerAnmSlot(Player *player)
+{
+    if (player == &g_Player)
+        return ANM_FILE_SLOT_PLAYER;
+
+    // P2 borrows slot 5 when both players selected the same team.  Only a P2
+    // whose ANM actually came from slot 25 owns a resource to release.
+    if (player == &g_Player2 &&
+        player->anmFile == g_AnmManager->GetAnm(ANM_FILE_SLOT_PLAYER_P2))
+        return ANM_FILE_SLOT_PLAYER_P2;
+
+    return -1;
+}
+
 #define MULTI_PLAYER_ANM_SLOT(player) GetMultiPlayerAnmSlot(player)
 #define MULTI_PLAYER_PRIMARY_SHT(player) ((player)->primaryShtFile)
 #define MULTI_PLAYER_SECONDARY_SHT(player) ((player)->secondaryShtFile)
@@ -2052,6 +2066,37 @@ ZunResult Player::AddedCallback(Player *player)
 // FUNCTION: th08 0x44dc60
 ZunResult Player::DeletedCallback(Player *player)
 {
+#ifdef TH08_MULTI
+    PlayerRawShtFile *primaryShtFile;
+    PlayerRawShtFile *secondaryShtFile;
+    i32 ownedAnmSlot;
+
+    if (IsBulletManagerAnmReleaseRequired())
+    {
+        ownedAnmSlot = GetOwnedMultiPlayerAnmSlot(player);
+        player->anmFile = NULL;
+        if (ownedAnmSlot >= 0)
+            g_AnmManager->ReleaseAnm(ownedAnmSlot);
+
+        g_AsciiManager.SetGaugeInterrupt(99);
+        g_AsciiManager.SetBossMarkerInterrupt(0, 99);
+        g_AsciiManager.SetBossMarkerInterrupt(1, 99);
+        g_AsciiManager.SetBossMarkerInterrupt(2, 99);
+
+        // Detach both owners before entering the allocator.  A repeated or
+        // nested deleted callback then observes an empty player instead of
+        // freeing the same SHT buffer again.
+        primaryShtFile = player->primaryShtFile;
+        secondaryShtFile = player->secondaryShtFile;
+        player->primaryShtFile = NULL;
+        player->secondaryShtFile = NULL;
+
+        if (primaryShtFile != NULL)
+            g_ZunMemory.Free(primaryShtFile);
+        if (secondaryShtFile != NULL && secondaryShtFile != primaryShtFile)
+            g_ZunMemory.Free(secondaryShtFile);
+    }
+#else
     if (IsBulletManagerAnmReleaseRequired())
     {
         g_AnmManager->ReleaseAnm(MULTI_PLAYER_ANM_SLOT(player));
@@ -2072,6 +2117,7 @@ ZunResult Player::DeletedCallback(Player *player)
             MULTI_PLAYER_SECONDARY_SHT(player) = NULL;
         }
     }
+#endif
 
     return ZUN_SUCCESS;
 }
@@ -2079,23 +2125,32 @@ ZunResult Player::DeletedCallback(Player *player)
 // FUNCTION: th08 0x44dd10
 void Player::CutChain()
 {
+#ifdef TH08_MULTI
+    g_Chain.Cut(g_Player.drawChainHighPrio);
+    g_Player.drawChainHighPrio = NULL;
+    g_Chain.Cut(g_Player.drawChainLowPrio);
+    g_Player.drawChainLowPrio = NULL;
+    g_Chain.Cut(g_Player.calcChain);
+    g_Player.calcChain = NULL;
+#else
     g_Chain.Cut(g_Player.calcChain);
     g_Player.calcChain = NULL;
     g_Chain.Cut(g_Player.drawChainHighPrio);
     g_Player.drawChainHighPrio = NULL;
     g_Chain.Cut(g_Player.drawChainLowPrio);
     g_Player.drawChainLowPrio = NULL;
+#endif
 }
 
 #ifdef TH08_MULTI
 void Player::CutSecondPlayerChain()
 {
-    g_Chain.Cut(g_Player2.calcChain);
-    g_Player2.calcChain = NULL;
     g_Chain.Cut(g_Player2.drawChainHighPrio);
     g_Player2.drawChainHighPrio = NULL;
     g_Chain.Cut(g_Player2.drawChainLowPrio);
     g_Player2.drawChainLowPrio = NULL;
+    g_Chain.Cut(g_Player2.calcChain);
+    g_Player2.calcChain = NULL;
 }
 #endif
 

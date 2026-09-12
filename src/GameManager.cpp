@@ -1318,14 +1318,17 @@ ZunResult GameManager::DeletedCallback(GameManager *gameManager)
     Spellcard::CutChain();
     Background::CutChain();
     BulletManager::CutChain();
-    Player::CutChain();
 #ifdef TH08_MULTI
     if (g_MultiPlayerState.IsEnabled())
     {
+        // P2 may borrow P1's immutable player ANM when both selected the same
+        // team.  Tear down the borrower first so slot 5 remains valid until no
+        // P2 draw or update chain can reference it.
         Player::CutSecondPlayerChain();
         g_MultiPlayerCoordinator.EndGameplay();
     }
 #endif
+    Player::CutChain();
     EnemyManager::CutChain();
     EffectManager::CutChain();
     Gui::CutChain();
