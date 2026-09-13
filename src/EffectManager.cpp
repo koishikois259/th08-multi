@@ -21,6 +21,35 @@ namespace th08
 ZunBool IsDisableResourceReload();
 
 #ifdef TH08_MULTI
+enum
+{
+    MULTI_RADIAL_TRAIL_MAX_SEGMENTS = 128,
+};
+
+static bool IsValidRadialTrailGeometry(const Effect *effect)
+{
+    return effect != NULL && effect->vertices != NULL &&
+           effect->vertexSegmentCount > 0 &&
+           effect->vertexSegmentCount <= MULTI_RADIAL_TRAIL_MAX_SEGMENTS;
+}
+
+static i32 RejectInvalidRadialTrailGeometry(Effect *effect,
+                                            const char *operation,
+                                            i32 segmentCount)
+{
+    g_GameErrorContext.Log(
+        "multi: rejected radial effect geometry stage=%d op=%s effect=%d segments=%d vertices=%p\n",
+        g_GameManager.currentStage, operation,
+        effect != NULL ? static_cast<i32>(effect->effectId) : -1,
+        segmentCount, effect != NULL ? effect->vertices : NULL);
+    if (effect != NULL)
+    {
+        effect->verticesDirty = 0;
+        effect->active = 0;
+    }
+    return 0;
+}
+
 static bool ShouldHideRemoteFocusEffect(Effect *effect)
 {
     MultiPlayerSlot owner;
@@ -966,6 +995,12 @@ i32 __fastcall DrawRadialTrail(Effect *effect)
     f32 angleStep;
     f32 radius;
 
+#ifdef TH08_MULTI
+    if (!IsValidRadialTrailGeometry(effect))
+        return RejectInvalidRadialTrailGeometry(
+            effect, "draw", effect != NULL ? effect->vertexSegmentCount : -1);
+#endif
+
     if (effect->verticesDirty)
     {
         angleStep = ZUN_2PI / effect->vertexSegmentCount;
@@ -1088,7 +1123,12 @@ i32 __fastcall DrawRadialTrail(Effect *effect)
 // FUNCTION: th08 0x427970
 i32 __fastcall InitializeAlternateLayerRadialTrail(Effect *effect)
 {
+#ifdef TH08_MULTI
+    if (InitializeRadialTrail(effect) != 0)
+        return -1;
+#else
     InitializeRadialTrail(effect);
+#endif
     effect->alternateDrawGroup = 1;
     return 0;
 }
@@ -1105,6 +1145,12 @@ i32 __fastcall SyncRadialTrailRadius(Effect *effect)
 // FUNCTION: th08 0x4279d0
 i32 __fastcall SyncRadialTrailShape(Effect *effect)
 {
+#ifdef TH08_MULTI
+    if (effect->vm.intVar0 <= 0 ||
+        effect->vm.intVar0 > MULTI_RADIAL_TRAIL_MAX_SEGMENTS)
+        return RejectInvalidRadialTrailGeometry(
+            effect, "sync-shape", effect->vm.intVar0);
+#endif
     effect->vertexSegmentCount = effect->vm.intVar0;
     effect->radialWaveCount = (f32)effect->vm.intVar1;
     effect->shapeThickness = effect->vm.scale.x;
@@ -1145,6 +1191,12 @@ i32 __fastcall UpdateFadingRadialTrail(Effect *effect)
 // FUNCTION: th08 0x427b50
 i32 __fastcall SyncAnchoredRadialTrail(Effect *effect)
 {
+#ifdef TH08_MULTI
+    if (effect->vm.intVar0 <= 0 ||
+        effect->vm.intVar0 > MULTI_RADIAL_TRAIL_MAX_SEGMENTS)
+        return RejectInvalidRadialTrailGeometry(
+            effect, "sync-anchored", effect->vm.intVar0);
+#endif
     effect->vertexSegmentCount = effect->vm.intVar0;
     effect->radialWaveCount = (f32)effect->vm.intVar1;
     effect->shapeThickness = effect->vm.scale.x;
