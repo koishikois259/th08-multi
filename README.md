@@ -93,7 +93,7 @@ Connection addresses, public IP addresses, and tunnel ports may also constitute 
 - Fixed lingering portrait trail artifacts during dialogue scenes in Stages 4, 5, 6, and Extra, including dialogue between Spell Cards.
 - Strengthened ownership and cleanup handling for dialogue portraits, ANM resources, P1/P2 resources, child ECL resources, and stage-transition resources, reducing the risk of crashes caused by dangling pointers or double-free conditions during dialogue or stage transitions in the later stages.
 
-##7. Source Code, License, and Credits
+## 7. Source Code, License, and Credits
 
 The project source code is released under the MIT License contained in the repository root LICENSE file.
 
