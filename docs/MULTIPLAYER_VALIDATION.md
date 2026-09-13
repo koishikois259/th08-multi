@@ -74,7 +74,7 @@ Use [the manual network testing guide](MULTIPLAYER_TESTING.md) and the bundled
   `playing (P1 team 0 / P2 team 0 / delay 3)` on both processes.
 - The v0.32 six-file patch archive includes the GitHub source and release URLs
   in its README and has SHA-256
-  `b3bfd7be8ceda9d61d2d93515ff573b9a92e26d74dc39e529d15672e1ff49271`.
+  `e5f898bbb829eda54603e5130aa17bae88dac140689b4d958baac6216a9a0267`.
 - Installation into the verified `th08-origin` directory preserved the original
   `th08.exe` hash, all installed payload hashes matched, and the installed
   launcher remained alive during its startup smoke test.

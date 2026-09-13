@@ -107,7 +107,16 @@ v0.32 主要修复：
 - th06_multi_net：https://github.com/RUEEE/th06_multi_net
 - Microsoft Detours：https://github.com/microsoft/Detours
 
-感谢原项目作者、历史贡献者及测试人员。各第三方项目仍适用其各自许可证。
+感谢原项目作者、历史贡献者及测试人员。
+
+特别感谢以下合作者参与开发与测试：
+- HDZsuper：https://github.com/HDZsuper
+- nmmuwu：https://github.com/nmmuwu
+
+他们在测试和开发方面提供的帮助改善了本版本的稳定性与完整性。各第三方
+项目仍适用其各自许可证。
+
+本项目的部分开发、调试和代码审查工作由 OpenAI Codex 协助完成。
 
 八、问题与安全报告
 ------------------
