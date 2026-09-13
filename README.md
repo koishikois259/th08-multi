@@ -128,6 +128,8 @@ Their assistance with testing and development contributed to the improvement and
 
 Each third-party project remains subject to its own respective license.
 
+Parts of the development, debugging, and code review process were assisted by OpenAI Codex.
+
 ## 8. Bug Reports and Security Reports
 
 General bugs may be reported through GitHub Issues.
