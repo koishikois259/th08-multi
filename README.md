@@ -93,26 +93,38 @@ Connection addresses, public IP addresses, and tunnel ports may also constitute 
 - Fixed lingering portrait trail artifacts during dialogue scenes in Stages 4, 5, 6, and Extra, including dialogue between Spell Cards.
 - Strengthened ownership and cleanup handling for dialogue portraits, ANM resources, P1/P2 resources, child ECL resources, and stage-transition resources, reducing the risk of crashes caused by dangling pointers or double-free conditions during dialogue or stage transitions in the later stages.
 
-## 7. Source Code, License, and Credits
+##7. Source Code, License, and Credits
 
-The project source code is released under the MIT License contained in the repository root `LICENSE` file.
+The project source code is released under the MIT License contained in the repository root LICENSE file.
 
 The MIT License applies only to source code and modifications that the project contributors have the legal right to license. It does not apply to Touhou Project original content, original game files, or any other third-party materials.
 
-The patch includes `th08-multi-LICENSE.txt`.
+The patch includes th08-multi-LICENSE.txt.
 
 When copying, modifying, or redistributing the source code, the applicable license and copyright notices must be retained.
 
 This project is based on or references the following publicly available projects and designs:
 
-- TH08 source reconstruction:  
-  https://github.com/N0zoM1z0/th08
-- `th06_multi_net`:  
-  https://github.com/RUEEE/th06_multi_net
-- Microsoft Detours:  
-  https://github.com/microsoft/Detours
+TH08 source reconstruction:
+https://github.com/N0zoM1z0/th08
+
+th06_multi_net:
+https://github.com/RUEEE/th06_multi_net
+
+Microsoft Detours:
+https://github.com/microsoft/Detours
 
 Thanks to the authors of the original projects, historical contributors, and testers.
+
+Special thanks to the following contributors for helping with development and testing:
+
+HDZsuper
+https://github.com/HDZsuper
+
+nmmuwu
+https://github.com/nmmuwu
+
+Their assistance with testing and development contributed to the improvement and stability of this release.
 
 Each third-party project remains subject to its own respective license.
 
