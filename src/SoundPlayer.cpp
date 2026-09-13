@@ -37,6 +37,15 @@ DIFFABLE_STATIC_ARRAY_ASSIGN(char *, 36, g_SFXList) = {
 };
 DIFFABLE_STATIC(SoundPlayer, g_SoundPlayer)
 
+#ifdef TH08_MULTI
+static bool IsValidSoundIndex(i32 soundIndex)
+{
+    return soundIndex >= 0 &&
+           soundIndex < ARRAY_SIZE_SIGNED(g_SoundBufferIdxVol) &&
+           soundIndex < NUM_SOUND_BUFFERS;
+}
+#endif
+
 #pragma var_order(bufDesc, audioBuffer2Start, audioBuffer2Len, audioBuffer1Len, audioBuffer1Start, wavFormat)
 ZunResult SoundPlayer::InitializeDSound(HWND gameWindow)
 {
@@ -464,6 +473,9 @@ ZunResult SoundPlayer::InitSoundBuffers()
     for (i = 0; i < SFX_QUEUE_LENGTH; i++)
     {
         this->soundQueue[i] = -1;
+#ifdef TH08_MULTI
+        this->soundQueueRequestCounts[i] = 0;
+#endif
     }
     for (i = 0; i < ARRAY_SIZE_SIGNED(g_SFXList); i++)
     {
@@ -475,8 +487,21 @@ ZunResult SoundPlayer::InitSoundBuffers()
     }
     for (i = 0; i < ARRAY_SIZE(g_SoundBufferIdxVol); i++)
     {
+#ifdef TH08_MULTI
+        HRESULT duplicateResult = this->dsoundHdl->DuplicateSoundBuffer(
+            this->soundBuffers[g_SoundBufferIdxVol[i].bufferIdx],
+            &this->duplicateSoundBuffers[i]);
+        if (FAILED(duplicateResult) || this->duplicateSoundBuffers[i] == NULL)
+        {
+            g_GameErrorContext.Log(
+                "multi: failed to duplicate sound buffer index=%d hr=%08x\n",
+                i, duplicateResult);
+            return ZUN_ERROR;
+        }
+#else
         this->dsoundHdl->DuplicateSoundBuffer(this->soundBuffers[g_SoundBufferIdxVol[i].bufferIdx],
                                               &this->duplicateSoundBuffers[i]);
+#endif
         this->duplicateSoundBuffers[i]->SetCurrentPosition(0);
         this->duplicateSoundBuffers[i]->SetVolume(g_SoundBufferIdxVol[i].volume);
     }
@@ -489,6 +514,14 @@ void SoundPlayer::PlaySoundByIdx(SoundIdx idx, i32 pan)
     i32 unconsumedMetadata;
     i32 i;
 
+#ifdef TH08_MULTI
+    if (!IsValidSoundIndex(static_cast<i32>(idx)))
+    {
+        g_GameErrorContext.Log(
+            "multi: rejected invalid sound index=%d\n", static_cast<i32>(idx));
+        return;
+    }
+#endif
     unconsumedMetadata = g_SoundBufferIdxVol[idx].unconsumedMetadata;
     for (i = 0; i < SFX_QUEUE_LENGTH; i++)
     {
@@ -497,6 +530,10 @@ void SoundPlayer::PlaySoundByIdx(SoundIdx idx, i32 pan)
 
         if (this->soundQueue[i] == idx)
         {
+#ifdef TH08_MULTI
+            if (this->soundQueueRequestCounts[i] < 0)
+                this->soundQueueRequestCounts[i] = 0;
+#endif
             if (this->soundQueueRequestCounts[i] < 0x80)
                 this->soundQueuePanData[i][this->soundQueueRequestCounts[i]++] = pan;
 
@@ -510,7 +547,11 @@ void SoundPlayer::PlaySoundByIdx(SoundIdx idx, i32 pan)
     this->soundQueue[i] = idx;
     this->unconsumedMetadataBySound[idx] = unconsumedMetadata;
     this->soundQueuePanData[i][0] = pan;
+#ifdef TH08_MULTI
+    this->soundQueueRequestCounts[i] = 1;
+#else
     this->soundQueueRequestCounts[i]++;
+#endif
 }
 
 void SoundPlayer::PlaySoundPositionedByIdx(SoundIdx idx, f32 pan)
@@ -519,6 +560,15 @@ void SoundPlayer::PlaySoundPositionedByIdx(SoundIdx idx, f32 pan)
     i32 panAsInt;
     i32 i;
 
+#ifdef TH08_MULTI
+    if (!IsValidSoundIndex(static_cast<i32>(idx)))
+    {
+        g_GameErrorContext.Log(
+            "multi: rejected invalid positioned sound index=%d\n",
+            static_cast<i32>(idx));
+        return;
+    }
+#endif
     unconsumedMetadata = g_SoundBufferIdxVol[idx].unconsumedMetadata;
     panAsInt = ((pan - 192) * 1000) / 192;
 
@@ -529,6 +579,10 @@ void SoundPlayer::PlaySoundPositionedByIdx(SoundIdx idx, f32 pan)
 
         if (this->soundQueue[i] == idx)
         {
+#ifdef TH08_MULTI
+            if (this->soundQueueRequestCounts[i] < 0)
+                this->soundQueueRequestCounts[i] = 0;
+#endif
             if (this->soundQueueRequestCounts[i] < 0x80)
                 this->soundQueuePanData[i][this->soundQueueRequestCounts[i]++] = panAsInt;
 
@@ -542,7 +596,11 @@ void SoundPlayer::PlaySoundPositionedByIdx(SoundIdx idx, f32 pan)
     this->soundQueue[i] = idx;
     this->unconsumedMetadataBySound[idx] = unconsumedMetadata;
     this->soundQueuePanData[i][0] = panAsInt;
+#ifdef TH08_MULTI
+    this->soundQueueRequestCounts[i] = 1;
+#else
     this->soundQueueRequestCounts[i]++;
+#endif
 }
 
 #pragma var_order(restartCommandProcessing, averagedPan, i, commandCursor, soundIndex, j, preloadBuffer, bgmPath,     \
@@ -558,6 +616,9 @@ i32 SoundPlayer::ProcessQueues()
     i32 i;
     i32 j;
     i32 soundIndex;
+#ifdef TH08_MULTI
+    i32 soundRequestCount;
+#endif
     i32 averagedPan;
     f32 volumeScale;
 
@@ -814,6 +875,18 @@ loop:
         soundIndex = soundQueue[i];
         soundQueue[i] = -1;
 
+#ifdef TH08_MULTI
+        soundRequestCount = this->soundQueueRequestCounts[i];
+        this->soundQueueRequestCounts[i] = 0;
+        if (!IsValidSoundIndex(soundIndex) ||
+            soundRequestCount <= 0 || soundRequestCount > 0x80)
+        {
+            g_GameErrorContext.Log(
+                "multi: rejected corrupt sound queue slot=%d index=%d count=%d\n",
+                i, soundIndex, soundRequestCount);
+            continue;
+        }
+#else
         averagedPan = 0;
         for (j = 0; j < this->soundQueueRequestCounts[i]; j++)
         {
@@ -821,6 +894,15 @@ loop:
         }
         averagedPan /= this->soundQueueRequestCounts[i];
         this->soundQueueRequestCounts[i] = 0;
+#endif
+#ifdef TH08_MULTI
+        averagedPan = 0;
+        for (j = 0; j < soundRequestCount; j++)
+        {
+            averagedPan += this->soundQueuePanData[i][j];
+        }
+        averagedPan /= soundRequestCount;
+#endif
         if (this->duplicateSoundBuffers[soundIndex] == NULL)
         {
             continue;
