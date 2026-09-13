@@ -347,7 +347,7 @@ i32 EnemyManager::OnUpdate()
                 *D3DXVECTOR3_PTR(&enemy->worldPosition);
         }
 
-        if (enemy->trailFlags)
+        if (enemy->trailFlags && enemy->ValidateTrailState("update"))
         {
             for (trailIndex = enemy->trailHistoryLength - 1;
                  trailIndex > 0; --trailIndex)

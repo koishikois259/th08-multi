@@ -1020,6 +1020,10 @@ enter_subroutine:
         TH08_ECL_CONTEXT_ENEMY(ctx)->trailSampleStride =
             (u16)TH08_ECL_READ_I_FIELD(
                 ctx, TrailInstructionArgs, sampleStride);
+#ifdef TH08_MULTI
+        if (!TH08_ECL_CONTEXT_ENEMY(ctx)->ValidateTrailState("set-trail"))
+            break;
+#endif
         if (TH08_ECL_CONTEXT_ENEMY(ctx)->trailFlags & ENEMY_TRAIL_RENDER_AS_STRIP)
             g_AnmManager->InitializeHorizontalTextureStrip(
                 &TH08_ECL_CONTEXT_ENEMY(ctx)->vm,

@@ -214,6 +214,41 @@ EnemyEclInterpolationSlot::EnemyEclInterpolationSlot() {}
 // FUNCTION: th08 0x42a820
 #pragma var_order(i, this)
 #ifdef TH08_MULTI
+bool Enemy::ValidateTrailState(const char *operation)
+{
+    i32 historyCapacity = ARRAY_SIZE_SIGNED(this->trailSamples);
+    i32 vertexCapacity = ARRAY_SIZE_SIGNED(this->trailVertices);
+    i32 stripVertexCount;
+
+    if (this->trailFlags == 0)
+        return true;
+
+    if (this->trailHistoryLength > 0 &&
+        this->trailHistoryLength <= historyCapacity &&
+        this->trailCollisionLength >= 0 &&
+        this->trailCollisionLength <= this->trailHistoryLength &&
+        this->trailSampleStride > 0 &&
+        this->trailSampleStride <= this->trailHistoryLength)
+    {
+        stripVertexCount =
+            (this->trailHistoryLength / this->trailSampleStride) << 1;
+        if ((this->trailFlags & ENEMY_TRAIL_RENDER_AS_STRIP) == 0 ||
+            stripVertexCount <= vertexCapacity)
+            return true;
+    }
+
+    g_GameErrorContext.Log(
+        "multi: disabled invalid enemy trail stage=%d operation=%s flags=%d history=%d collision=%d stride=%d\n",
+        g_GameManager.currentStage, operation, this->trailFlags,
+        this->trailHistoryLength, this->trailCollisionLength,
+        this->trailSampleStride);
+    this->trailFlags = 0;
+    this->trailHistoryLength = 0;
+    this->trailCollisionLength = 0;
+    this->trailSampleStride = 1;
+    return false;
+}
+
 static i32 GetSafeAttachedEffectCount(Enemy *enemy, const char *operation)
 {
     i32 count = enemy->attachedEffectCount;
@@ -1268,7 +1303,7 @@ ChainCallbackResult __fastcall EnemyManager::OnDrawImpl(i32 drawGroup, i32 chain
             enemy->vm.pos.y += g_GameManager.arcadeRegionTopLeftPos.y;
             enemy->vm.pos.z = 0.25f;
 
-            if (enemy->trailFlags)
+            if (enemy->trailFlags && enemy->ValidateTrailState("draw"))
             {
                 *reinterpret_cast<Float2 *>(&savedScaleX) = enemy->vm.scale;
                 savedColor = enemy->vm.color1.d3dColor;
@@ -1714,7 +1749,8 @@ i32 EnemyManager::KillAllNonBossEnemies(i32 maxScore, i32 initialScore)
                 score = maxScore;
             }
 
-            if (enemy->trailFlags != 0)
+            if (enemy->trailFlags != 0 &&
+                enemy->ValidateTrailState("drop-items"))
             {
                 for (itemIndex = 0; itemIndex < enemy->trailHistoryLength; itemIndex += 6)
                 {

@@ -339,6 +339,7 @@ struct Enemy
     void UpdateShotAndAnm();
 #ifdef TH08_MULTI
     bool ReleaseChildEclBlock(i32 slot);
+    bool ValidateTrailState(const char *operation);
 #endif
     void ReleaseChildEclBlocks();
     void ResetBulletRankInfluence();
