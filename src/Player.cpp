@@ -2279,7 +2279,7 @@ ZunResult Player::LoadShtFile(PlayerRawShtFile **header, const char *path)
         descriptorOffset = reinterpret_cast<u32>(
             (*header)->shotPowerLevels[i].descriptors);
         if (descriptorOffset >
-            static_cast<u32>(fileSize) - sizeof(PlayerShotDescriptor))
+            static_cast<u32>(fileSize) - sizeof(descriptor->fireInterval))
             goto invalidSht;
 
         descriptor = reinterpret_cast<PlayerShotDescriptor *>(
@@ -2290,10 +2290,13 @@ ZunResult Player::LoadShtFile(PlayerRawShtFile **header, const char *path)
         {
             if (reinterpret_cast<u8 *>(descriptor) < fileBegin ||
                 reinterpret_cast<u8 *>(descriptor) >
-                    fileEnd - sizeof(PlayerShotDescriptor))
+                    fileEnd - sizeof(descriptor->fireInterval))
                 goto invalidSht;
             if (descriptor->fireInterval < 0)
                 break;
+            if (reinterpret_cast<u8 *>(descriptor) >
+                fileEnd - sizeof(PlayerShotDescriptor))
+                goto invalidSht;
 
             spawnIndex = reinterpret_cast<u32>(descriptor->spawnCallback);
             updateIndex = reinterpret_cast<u32>(descriptor->updateCallback);

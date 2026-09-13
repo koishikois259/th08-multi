@@ -69,10 +69,12 @@ Use [the manual network testing guide](MULTIPLAYER_TESTING.md) and the bundled
   data in the patch archive.
 - The launcher process remained alive during its startup smoke test.
 - Fresh copies placed in the local Host/Guest fixtures connected successfully;
-  both window titles reported `connected (select teams in game / delay 3)`.
+  both window titles reported `connected (select teams in game / delay 3)`,
+  then a v0.32 same-team smoke run reached
+  `playing (P1 team 0 / P2 team 0 / delay 3)` on both processes.
 - The v0.32 six-file patch archive includes the GitHub source and release URLs
   in its README and has SHA-256
-  `80fa8fd5331834a5ba68e66230e77f6598c744b27af99d362638104fa14b29db`.
+  `b3bfd7be8ceda9d61d2d93515ff573b9a92e26d74dc39e529d15672e1ff49271`.
 - Installation into the verified `th08-origin` directory preserved the original
   `th08.exe` hash, all installed payload hashes matched, and the installed
   launcher remained alive during its startup smoke test.

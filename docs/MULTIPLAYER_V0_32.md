@@ -33,6 +33,10 @@ The VC7 multiplayer build and focused state, network, relocation-literal, and
 semantic-protocol tests pass. The original non-multiplayer Player translation
 unit also compiles with all v0.32 behavior excluded by `TH08_MULTI`.
 
+A local two-process Host/Guest smoke run connected at input delay 3, selected
+Border Team for both players, initialized both SHT files, and reached the
+`playing (P1 team 0 / P2 team 0 / delay 3)` state without an SHT rejection.
+
 The supplied dump identifies the final invalid heap operation, not the earlier
 write that damaged the heap. These guards cover the highest-risk candidates but
 do not prove the remote crash closed; that requires a sustained two-PC run
