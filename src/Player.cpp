@@ -375,6 +375,93 @@ DIFFABLE_STATIC_ARRAY_ASSIGN(PlayerShotCollisionCallback, 3,
                              g_PlayerShotCollisionCallbacks) = {
     NULL, ApplyShotHitBehavior, SpawnPeriodicShotHitEffect};
 
+#ifdef TH08_MULTI
+static bool IsKnownMultiShotSpawnCallback(PlayerShotSpawnCallback callback)
+{
+    i32 i;
+    for (i = 0; i < ARRAY_SIZE_SIGNED(g_PlayerShotSpawnCallbacks); ++i)
+        if (callback == g_PlayerShotSpawnCallbacks[i])
+            return true;
+    return false;
+}
+
+static bool IsKnownMultiShotUpdateCallback(PlayerShotUpdateCallback callback)
+{
+    i32 i;
+    for (i = 0; i < ARRAY_SIZE_SIGNED(g_PlayerShotUpdateCallbacks); ++i)
+        if (callback == g_PlayerShotUpdateCallbacks[i])
+            return true;
+    return false;
+}
+
+static bool IsKnownMultiShotDrawCallback(PlayerShotDrawCallback callback)
+{
+    i32 i;
+    for (i = 0; i < ARRAY_SIZE_SIGNED(g_PlayerShotDrawCallbacks); ++i)
+        if (callback == g_PlayerShotDrawCallbacks[i])
+            return true;
+    return false;
+}
+
+static bool IsKnownMultiShotCollisionCallback(
+    PlayerShotCollisionCallback callback)
+{
+    i32 i;
+    for (i = 0; i < ARRAY_SIZE_SIGNED(g_PlayerShotCollisionCallbacks); ++i)
+        if (callback == g_PlayerShotCollisionCallbacks[i])
+            return true;
+    return false;
+}
+
+static bool ValidateMultiShotDescriptor(
+    const PlayerShotDescriptor *descriptor, const char *operation)
+{
+    if (descriptor->fireInterval > 0 &&
+        descriptor->sourceOptionIndex >= 0 &&
+        descriptor->sourceOptionIndex <= 4 &&
+        IsKnownMultiShotSpawnCallback(descriptor->spawnCallback) &&
+        IsKnownMultiShotUpdateCallback(descriptor->updateCallback) &&
+        IsKnownMultiShotDrawCallback(descriptor->drawCallback) &&
+        IsKnownMultiShotCollisionCallback(descriptor->collisionCallback))
+        return true;
+
+    g_GameErrorContext.Log(
+        "multi: rejected shot descriptor stage=%d operation=%s interval=%d option=%d\n",
+        g_GameManager.currentStage, operation, descriptor->fireInterval,
+        descriptor->sourceOptionIndex);
+    return false;
+}
+
+static bool ValidateMultiShotTimelineIndex(
+    const Player *player, const PlayerShot *shot, const char *operation)
+{
+    if (shot->timelineIndex >= 0 &&
+        shot->timelineIndex < ARRAY_SIZE_SIGNED(player->timelines))
+        return true;
+
+    g_GameErrorContext.Log(
+        "multi: rejected shot timeline stage=%d operation=%s index=%d count=%d\n",
+        g_GameManager.currentStage, operation, shot->timelineIndex,
+        ARRAY_SIZE_SIGNED(player->timelines));
+    return false;
+}
+
+static bool ValidateMultiShotTrail(
+    const PlayerShot *shot, const char *operation)
+{
+    i32 capacity = ARRAY_SIZE_SIGNED(shot->positionHistory) / 2;
+    if (shot->trailSegmentCount > 0 &&
+        shot->trailSegmentCount <= capacity)
+        return true;
+
+    g_GameErrorContext.Log(
+        "multi: rejected shot trail stage=%d operation=%s segments=%d capacity=%d\n",
+        g_GameManager.currentStage, operation, shot->trailSegmentCount,
+        capacity);
+    return false;
+}
+#endif
+
 ZunBool IsResourceReloadDisabled();
 void __fastcall PlayerBuildAabb(Float3 *topLeft, Float3 *bottomRight,
                                 const Float3 *center, const Float3 *size);
@@ -2160,6 +2247,93 @@ ZunResult Player::LoadShtFile(PlayerRawShtFile **header, const char *path)
 {
     i32 i;
     PlayerShotDescriptor *descriptor;
+#ifdef TH08_MULTI
+    i32 fileSize;
+    u32 descriptorOffset;
+    u32 spawnIndex;
+    u32 updateIndex;
+    u32 drawIndex;
+    u32 collisionIndex;
+    u8 *fileBegin;
+    u8 *fileEnd;
+
+    *header = reinterpret_cast<PlayerRawShtFile *>(
+        FileSystem::OpenFile(path, &fileSize, 0));
+    if (*header == NULL)
+    {
+        return ZUN_ERROR;
+    }
+
+    fileBegin = reinterpret_cast<u8 *>(*header);
+    if (fileSize < static_cast<i32>(
+                       offsetof(PlayerRawShtFile, shotPowerLevels)) ||
+        (*header)->shotPowerLevelCount == 0 ||
+        (*header)->shotPowerLevelCount >
+            (fileSize - offsetof(PlayerRawShtFile, shotPowerLevels)) /
+                sizeof(PlayerShotPowerLevel))
+        goto invalidSht;
+    fileEnd = fileBegin + fileSize;
+
+    for (i = 0; i < (*header)->shotPowerLevelCount; i++)
+    {
+        descriptorOffset = reinterpret_cast<u32>(
+            (*header)->shotPowerLevels[i].descriptors);
+        if (descriptorOffset >
+            static_cast<u32>(fileSize) - sizeof(PlayerShotDescriptor))
+            goto invalidSht;
+
+        descriptor = reinterpret_cast<PlayerShotDescriptor *>(
+            fileBegin + descriptorOffset);
+        (*header)->shotPowerLevels[i].descriptors = descriptor;
+
+        while (true)
+        {
+            if (reinterpret_cast<u8 *>(descriptor) < fileBegin ||
+                reinterpret_cast<u8 *>(descriptor) >
+                    fileEnd - sizeof(PlayerShotDescriptor))
+                goto invalidSht;
+            if (descriptor->fireInterval < 0)
+                break;
+
+            spawnIndex = reinterpret_cast<u32>(descriptor->spawnCallback);
+            updateIndex = reinterpret_cast<u32>(descriptor->updateCallback);
+            drawIndex = reinterpret_cast<u32>(descriptor->drawCallback);
+            collisionIndex = reinterpret_cast<u32>(
+                descriptor->collisionCallback);
+            if (descriptor->fireInterval == 0 ||
+                descriptor->sourceOptionIndex < 0 ||
+                descriptor->sourceOptionIndex > 4 ||
+                spawnIndex >= ARRAY_SIZE(g_PlayerShotSpawnCallbacks) ||
+                updateIndex >= ARRAY_SIZE(g_PlayerShotUpdateCallbacks) ||
+                drawIndex >= ARRAY_SIZE(g_PlayerShotDrawCallbacks) ||
+                collisionIndex >=
+                    ARRAY_SIZE(g_PlayerShotCollisionCallbacks) ||
+                ((updateIndex == 5 || drawIndex == 1) &&
+                 descriptor->fireInterval > 16))
+                goto invalidSht;
+
+            descriptor->spawnCallback =
+                g_PlayerShotSpawnCallbacks[spawnIndex];
+            descriptor->updateCallback =
+                g_PlayerShotUpdateCallbacks[updateIndex];
+            descriptor->drawCallback =
+                g_PlayerShotDrawCallbacks[drawIndex];
+            descriptor->collisionCallback =
+                g_PlayerShotCollisionCallbacks[collisionIndex];
+            descriptor++;
+        }
+    }
+
+    return ZUN_SUCCESS;
+
+invalidSht:
+    g_GameErrorContext.Log(
+        "multi: rejected invalid SHT file path=%s size=%d power-levels=%d\n",
+        path, fileSize, (*header)->shotPowerLevelCount);
+    g_ZunMemory.Free(*header);
+    *header = NULL;
+    return ZUN_ERROR;
+#else
 
     *header = reinterpret_cast<PlayerRawShtFile *>(FileSystem::OpenFile(path, NULL, 0));
     if (*header == NULL)
@@ -2190,6 +2364,7 @@ ZunResult Player::LoadShtFile(PlayerRawShtFile **header, const char *path)
     }
 
     return ZUN_SUCCESS;
+#endif
 }
 
 #pragma var_order(slot, index)
@@ -3010,6 +3185,16 @@ i32 __fastcall UpdateTwinOrbitingOption(Player *player, PlayerOptionState *optio
 // FUNCTION: th08 0x44fb70
 void __fastcall Player::InitializeShot(PlayerShot *slot, PlayerShotDescriptor *entry)
 {
+#ifdef TH08_MULTI
+    if (entry->sourceOptionIndex < 0 || entry->sourceOptionIndex > 4)
+    {
+        g_GameErrorContext.Log(
+            "multi: repaired shot option index stage=%d index=%d count=4\n",
+            g_GameManager.currentStage, entry->sourceOptionIndex);
+        slot->position = this->position;
+    }
+    else
+#endif
     if (entry->sourceOptionIndex == 0)
     {
         slot->position = this->position;
@@ -3102,6 +3287,25 @@ i32 __fastcall Player::SpawnPersistentShot(PlayerShot *slot, i32 value,
     {
         return 0;
     }
+#ifdef TH08_MULTI
+    if (index < 0 || index >= ARRAY_SIZE_SIGNED(this->timelines))
+    {
+        g_GameErrorContext.Log(
+            "multi: rejected persistent shot timeline stage=%d index=%d count=%d\n",
+            g_GameManager.currentStage, index,
+            ARRAY_SIZE_SIGNED(this->timelines));
+        return 0;
+    }
+    if ((entry->updateCallback == UpdateShotTrail ||
+         entry->drawCallback == DrawShotTrail) &&
+        (entry->fireInterval <= 0 || entry->fireInterval > 16))
+    {
+        g_GameErrorContext.Log(
+            "multi: rejected persistent shot trail stage=%d segments=%d capacity=16\n",
+            g_GameManager.currentStage, entry->fireInterval);
+        return 0;
+    }
+#endif
 
     if (this->timelines[index].instruction != NULL)
     {
@@ -3289,6 +3493,14 @@ i32 __fastcall UpdateFallingShot(Player *player, PlayerShot *slot)
 // FUNCTION: th08 0x004505d0
 i32 __fastcall UpdatePersistentShot(Player *player, PlayerShot *slot)
 {
+#ifdef TH08_MULTI
+    if (!ValidateMultiShotTimelineIndex(player, slot, "persistent-update"))
+    {
+        slot->state = PLAYER_SHOT_INACTIVE;
+        slot->updateCallback = NULL;
+        return 1;
+    }
+#endif
     if (player->timelines[slot->timelineIndex].instruction !=
         reinterpret_cast<EclTimelineInstruction *>(slot))
     {
@@ -3335,6 +3547,16 @@ i32 __fastcall UpdateShotTrail(Player *player, PlayerShot *slot)
 {
     PlayerCollisionRegion *damageSlot;
     i32 i;
+#ifdef TH08_MULTI
+    if (!ValidateMultiShotTimelineIndex(player, slot, "trail-update") ||
+        !ValidateMultiShotTrail(slot, "trail-update"))
+    {
+        slot->state = PLAYER_SHOT_INACTIVE;
+        slot->updateCallback = NULL;
+        slot->drawCallback = NULL;
+        return 1;
+    }
+#endif
     if (player->timelines[slot->timelineIndex].instruction !=
             reinterpret_cast<EclTimelineInstruction *>(slot) ||
         g_Gui.IsDialoguePresent() ||
@@ -3388,6 +3610,14 @@ i32 __fastcall DrawShotTrail(Player *player, PlayerShot *slot)
     i32 color;
     i32 i;
     i32 originalColor;
+#ifdef TH08_MULTI
+    if (!ValidateMultiShotTrail(slot, "trail-draw"))
+    {
+        slot->state = PLAYER_SHOT_INACTIVE;
+        slot->drawCallback = NULL;
+        return 1;
+    }
+#endif
 
     color = slot->vm.color1.a;
     originalColor = color;
@@ -3474,10 +3704,27 @@ void __fastcall Player::SpawnShots(i32 value)
     PlayerShot *slot;
     i32 result;
     i32 i;
+#ifdef TH08_MULTI
+    PlayerRawShtFile *shtFile;
+    i32 powerLevelIndex;
 
+    shtFile = (this->focusMode == PLAYER_FOCUS_MODE_UNFOCUSED)
+                  ? this->primaryShtFile
+                  : this->secondaryShtFile;
+    if (shtFile == NULL || shtFile->shotPowerLevelCount == 0)
+    {
+        g_GameErrorContext.Log(
+            "multi: rejected missing SHT power table stage=%d\n",
+            g_GameManager.currentStage);
+        return;
+    }
+    table = shtFile->shotPowerLevels;
+    powerLevelIndex = 0;
+#else
     table = (this->focusMode == PLAYER_FOCUS_MODE_UNFOCUSED)
                 ? this->primaryShtFile->shotPowerLevels
                 : this->secondaryShtFile->shotPowerLevels;
+#endif
 
     if (this->bombState.isInUse != 0 &&
         ((MULTI_PLAYER_SHOT_TYPE(this) == 2 &&
@@ -3485,14 +3732,36 @@ void __fastcall Player::SpawnShots(i32 value)
          MULTI_PLAYER_SHOT_TYPE(this) == 9) &&
         this->bombState.timer >= 60)
     {
+#ifdef TH08_MULTI
+        powerLevelIndex = (this->bombState.callbackVariant & 2) ? 7 : 6;
+        if (powerLevelIndex >= shtFile->shotPowerLevelCount)
+        {
+            g_GameErrorContext.Log(
+                "multi: rejected SHT bomb power index stage=%d index=%d count=%d\n",
+                g_GameManager.currentStage, powerLevelIndex,
+                shtFile->shotPowerLevelCount);
+            return;
+        }
+        table += powerLevelIndex;
+#else
         table += ((this->bombState.callbackVariant & 2) ? 7 : 6);
+#endif
     }
     else
     {
+#ifdef TH08_MULTI
+        while (powerLevelIndex + 1 < shtFile->shotPowerLevelCount &&
+               MULTI_PLAYER_GET_POWER(this) >= table->minimumPower)
+        {
+            table++;
+            powerLevelIndex++;
+        }
+#else
         while (MULTI_PLAYER_GET_POWER(this) >= table->minimumPower)
         {
             table++;
         }
+#endif
     }
 
     entry = table->descriptors;
@@ -3505,6 +3774,10 @@ void __fastcall Player::SpawnShots(i32 value)
         }
 
 processEntry:
+#ifdef TH08_MULTI
+        if (!ValidateMultiShotDescriptor(entry, "spawn"))
+            return;
+#endif
         if (entry->spawnCallback != NULL)
         {
             result = entry->spawnCallback(this, slot, value, entry);
@@ -3558,6 +3831,17 @@ void Player::UpdateShots()
 
         if (slot->updateCallback != NULL)
         {
+#ifdef TH08_MULTI
+            if (!IsKnownMultiShotUpdateCallback(slot->updateCallback))
+            {
+                g_GameErrorContext.Log(
+                    "multi: rejected shot update callback stage=%d slot=%d\n",
+                    g_GameManager.currentStage, i);
+                slot->state = PLAYER_SHOT_INACTIVE;
+                slot->updateCallback = NULL;
+                continue;
+            }
+#endif
             if (slot->updateCallback(this, slot) != 0)
             {
                 slot->state = PLAYER_SHOT_INACTIVE;
@@ -3619,6 +3903,17 @@ void Player::DrawActiveShots()
         g_AnmManager->Draw2D(&slot->vm);
         if (slot->drawCallback != NULL)
         {
+#ifdef TH08_MULTI
+            if (!IsKnownMultiShotDrawCallback(slot->drawCallback))
+            {
+                g_GameErrorContext.Log(
+                    "multi: rejected shot draw callback stage=%d slot=%d\n",
+                    g_GameManager.currentStage, i);
+                slot->state = PLAYER_SHOT_INACTIVE;
+                slot->drawCallback = NULL;
+                continue;
+            }
+#endif
             slot->drawCallback(this, slot);
         }
     }
@@ -3752,7 +4047,20 @@ i32 Player::CalcDamageToEnemy(Float3 *enemyPosition, Float3 *enemySize, i32 *hit
 
         if ((bullet->shotType == 4 || bullet->shotType == 5) && (bullet->timer % 2) != 0)
             continue;
-        if (bullet->collisionCallback != NULL && bullet->collisionCallback(this, bullet, enemyPosition))
+        if (bullet->collisionCallback != NULL
+#ifdef TH08_MULTI
+            && !IsKnownMultiShotCollisionCallback(bullet->collisionCallback))
+        {
+            g_GameErrorContext.Log(
+                "multi: rejected shot collision callback stage=%d slot=%d\n",
+                g_GameManager.currentStage, i);
+            bullet->state = PLAYER_SHOT_INACTIVE;
+            bullet->collisionCallback = NULL;
+            continue;
+        }
+        if (bullet->collisionCallback != NULL
+#endif
+            && bullet->collisionCallback(this, bullet, enemyPosition))
             continue;
 
         if (this->bombState.isInUse == 0)
