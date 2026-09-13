@@ -714,25 +714,55 @@ static EclRawInstruction *__fastcall CompareOperands(
         break; // both target entries are 0x0041E7E4 (ordinary advance)
 
     case ECL_OPCODE_SET_REMOTE_INT:
+#ifdef TH08_MULTI
+        lhsInt = ReadInt(enemy, instruction, 2);
+        if (!ValidateMultiEclIndex("remote-int", lhsInt, 8) ||
+            g_EnemyManager.bosses[lhsInt] == NULL)
+            break;
+        *WriteInt(enemy, instruction, 0) =
+            (instruction->operandFlags & 2U)
+                ? EclOperands::ResolveInt(
+                      g_EnemyManager.bosses[lhsInt],
+                      RawInt(instruction, 1))
+                : RawInt(instruction, 1);
+#else
         *WriteInt(enemy, instruction, 0) =
             (instruction->operandFlags & 2U)
                 ? EclOperands::ResolveInt(
                       g_EnemyManager.bosses[ReadInt(enemy, instruction, 2)],
                       RawInt(instruction, 1))
                 : RawInt(instruction, 1);
+#endif
         break;
 
     case ECL_OPCODE_SET_REMOTE_FLOAT:
+#ifdef TH08_MULTI
+        lhsInt = ReadInt(enemy, instruction, 2);
+        if (!ValidateMultiEclIndex("remote-float", lhsInt, 8))
+            break;
+        if (g_EnemyManager.bosses[lhsInt])
+            *WriteFloat(enemy, instruction, 0) =
+                (instruction->operandFlags & 2U)
+                    ? g_EnemyManager.bosses[lhsInt]->ResolveFloat(
+                          *reinterpret_cast<f32 *>(&RawInt(instruction, 1)))
+                    : *reinterpret_cast<f32 *>(&RawInt(instruction, 1));
+#else
         if (g_EnemyManager.bosses[ReadInt(enemy, instruction, 2)])
             *WriteFloat(enemy, instruction, 0) =
                 (instruction->operandFlags & 2U)
                     ? g_EnemyManager.bosses[ReadInt(enemy, instruction, 2)]->ResolveFloat(
                           *reinterpret_cast<f32 *>(&RawInt(instruction, 1)))
                     : *reinterpret_cast<f32 *>(&RawInt(instruction, 1));
+#endif
         break;
 
     case ECL_OPCODE_CALL_REMOTE:
         lhsInt = ReadInt(enemy, instruction, 0);
+#ifdef TH08_MULTI
+        if (!ValidateMultiEclIndex("call-remote", lhsInt, 8) ||
+            g_EnemyManager.bosses[lhsInt] == NULL)
+            break;
+#endif
         CallSubOnEnemy(
             g_EnemyManager.bosses[lhsInt],
             g_EnemyManager.bosses[lhsInt]->activeEclContext->currentInstr,
@@ -740,12 +770,23 @@ static EclRawInstruction *__fastcall CompareOperands(
         break;
 
     case ECL_OPCODE_SCHEDULE_REMOTE_SUBROUTINE:
+#ifdef TH08_MULTI
+        lhsInt = ReadInt(enemy, instruction, 0);
+        if (!ValidateMultiEclIndex("schedule-remote", lhsInt, 8))
+            break;
+        if (g_EnemyManager.bosses[lhsInt])
+        {
+            g_EnemyManager.bosses[lhsInt]->pendingEclSubroutineIndex =
+                static_cast<i16>(ReadInt(enemy, instruction, 1));
+        }
+#else
         if (g_EnemyManager.bosses[ReadInt(enemy, instruction, 0)])
         {
             // Target resolves operand 0 a second time before the store.
             g_EnemyManager.bosses[ReadInt(enemy, instruction, 0)]->pendingEclSubroutineIndex =
                 static_cast<i16>(ReadInt(enemy, instruction, 1));
         }
+#endif
         break;
 
     // Target fact map for the linked-child cluster:

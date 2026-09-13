@@ -213,9 +213,57 @@ EnemyEclInterpolationSlot::EnemyEclInterpolationSlot() {}
 
 // FUNCTION: th08 0x42a820
 #pragma var_order(i, this)
+#ifdef TH08_MULTI
+static i32 GetSafeAttachedEffectCount(Enemy *enemy, const char *operation)
+{
+    i32 count = enemy->attachedEffectCount;
+    i32 capacity = ARRAY_SIZE_SIGNED(enemy->attachedEffects);
+
+    if (count >= 0 && count <= capacity)
+        return count;
+
+    g_GameErrorContext.Log(
+        "multi: repaired attached effect count stage=%d operation=%s count=%d capacity=%d\n",
+        g_GameManager.currentStage, operation, count, capacity);
+    count = count < 0 ? 0 : capacity;
+    enemy->attachedEffectCount = count;
+    return count;
+}
+
+static bool IsEffectPoolPointer(const Effect *effect)
+{
+    const u8 *begin = reinterpret_cast<const u8 *>(&g_EffectManager.effects[0]);
+    const u8 *end = reinterpret_cast<const u8 *>(
+        &g_EffectManager.effects[ARRAY_SIZE(g_EffectManager.effects)]);
+    const u8 *candidate = reinterpret_cast<const u8 *>(effect);
+
+    return candidate >= begin && candidate < end &&
+           ((candidate - begin) % sizeof(Effect)) == 0;
+}
+#endif
+
 void Enemy::ReleaseAttachedEffects()
 {
     i32 i;
+#ifdef TH08_MULTI
+    i32 effectCount = GetSafeAttachedEffectCount(this, "release");
+
+    for (i = 0; i < effectCount; i++)
+    {
+        if (this->attachedEffects[i] == NULL)
+            continue;
+        if (!IsEffectPoolPointer(this->attachedEffects[i]))
+        {
+            g_GameErrorContext.Log(
+                "multi: rejected attached effect pointer stage=%d operation=release slot=%d pointer=%p\n",
+                g_GameManager.currentStage, i, this->attachedEffects[i]);
+            this->attachedEffects[i] = NULL;
+            continue;
+        }
+        this->attachedEffects[i]->releaseRequested = 1;
+        this->attachedEffects[i] = NULL;
+    }
+#else
 
     for (i = 0; i < this->attachedEffectCount; i++)
     {
@@ -224,6 +272,7 @@ void Enemy::ReleaseAttachedEffects()
         this->attachedEffects[i]->releaseRequested = 1;
         this->attachedEffects[i] = NULL;
     }
+#endif
     this->attachedEffectCount = 0;
 }
 
@@ -813,7 +862,20 @@ void Enemy::Despawn()
         this->ReleaseAttachedEffects();
 
     if (((this->flags1 >> ENEMY_FLAG_BOSS_SHIFT) & 1) != 0)
+#ifdef TH08_MULTI
+    {
+        if (this->bossSlot < ARRAY_SIZE(g_EnemyManager.bosses))
+            g_EnemyManager.bosses[this->bossSlot] = NULL;
+        else
+            g_GameErrorContext.Log(
+                "multi: rejected boss cleanup index stage=%d index=%d count=%d\n",
+                g_GameManager.currentStage, this->bossSlot,
+                ARRAY_SIZE_SIGNED(g_EnemyManager.bosses));
+        this->flags1 &= ~ENEMY_FLAG_BOSS;
+    }
+#else
         g_EnemyManager.bosses[this->bossSlot] = NULL;
+#endif
 
     g_ReplayManager->frameEventFlags |= REPLAY_FRAME_EVENT_ENEMY_REMOVED;
 
@@ -1100,12 +1162,27 @@ void Enemy::UpdateEffects()
 {
     Effect *effect;
     i32 i;
+#ifdef TH08_MULTI
+    i32 effectCount = GetSafeAttachedEffectCount(this, "update");
 
+    for (i = 0; i < effectCount; ++i)
+#else
     for (i = 0; i < this->attachedEffectCount; ++i)
+#endif
     {
         effect = this->attachedEffects[i];
         if (effect == NULL)
             continue;
+#ifdef TH08_MULTI
+        if (!IsEffectPoolPointer(effect))
+        {
+            g_GameErrorContext.Log(
+                "multi: rejected attached effect pointer stage=%d operation=update slot=%d pointer=%p\n",
+                g_GameManager.currentStage, i, effect);
+            this->attachedEffects[i] = NULL;
+            continue;
+        }
+#endif
 
         effect->vm.flag1 =
             ((this->flags1 >> ENEMY_FLAG_NO_SPRITE_SHIFT) & 1) == 0;

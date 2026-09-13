@@ -205,6 +205,18 @@ C_ASSERT(TH08_ECL_ENEMY_POSITION_OFFSET == offsetof(Enemy, position));
         GameManagerFlags::PLAYER_DEATH_DISSOLVE_SHIFT) & \
        GameManagerFlags::PLAYER_DEATH_DISSOLVE_MASK) == 0))
 
+#ifdef TH08_MULTI
+static bool ValidateMultiEclIndex(const char *kind, i32 index, i32 count)
+{
+    if (index >= 0 && index < count)
+        return true;
+    g_GameErrorContext.Log(
+        "multi: rejected ECL array index stage=%d kind=%s index=%d count=%d\n",
+        g_GameManager.currentStage, kind, index, count);
+    return false;
+}
+#endif
+
 } // namespace EclRunHigh
 } // namespace th08
 
@@ -242,10 +254,20 @@ C_ASSERT(TH08_ECL_ENEMY_POSITION_OFFSET == offsetof(Enemy, position));
 
     case ECL_OPCODE_SET_BULLET_TRANSFORM:
     {
+#ifdef TH08_MULTI
+        lhsInt = TH08_ECL_READ_I_FIELD(
+            ctx, BulletTransformInstructionArgs, transformIndex);
+        if (!ValidateMultiEclIndex("bullet-transform", lhsInt, 18))
+            break;
+#endif
         BulletTransformRecord *entry =
             &TH08_ECL_CONTEXT_ENEMY(ctx)
+#ifdef TH08_MULTI
+                 ->bulletSpawnDescriptor.transforms[lhsInt];
+#else
                  ->bulletSpawnDescriptor.transforms[TH08_ECL_READ_I_FIELD(
                      ctx, BulletTransformInstructionArgs, transformIndex)];
+#endif
         entry->kind = TH08_ECL_READ_I_FIELD(
             ctx, BulletTransformInstructionArgs, kind);
         entry->allowWhileActive = TH08_ECL_READ_I_FIELD(
@@ -387,18 +409,34 @@ C_ASSERT(TH08_ECL_ENEMY_POSITION_OFFSET == offsetof(Enemy, position));
             descriptor->aimMode = BULLET_AIM_FAN_AIMED;
         else
             descriptor->aimMode = BULLET_AIM_FAN;
+#ifdef TH08_MULTI
+        lhsInt = TH08_ECL_CONTEXT_ENEMY(ctx)->selectedLaserSlot;
+        if (!ValidateMultiEclIndex("create-laser", lhsInt, 32))
+            break;
+#endif
         TH08_ECL_CONTEXT_ENEMY(ctx)
             ->laserSlots[TH08_ECL_CONTEXT_ENEMY(ctx)->selectedLaserSlot] =
             g_BulletManager.SpawnLaserPattern(descriptor);
         break;
     }
     case ECL_OPCODE_SELECT_LASER_SLOT:
+#ifdef TH08_MULTI
+        lhsInt = TH08_ECL_READ_I(ctx, 0);
+        if (!ValidateMultiEclIndex("select-laser", lhsInt, 32))
+            break;
+        TH08_ECL_CONTEXT_ENEMY(ctx)->selectedLaserSlot = lhsInt;
+#else
         TH08_ECL_CONTEXT_ENEMY(ctx)->selectedLaserSlot =
             TH08_ECL_READ_I(ctx, 0);
+#endif
         break;
     case ECL_OPCODE_ROTATE_LASER:
         lhsInt = TH08_ECL_READ_I(ctx, 0);
-        if (TH08_ECL_LASER(ctx, lhsInt))
+        if (
+#ifdef TH08_MULTI
+            ValidateMultiEclIndex("rotate-laser", lhsInt, 32) &&
+#endif
+            TH08_ECL_LASER(ctx, lhsInt))
             TH08_ECL_LASER(ctx, lhsInt)->angle =
                 AddNormalizeAngle(
                     TH08_ECL_LASER(ctx, lhsInt)->angle,
@@ -406,13 +444,21 @@ C_ASSERT(TH08_ECL_ENEMY_POSITION_OFFSET == offsetof(Enemy, position));
         break;
     case ECL_OPCODE_SET_LASER_ANGLE:
         lhsInt = TH08_ECL_READ_I(ctx, 0);
-        if (TH08_ECL_LASER(ctx, lhsInt))
+        if (
+#ifdef TH08_MULTI
+            ValidateMultiEclIndex("laser-angle", lhsInt, 32) &&
+#endif
+            TH08_ECL_LASER(ctx, lhsInt))
             TH08_ECL_LASER(ctx, lhsInt)->angle =
                 ((TH08_ECL_CONTEXT_INSTRUCTION(ctx)->operandFlags & (1U << 1)) ? TH08_ECL_CONTEXT_ENEMY(ctx)->ResolveFloat(*reinterpret_cast<f32 *>(&TH08_ECL_RAW_I(ctx, 1))) : *reinterpret_cast<f32 *>(&TH08_ECL_RAW_I(ctx, 1)));
         break;
     case ECL_OPCODE_AIM_LASER_AT_PLAYER:
         lhsInt = TH08_ECL_READ_I(ctx, 0);
-        if (TH08_ECL_LASER(ctx, lhsInt))
+        if (
+#ifdef TH08_MULTI
+            ValidateMultiEclIndex("aim-laser", lhsInt, 32) &&
+#endif
+            TH08_ECL_LASER(ctx, lhsInt))
             TH08_ECL_LASER(ctx, lhsInt)->angle =
                 MULTI_ECL_RUN_PLAYER(TH08_ECL_LASER(ctx, lhsInt)->position).AngleToPoint(
                     &TH08_ECL_LASER(ctx, lhsInt)->position) +
@@ -420,7 +466,11 @@ C_ASSERT(TH08_ECL_ENEMY_POSITION_OFFSET == offsetof(Enemy, position));
         break;
     case ECL_OPCODE_SET_LASER_POSITION:
         lhsInt = TH08_ECL_READ_I(ctx, 0);
-        if (TH08_ECL_LASER(ctx, lhsInt))
+        if (
+#ifdef TH08_MULTI
+            ValidateMultiEclIndex("laser-position", lhsInt, 32) &&
+#endif
+            TH08_ECL_LASER(ctx, lhsInt))
         {
             TH08_ECL_LASER(ctx, lhsInt)->position.x = ((TH08_ECL_CONTEXT_INSTRUCTION(ctx)->operandFlags & (1U << 1))
                     ? TH08_ECL_CONTEXT_ENEMY(ctx)->ResolveFloat(
@@ -438,13 +488,21 @@ C_ASSERT(TH08_ECL_ENEMY_POSITION_OFFSET == offsetof(Enemy, position));
         break;
     case ECL_OPCODE_SET_LASER_START_CAP_HIDDEN:
         lhsInt = TH08_ECL_READ_I(ctx, 0);
-        if (TH08_ECL_LASER(ctx, lhsInt))
+        if (
+#ifdef TH08_MULTI
+            ValidateMultiEclIndex("laser-cap", lhsInt, 32) &&
+#endif
+            TH08_ECL_LASER(ctx, lhsInt))
             TH08_ECL_LASER(ctx, lhsInt)->hideCapDuringStartup =
                 (u8)TH08_ECL_READ_I(ctx, 1);
         break;
     case ECL_OPCODE_TEST_LASER_ACTIVE:
         lhsInt = TH08_ECL_READ_I(ctx, 0);
-        if (TH08_ECL_LASER(ctx, lhsInt) && TH08_ECL_LASER(ctx, lhsInt)->inUse)
+        if (
+#ifdef TH08_MULTI
+            ValidateMultiEclIndex("test-laser", lhsInt, 32) &&
+#endif
+            TH08_ECL_LASER(ctx, lhsInt) && TH08_ECL_LASER(ctx, lhsInt)->inUse)
             TH08_ECL_CONTEXT_ENEMY(ctx)->activeEclContext->
                 extraIntVariables[2] = 1;
         else
@@ -453,7 +511,11 @@ C_ASSERT(TH08_ECL_ENEMY_POSITION_OFFSET == offsetof(Enemy, position));
         break;
     case ECL_OPCODE_CANCEL_LASER:
         lhsInt = TH08_ECL_READ_I(ctx, 0);
-        if (TH08_ECL_LASER(ctx, lhsInt) && TH08_ECL_LASER(ctx, lhsInt)->inUse &&
+        if (
+#ifdef TH08_MULTI
+            ValidateMultiEclIndex("cancel-laser", lhsInt, 32) &&
+#endif
+            TH08_ECL_LASER(ctx, lhsInt) && TH08_ECL_LASER(ctx, lhsInt)->inUse &&
             TH08_ECL_LASER(ctx, lhsInt)->state < LASER_STATE_DESPAWNING)
         {
             TH08_ECL_LASER(ctx, lhsInt)->state = LASER_STATE_DESPAWNING;
@@ -468,13 +530,21 @@ C_ASSERT(TH08_ECL_ENEMY_POSITION_OFFSET == offsetof(Enemy, position));
         break;
     case ECL_OPCODE_SET_LASER_START_LENGTH:
         lhsInt = TH08_ECL_READ_I(ctx, 0);
-        if (TH08_ECL_LASER(ctx, lhsInt))
+        if (
+#ifdef TH08_MULTI
+            ValidateMultiEclIndex("laser-length", lhsInt, 32) &&
+#endif
+            TH08_ECL_LASER(ctx, lhsInt))
             TH08_ECL_LASER(ctx, lhsInt)->startLength =
                 ((TH08_ECL_CONTEXT_INSTRUCTION(ctx)->operandFlags & (1U << 1)) ? TH08_ECL_CONTEXT_ENEMY(ctx)->ResolveFloat(*reinterpret_cast<f32 *>(&TH08_ECL_RAW_I(ctx, 1))) : *reinterpret_cast<f32 *>(&TH08_ECL_RAW_I(ctx, 1)));
         break;
     case ECL_OPCODE_SET_LASER_OFFSETS:
         lhsInt = TH08_ECL_READ_I(ctx, 0);
-        if (TH08_ECL_LASER(ctx, lhsInt))
+        if (
+#ifdef TH08_MULTI
+            ValidateMultiEclIndex("laser-offsets", lhsInt, 32) &&
+#endif
+            TH08_ECL_LASER(ctx, lhsInt))
         {
             TH08_ECL_LASER(ctx, lhsInt)->startOffset =
                 ((TH08_ECL_CONTEXT_INSTRUCTION(ctx)->operandFlags & (1U << 1)) ? TH08_ECL_CONTEXT_ENEMY(ctx)->ResolveFloat(*reinterpret_cast<f32 *>(&TH08_ECL_RAW_I(ctx, 1))) : *reinterpret_cast<f32 *>(&TH08_ECL_RAW_I(ctx, 1)));
@@ -484,23 +554,37 @@ C_ASSERT(TH08_ECL_ENEMY_POSITION_OFFSET == offsetof(Enemy, position));
         break;
     case ECL_OPCODE_SET_MANAGER_PROTOCOL_VALUE: g_EnemyManager.opcode163Value = TH08_ECL_READ_I(ctx, 0); break;
     case ECL_OPCODE_SET_BOSS:
-        if (TH08_ECL_READ_I(ctx, 0) >= 0)
+        lhsInt = TH08_ECL_READ_I(ctx, 0);
+        if (lhsInt >= 0)
         {
-            g_EnemyManager.bosses[TH08_ECL_READ_I(ctx, 0)] =
+#ifdef TH08_MULTI
+            if (!ValidateMultiEclIndex("set-boss", lhsInt, 4))
+                break;
+#endif
+            g_EnemyManager.bosses[lhsInt] =
                 TH08_ECL_CONTEXT_ENEMY(ctx);
-            if (TH08_ECL_READ_I(ctx, 0) == 0)
+            if (lhsInt == 0)
             {
                 g_Gui.SetBossPresent(true);
                 g_Gui.SetBossLifeBarTarget(1.0f);
             }
             TH08_ECL_CONTEXT_ENEMY(ctx)->flags1 |= ENEMY_FLAG_BOSS;
-            TH08_ECL_CONTEXT_ENEMY(ctx)->bossSlot = (u8)TH08_ECL_READ_I(ctx, 0);
+            TH08_ECL_CONTEXT_ENEMY(ctx)->bossSlot = (u8)lhsInt;
             g_AsciiManager.SetBossMarkerInterrupt(
                 TH08_ECL_CONTEXT_ENEMY(ctx)->bossSlot, 1);
             TH08_ECL_CONTEXT_ENEMY(ctx)->minimumPlayerDistanceSquared = 0.0f;
         }
         else
         {
+#ifdef TH08_MULTI
+            if (!ValidateMultiEclIndex(
+                    "clear-boss", TH08_ECL_CONTEXT_ENEMY(ctx)->bossSlot, 4))
+            {
+                TH08_ECL_CONTEXT_ENEMY(ctx)->flags1 &= ~ENEMY_FLAG_BOSS;
+                TH08_ECL_CONTEXT_ENEMY(ctx)->ReleaseAttachedEffects();
+                break;
+            }
+#endif
             if (TH08_ECL_CONTEXT_ENEMY(ctx)->bossSlot < 4)
                 g_Gui.SetBossPresent(false);
             g_EnemyManager.bosses[
@@ -518,6 +602,15 @@ C_ASSERT(TH08_ECL_ENEMY_POSITION_OFFSET == offsetof(Enemy, position));
     case ECL_OPCODE_ATTACH_SPELL_EFFECT:
     {
         u8 *operands = TH08_ECL_CONTEXT_INSTRUCTION(ctx)->operands;
+#ifdef TH08_MULTI
+        lhsInt = TH08_ECL_CONTEXT_ENEMY(ctx)->attachedEffectCount;
+        if (!ValidateMultiEclIndex("attached-effect", lhsInt, 24))
+        {
+            TH08_ECL_CONTEXT_ENEMY(ctx)->attachedEffectCount =
+                lhsInt < 0 ? 0 : 24;
+            break;
+        }
+#endif
         TH08_ECL_CONTEXT_ENEMY(ctx)->attachedEffects[
             TH08_ECL_CONTEXT_ENEMY(ctx)->attachedEffectCount] =
             g_EffectManager.SpawnEffect(
