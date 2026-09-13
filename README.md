@@ -1,131 +1,167 @@
-th08-multi v0.31 联机补丁
-========================
+# th08-multi v0.31 Online Multiplayer Patch
 
-一、项目性质与权利声明
-----------------------
+## 1. Project Nature and Rights Notice
 
-th08-multi 是基于《东方永夜抄 ～ Imperishable Night》的非官方二次创作
-联机项目，与上海爱丽丝幻乐团、ZUN 及任何官方发行方均无隶属、授权或
-合作关系，请勿将本项目误认为官方作品或官方更新。
+th08-multi is an unofficial fan-made online multiplayer project based on *Touhou Eiyashou ~ Imperishable Night*. It is not affiliated with, authorized by, endorsed by, or developed in cooperation with Team Shanghai Alice, ZUN, or any official publisher or distributor. Please do not mistake this project for an official product or official update.
 
-“东方Project”、《东方永夜抄》及其角色、美术、音乐、文字和其他原作内容
-的权利归原权利人所有。本项目不授予用户复制或传播原版游戏内容的权利。
-使用者必须自行合法取得《东方永夜抄》日文原版 1.00d。
+“Touhou Project,” *Touhou Eiyashou ~ Imperishable Night*, and all characters, artwork, music, text, and other original game content remain the property of their respective rights holders. This project does not grant users any right to copy or redistribute the original game content.
 
-东方Project 二次创作指南：
+Users must legally obtain their own copy of the Japanese original version 1.00d of *Touhou Eiyashou ~ Imperishable Night*.
+
+Touhou Project Fan Content Guidelines:  
 https://touhou-project.news/guidelines_en/
 
-二、支持版本
-------------
+## 2. Supported Version
 
-仅支持《东方永夜抄》日文原版 1.00d：
-- th08.exe 文件大小：840704 字节
-- th08.exe SHA-256：
-  330fbdbf58a710829d65277b4f312cfbb38d5448b3df523e79350b879213d924
+Only the Japanese original version 1.00d of *Touhou Eiyashou ~ Imperishable Night* is supported:
 
-汉化版、体验版、其他版本或经过修改的游戏数据不在支持范围内。
-联机双方必须使用完全相同的 v0.31 补丁和相同版本的原版游戏数据。
+- `th08.exe` file size: 840704 bytes
+- `th08.exe` SHA-256:  
+  `330fbdbf58a710829d65277b4f312cfbb38d5448b3df523e79350b879213d924`
 
-三、补丁内容与分发边界
-----------------------
+Translated versions, trial versions, other releases, or modified game data are not supported.
 
-本补丁压缩包只包含：
-- th08-multi.exe
-- th08-multi-launcher.exe
-- th08_multi.ini.example
-- th08-multi-README.txt
-- th08-multi-LICENSE.txt
-- SHA256SUMS.txt
+Both players must use exactly the same v0.31 patch and the same version of the original game data.
 
-补丁不包含原版 th08.exe、th08.dat、thbgm.dat、音乐、美术素材、存档或
-Replay。请勿将上述原版文件、从原作提取的素材或他人的存档重新打包进
-本补丁，也不要发布包含这些内容的整合游戏包。
+## 3. Patch Contents and Distribution Boundaries
 
-SHA256SUMS.txt 用于核对补丁内部各文件。整个 ZIP 的 SHA-256 以对应
-GitHub Release 页面公布的值为准。
+This patch archive contains only:
 
-四、安装与启动
---------------
+- `th08-multi.exe`
+- `th08-multi-launcher.exe`
+- `th08_multi.ini.example`
+- `th08-multi-README.txt`
+- `th08-multi-LICENSE.txt`
+- `SHA256SUMS.txt`
 
-1. 备份自己的存档和配置。
-2. 将补丁压缩包内全部文件解压到合法取得的日文原版 1.00d 游戏目录。
-3. 保留原版 th08.exe、th08.dat 和 thbgm.dat；补丁不会覆盖 th08.exe。
-4. 双方分别运行 th08-multi-launcher.exe。
-5. 启动器会显示 Local IPv4，不提供 Bind local IPv4 输入栏。主机选择
-   Host；客机选择 Guest，并填写主机的局域网、可信 VPN 或受控隧道地址。
-6. 双方设置相同的 Input delay，然后分别点击 Connect。
-7. 双方均显示 Connected 后，由 Host 点击 Start both games；两侧游戏
-   会在同一启动指令后进入游戏。
+The patch does **not** include the original `th08.exe`, `th08.dat`, `thbgm.dat`, music, artwork, save data, or Replay files.
 
-GitHub 源码：
+Do not repackage any of the above original game files, extracted original assets, or other users’ save data together with this patch. Do not distribute any pre-bundled or integrated game package containing such content.
+
+`SHA256SUMS.txt` is provided for verifying the files included in the patch. The SHA-256 hash of the complete ZIP archive will be published on the corresponding GitHub Release page.
+
+## 4. Installation and Startup
+
+1. Back up your save data and configuration files.
+2. Extract all files from the patch archive into the directory containing your legally obtained Japanese original version 1.00d of the game.
+3. Keep the original `th08.exe`, `th08.dat`, and `thbgm.dat`. The patch does not overwrite `th08.exe`.
+4. Both players should run `th08-multi-launcher.exe`.
+5. The launcher displays the Local IPv4 address and does not provide a separate “Bind local IPv4” input field. The host should select **Host**. The guest should select **Guest** and enter the host’s LAN address, trusted VPN address, or address provided by a controlled tunneling service.
+6. Both players must configure the same **Input delay**, then click **Connect**.
+7. Once both sides show **Connected**, the Host should click **Start both games**. Both games will then launch from the same start command.
+
+**Important:**  
+Always wait until both the Guest and the Host have fully entered the game’s main menu before the Host begins stage or mode selection.
+
+If the Host starts the game while the Guest has not yet reached the main menu, the two clients may become desynchronized.
+
+GitHub source repository:  
 https://github.com/koishikois259/th08-multi
 
-v0.31 发布页：
+v0.31 release page:  
 https://github.com/koishikois259/th08-multi/releases/tag/v0.31
 
-五、网络与安全限制
-------------------
+## 5. Network and Security Limitations
 
-本项目仅面向互相信任的两名玩家在可信局域网、可信 VPN 或具有访问控制
-的临时内网穿透环境中使用，默认端口为 UDP 17708。协议不提供身份认证、
-数据加密、抗重放或恶意对端防护，不应直接暴露给公共互联网，也不要与
-不可信玩家连接。
+This project is intended only for two mutually trusted players using a trusted LAN, trusted VPN, or a temporary private tunneling environment with appropriate access controls.
 
-启动器会监听全部本地 IPv4 接口。Windows 防火墙规则应限制在预期网络
-和可信对端；使用内网穿透时应采用临时映射，只向对方提供连接信息，并在
-测试结束后关闭映射。连接地址、外网 IP 和隧道端口也可能属于隐私信息。
+The default port is:
 
-六、功能范围与已知限制
-----------------------
+- UDP `17708`
 
-- P1、P2 独立选择队伍，允许选择相同队伍。
-- 联机模式暂不支持 Replay。
-- 连接及异常状态显示在游戏窗口标题栏，诊断信息写入游戏目录 log.txt。
-- 本项目仍处于测试阶段；请保留存档备份，并优先在可信环境测试。
+The protocol does not provide authentication, encryption, replay protection, or protection against a malicious peer.
 
-v0.31 主要修复：
-- 修复 4、5、6、EX 面对话及符卡间对话的立绘轨迹残影。
-- 加固对话立绘、ANM、P1/P2、子 ECL 和换面资源的释放所有权，降低
-  后三面换面或对话期间因悬空指针、重复释放导致崩溃的风险。
+Therefore, the service should not be exposed directly to the public Internet, and users should not connect to untrusted players.
 
-七、源码、许可证与致谢
-----------------------
+The launcher listens on all local IPv4 interfaces. Windows Firewall rules should be restricted to the intended network and trusted peer whenever possible.
 
-项目源码依据仓库根目录 LICENSE 中的 MIT License 发布。MIT License 仅
-适用于项目贡献者有权授权的源码与改动，不适用于东方Project 原作、原版
-游戏文件或其他第三方素材。补丁内附 th08-multi-LICENSE.txt；复制、修改
-或再分发源码时必须保留许可证和版权声明。
+When using a tunneling service, use only a temporary mapping, share the connection information only with the intended player, and disable the mapping after testing is complete.
 
-本项目基于以下公开项目和设计参考：
-- TH08 源码重构：https://github.com/N0zoM1z0/th08
-- th06_multi_net：https://github.com/RUEEE/th06_multi_net
-- Microsoft Detours：https://github.com/microsoft/Detours
+Connection addresses, public IP addresses, and tunnel ports may also constitute private or sensitive information.
 
-感谢原项目作者、历史贡献者及测试人员。各第三方项目仍适用其各自许可证。
+## 6. Features and Known Limitations
 
-八、问题与安全报告
-------------------
+- P1 and P2 may select teams independently.
+- P1 and P2 may select the same team.
+- Replay is currently not supported in online multiplayer mode.
+- Connection and abnormal status information is displayed in the game window title bar.
+- Diagnostic information is written to `log.txt` in the game directory.
+- This project is still in the testing stage. Please keep backups of your save data and test primarily in trusted environments.
 
-一般 Bug 可通过 GitHub Issues 报告。报告崩溃时请提供版本、关卡、复现
-步骤和异常代码；上传日志、截图或转储前请删除外网 IP、用户名、个人路径
-等隐私信息。严禁上传 th08.exe、DAT、音乐、美术素材、存档或其他原版
-游戏内容。
+### Major fixes in v0.31
 
-安全问题不要公开披露。如仓库已启用 GitHub Private vulnerability
-reporting，请使用该入口；否则请先私下联系维护者，不要在公开 Issue 中
-发布利用细节。项目按 MIT License “AS IS” 条款提供，不
-承诺无错误、无崩溃或适合任何特定用途。
+- Fixed lingering portrait trail artifacts during dialogue scenes in Stages 4, 5, 6, and Extra, including dialogue between Spell Cards.
+- Strengthened ownership and cleanup handling for dialogue portraits, ANM resources, P1/P2 resources, child ECL resources, and stage-transition resources, reducing the risk of crashes caused by dangling pointers or double-free conditions during dialogue or stage transitions in the later stages.
 
-九、卸载
---------
+## 7. Source Code, License, and Credits
 
-关闭游戏后，删除以下补丁文件即可；原版游戏文件不受影响：
-- th08-multi.exe
-- th08-multi-launcher.exe
-- th08_multi.ini
-- th08_multi.ini.example
-- th08-multi-README.txt
-- th08-multi-LICENSE.txt
-- SHA256SUMS.txt
+The project source code is released under the MIT License contained in the repository root `LICENSE` file.
 
-如需保留联机设置，请在卸载前备份 th08_multi.ini。
+The MIT License applies only to source code and modifications that the project contributors have the legal right to license. It does not apply to Touhou Project original content, original game files, or any other third-party materials.
+
+The patch includes `th08-multi-LICENSE.txt`.
+
+When copying, modifying, or redistributing the source code, the applicable license and copyright notices must be retained.
+
+This project is based on or references the following publicly available projects and designs:
+
+- TH08 source reconstruction:  
+  https://github.com/N0zoM1z0/th08
+- `th06_multi_net`:  
+  https://github.com/RUEEE/th06_multi_net
+- Microsoft Detours:  
+  https://github.com/microsoft/Detours
+
+Thanks to the authors of the original projects, historical contributors, and testers.
+
+Each third-party project remains subject to its own respective license.
+
+## 8. Bug Reports and Security Reports
+
+General bugs may be reported through GitHub Issues.
+
+When reporting a crash, please include:
+
+- Patch version
+- Stage
+- Reproduction steps
+- Exception or error code
+
+Before uploading logs, screenshots, or crash dumps, remove private information such as:
+
+- Public IP addresses
+- Usernames
+- Personal file paths
+
+Do **not** upload:
+
+- `th08.exe`
+- DAT files
+- Music
+- Artwork
+- Save data
+- Any other original game content
+
+Security vulnerabilities should not be publicly disclosed.
+
+If GitHub Private Vulnerability Reporting is enabled for the repository, please use that feature. Otherwise, contact the maintainer privately before disclosing any vulnerability details.
+
+Do not publish exploitation details in a public GitHub Issue.
+
+This project is provided under the MIT License on an **“AS IS”** basis and makes no guarantee that it is free of bugs or crashes, or that it is suitable for any particular purpose.
+
+## 9. Uninstallation
+
+After closing the game, delete the following patch files:
+
+- `th08-multi.exe`
+- `th08-multi-launcher.exe`
+- `th08_multi.ini`
+- `th08_multi.ini.example`
+- `th08-multi-README.txt`
+- `th08-multi-LICENSE.txt`
+- `SHA256SUMS.txt`
+
+The original game files will not be affected.
+
+If you wish to keep your multiplayer configuration, back up `th08_multi.ini` before uninstalling.
