@@ -1249,7 +1249,13 @@ i32 InitializeScoreData()
         ScoreDat::GetHighScore(scoreDat, NULL, g_GameManager.shotType, g_GameManager.difficulty,
                                &g_GameManager.globals->continuesUsedInHighScore);
     ScoreDat::ParseCATK(scoreDat, g_GameManager.catkData);
+#ifdef TH08_MULTI
+    if (!g_MultiPlayerCoordinator.IsGuestSaveClient())
+        ScoreDat::ParseCLRD(scoreDat, g_GameManager.clrdData);
+    g_MultiPlayerCoordinator.ApplyHostSaveProgress();
+#else
     ScoreDat::ParseCLRD(scoreDat, g_GameManager.clrdData);
+#endif
     ScoreDat::ParsePSCR(scoreDat, g_GameManager.pscrData);
 
     if (g_GameManager.flags.isPracticeMode)

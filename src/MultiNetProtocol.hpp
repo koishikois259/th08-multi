@@ -7,12 +7,15 @@ namespace th08
 
 enum MultiNetProtocolConstant
 {
-    MULTI_NET_PROTOCOL_VERSION = 0x00010000,
+    MULTI_NET_PROTOCOL_VERSION = 0x00010001,
     MULTI_NET_MIN_INPUT_DELAY = 1,
     MULTI_NET_MAX_INPUT_DELAY = 12,
     MULTI_NET_MAX_REDUNDANT_INPUTS = 15,
     MULTI_NET_INPUT_HISTORY_SIZE = 256,
     MULTI_NET_INVALID_FRAME = 0xFFFFFFFF,
+    MULTI_NET_SAVE_SHOT_COUNT = 13,
+    MULTI_NET_SAVE_DIFFICULTY_COUNT = 5,
+    MULTI_NET_SAVE_SNAPSHOT_VERSION = 1,
 };
 
 enum MultiNetDisconnectReason
@@ -43,6 +46,13 @@ struct MultiNetWelcomePacket
     u8 hostTeam;
     u8 guestTeam;
     u8 assignedSlot;
+    u32 saveRevision;
+    struct SaveProgress
+    {
+        u16 clearedWithoutRetries[MULTI_NET_SAVE_DIFFICULTY_COUNT];
+        u16 clearedWithRetries[MULTI_NET_SAVE_DIFFICULTY_COUNT];
+        u8 pendingEndingSkip;
+    } saveProgress[MULTI_NET_SAVE_SHOT_COUNT];
 };
 
 struct MultiNetDisconnectPacket

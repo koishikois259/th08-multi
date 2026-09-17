@@ -12,7 +12,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     MultiNetWelcomePacket welcome;
     MultiNetInputPacket input;
     MultiNetDisconnectPacket disconnect;
-    u8 encoded[256];
+    u8 encoded[512];
     u32 encodedSize;
 
     if (size > 65535)

@@ -509,6 +509,11 @@ u32 ComputeCurrentMultiPlayerStateHash()
     }
     shared.bossLife = boss != NULL ? boss->life : 0;
     shared.bossPhase = g_GameManager.currentSpellCardNumber;
+    shared.currentStage = static_cast<u32>(g_GameManager.currentStage);
+    shared.finalStageRoute = g_GameManager.flags.finalStageRoute;
+    shared.stageTransitionState = g_GameManager.flags.stageTransitionState;
+    shared.dialogueMessage = g_Gui.impl != NULL ? g_Gui.impl->message.currentMsgIdx : -1;
+    shared.dialogueOption = g_Gui.impl != NULL ? g_Gui.impl->message.selectedOption : 0;
     return g_MultiPlayerState.ComputeStateHash(positions, shared);
 }
 

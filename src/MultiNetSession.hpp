@@ -45,7 +45,9 @@ class MultiNetSession
 
     bool OpenHost(u16 localPort, const char *bindAddress,
                   u8 selectedTeam, u16 requestedInputDelay,
-                  u32 buildFingerprint, u32 hostNonce, u32 randomSeed);
+                  u32 buildFingerprint, u32 hostNonce, u32 randomSeed,
+                  const MultiNetWelcomePacket::SaveProgress
+                      saveProgress[MULTI_NET_SAVE_SHOT_COUNT]);
     bool OpenGuest(u16 localPort, const char *bindAddress,
                    const char *hostAddress, u16 hostPort,
                    u8 selectedTeam, u16 requestedInputDelay,
@@ -56,6 +58,8 @@ class MultiNetSession
     bool CaptureLocalInput(u32 simulationFrame, u16 buttons,
                            u32 stateHashFrame, u32 stateHash);
     bool TryGetFrameInputs(u32 simulationFrame, u16 *p1Buttons, u16 *p2Buttons) const;
+    void UpdateHostSaveProgress(
+        const MultiNetWelcomePacket::SaveProgress saveProgress[MULTI_NET_SAVE_SHOT_COUNT]);
 
     MultiNetSessionState GetState() const;
     MultiNetSessionError GetError() const;
@@ -69,6 +73,8 @@ class MultiNetSession
     u32 GetLatestRemoteFrame() const;
     u32 GetLatestAcknowledgedFrame() const;
     u32 GetDesyncFrame() const;
+    u32 GetSaveRevision() const;
+    const MultiNetWelcomePacket::SaveProgress *GetSaveProgress() const;
 
   private:
     struct HashEntry
@@ -121,7 +127,9 @@ class MultiNetSession
     u32 latestStateHash;
     u32 pendingRemoteHashFrame;
     u32 pendingRemoteHash;
+    u32 saveRevision;
     bool peerConfirmed;
+    MultiNetWelcomePacket::SaveProgress saveProgress[MULTI_NET_SAVE_SHOT_COUNT];
     MultiNetInputHistory localInputs;
     MultiNetInputHistory remoteInputs;
     HashEntry localHashes[MULTI_NET_INPUT_HISTORY_SIZE];

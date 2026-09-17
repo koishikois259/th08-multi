@@ -15,7 +15,7 @@ const u32 MULTI_NET_RESEND_INTERVAL_MS = 250;
 const u32 MULTI_NET_INPUT_RESEND_INTERVAL_MS = 50;
 const u32 MULTI_NET_CONNECT_TIMEOUT_MS = 30000;
 const u32 MULTI_NET_CONNECTED_TIMEOUT_MS = 5000;
-const u32 MULTI_NET_WIRE_BUFFER_SIZE = 256;
+const u32 MULTI_NET_WIRE_BUFFER_SIZE = 512;
 const u32 MULTI_NET_MAX_PACKETS_PER_PUMP = 64;
 
 u16 ClampInputDelay(u16 delay)
@@ -78,7 +78,9 @@ void MultiNetSession::ResetState()
     latestStateHash = 0;
     pendingRemoteHashFrame = MULTI_NET_INVALID_FRAME;
     pendingRemoteHash = 0;
+    saveRevision = 0;
     peerConfirmed = false;
+    memset(saveProgress, 0, sizeof(saveProgress));
     localInputs.Reset();
     remoteInputs.Reset();
     for (i = 0; i < MULTI_NET_INPUT_HISTORY_SIZE; ++i)
@@ -121,12 +123,14 @@ bool MultiNetSession::OpenSocket(u16 localPort, u32 bindAddress)
 
 bool MultiNetSession::OpenHost(u16 localPort, const char *bindAddress,
                                u8 selectedTeam, u16 delay,
-                               u32 fingerprint, u32 hostNonce, u32 seed)
+                               u32 fingerprint, u32 hostNonce, u32 seed,
+                               const MultiNetWelcomePacket::SaveProgress
+                                   initialSaveProgress[MULTI_NET_SAVE_SHOT_COUNT])
 {
     u32 localAddress;
     Close(MULTI_NET_DISCONNECT_USER);
     ResetState();
-    if (hostNonce == 0 || seed == 0)
+    if (hostNonce == 0 || seed == 0 || initialSaveProgress == NULL)
     {
         state = MULTI_NET_STATE_ERROR;
         error = MULTI_NET_ERROR_ENTROPY;
@@ -155,6 +159,8 @@ bool MultiNetSession::OpenHost(u16 localPort, const char *bindAddress,
     localTeam = selectedTeam;
     hostTeam = selectedTeam;
     localSlot = 0;
+    memcpy(saveProgress, initialSaveProgress, sizeof(saveProgress));
+    saveRevision = 1;
     return true;
 }
 
@@ -260,6 +266,8 @@ void MultiNetSession::SendWelcome()
     packet.hostTeam = hostTeam;
     packet.guestTeam = guestTeam;
     packet.assignedSlot = 1;
+    packet.saveRevision = saveRevision;
+    memcpy(packet.saveProgress, saveProgress, sizeof(packet.saveProgress));
     if (!EncodeMultiNetWelcomePacket(packet, data, sizeof(data), &size))
         return;
     remote.sin_family = AF_INET;
@@ -435,6 +443,11 @@ void MultiNetSession::HandleWelcome(const u8 *data, u32 size, u32 address, u16 p
         !DecodeMultiNetWelcomePacket(data, size, &packet) ||
         packet.echoedClientNonce != localNonce || packet.guestTeam != localTeam)
         return;
+    if (state == MULTI_NET_STATE_CONNECTED &&
+        (packet.sessionId != sessionId || packet.hostNonce != remoteNonce ||
+         packet.randomSeed != randomSeed || packet.inputDelay != inputDelay ||
+         packet.hostTeam != hostTeam || packet.assignedSlot != localSlot))
+        return;
     remoteNonce = packet.hostNonce;
     sessionId = packet.sessionId;
     randomSeed = packet.randomSeed;
@@ -442,8 +455,29 @@ void MultiNetSession::HandleWelcome(const u8 *data, u32 size, u32 address, u16 p
     hostTeam = packet.hostTeam;
     guestTeam = packet.guestTeam;
     localSlot = packet.assignedSlot;
+    if (packet.saveRevision >= saveRevision)
+    {
+        saveRevision = packet.saveRevision;
+        memcpy(saveProgress, packet.saveProgress, sizeof(saveProgress));
+    }
     state = MULTI_NET_STATE_CONNECTED;
     lastReceiveTime = now;
+}
+
+void MultiNetSession::UpdateHostSaveProgress(
+    const MultiNetWelcomePacket::SaveProgress updatedSaveProgress[MULTI_NET_SAVE_SHOT_COUNT])
+{
+    if (role != MULTI_NET_ROLE_HOST || updatedSaveProgress == NULL)
+        return;
+    memcpy(saveProgress, updatedSaveProgress, sizeof(saveProgress));
+    ++saveRevision;
+    if (saveRevision == 0)
+        saveRevision = 1;
+    if (state == MULTI_NET_STATE_CONNECTED)
+    {
+        SendWelcome();
+        lastSendTime = currentTime;
+    }
 }
 
 void MultiNetSession::HandleInput(const u8 *data, u32 size, u32 address, u16 port, u32 now)
@@ -586,5 +620,10 @@ u32 MultiNetSession::GetRandomSeed() const { return randomSeed; }
 u32 MultiNetSession::GetLatestRemoteFrame() const { return latestRemoteFrame; }
 u32 MultiNetSession::GetLatestAcknowledgedFrame() const { return latestAcknowledgedFrame; }
 u32 MultiNetSession::GetDesyncFrame() const { return desyncFrame; }
+u32 MultiNetSession::GetSaveRevision() const { return saveRevision; }
+const MultiNetWelcomePacket::SaveProgress *MultiNetSession::GetSaveProgress() const
+{
+    return saveProgress;
+}
 
 } // namespace th08

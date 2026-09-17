@@ -11,7 +11,50 @@
 namespace th08
 {
 
-const u32 TH08_MULTI_BUILD_FINGERPRINT = 0x00030002;
+const u32 TH08_MULTI_BUILD_FINGERPRINT = 0x00030003;
+const u16 MULTI_INPUT_TITLE_READY = 0x8000;
+
+namespace
+{
+
+void CaptureCurrentSaveProgress(
+    MultiNetWelcomePacket::SaveProgress saveProgress[MULTI_NET_SAVE_SHOT_COUNT])
+{
+    u32 shot;
+    u32 difficulty;
+    C_ASSERT(MULTI_NET_SAVE_SHOT_COUNT == SHOT_ALL + 1);
+    C_ASSERT(MULTI_NET_SAVE_DIFFICULTY_COUNT == MAX_DIFFICULTIES);
+    for (shot = 0; shot < MULTI_NET_SAVE_SHOT_COUNT; ++shot)
+    {
+        for (difficulty = 0; difficulty < MULTI_NET_SAVE_DIFFICULTY_COUNT; ++difficulty)
+        {
+            saveProgress[shot].clearedWithoutRetries[difficulty] =
+                g_GameManager.clrdData[shot].difficultiesClearedWithoutRetries[difficulty];
+            saveProgress[shot].clearedWithRetries[difficulty] =
+                g_GameManager.clrdData[shot].difficultiesClearedWithRetries[difficulty];
+        }
+        saveProgress[shot].pendingEndingSkip =
+            g_GameManager.clrdData[shot].pendingEndingSkip ? 1 : 0;
+    }
+}
+
+void ClearCurrentSaveProgress()
+{
+    u32 shot;
+    for (shot = 0; shot < MULTI_NET_SAVE_SHOT_COUNT; ++shot)
+    {
+        memset(g_GameManager.clrdData[shot].difficultiesClearedWithoutRetries, 0,
+               sizeof(g_GameManager.clrdData[shot].difficultiesClearedWithoutRetries));
+        memset(g_GameManager.clrdData[shot].difficultiesClearedWithRetries, 0,
+               sizeof(g_GameManager.clrdData[shot].difficultiesClearedWithRetries));
+        g_GameManager.clrdData[shot].pendingEndingSkip = false;
+    }
+    g_GameManager.flags.isExtraUnlocked = false;
+    g_GameManager.flags.isSpellPracticeUnlocked = false;
+    g_GameManager.flags.isExtraUnlockedWithAllTeams = false;
+}
+
+} // namespace
 
 MultiPlayerCoordinator g_MultiPlayerCoordinator;
 
@@ -57,27 +100,40 @@ MultiPlayerCoordinator::MultiPlayerCoordinator()
     capturedSimulationFrame = MULTI_NET_INVALID_FRAME;
     networkFrame = 0;
     displayedState = MULTI_NET_STATE_CLOSED;
+    appliedSaveRevision = 0;
+    titleSynchronizationActive = false;
+    localTitleReady = false;
+    localTitleInputArmed = false;
+    titleReadyMask = 0;
+    titleStartFrame = MULTI_NET_INVALID_FRAME;
 }
 
 bool MultiPlayerCoordinator::Initialize()
 {
     DWORD nonce;
     DWORD seed;
+    MultiNetWelcomePacket::SaveProgress saveProgress[MULTI_NET_SAVE_SHOT_COUNT];
     if (initialized)
         return true;
     config.Load();
     initialized = true;
     if (config.mode == MULTI_LAUNCH_DISABLED)
         return true;
+    titleSynchronizationActive = true;
+    if (config.mode == MULTI_LAUNCH_GUEST)
+        ClearCurrentSaveProgress();
     nonce = 0;
     seed = 0;
     GenerateSecureRandomNonZeroU32(&nonce);
     if (config.mode == MULTI_LAUNCH_HOST)
+    {
         GenerateSecureRandomNonZeroU32(&seed);
+        CaptureCurrentSaveProgress(saveProgress);
+    }
     if (config.mode == MULTI_LAUNCH_HOST)
         return session.OpenHost(config.localPort, config.bindAddress,
                                 config.selectedTeam, config.inputDelay,
-                                TH08_MULTI_BUILD_FINGERPRINT, nonce, seed);
+                                TH08_MULTI_BUILD_FINGERPRINT, nonce, seed, saveProgress);
     return session.OpenGuest(config.localPort, config.bindAddress,
                              config.hostAddress, config.hostPort,
                              config.selectedTeam, config.inputDelay,
@@ -94,6 +150,12 @@ void MultiPlayerCoordinator::Shutdown()
     gameplayStartFrame = MULTI_NET_INVALID_FRAME;
     capturedSimulationFrame = MULTI_NET_INVALID_FRAME;
     networkFrame = 0;
+    appliedSaveRevision = 0;
+    titleSynchronizationActive = false;
+    localTitleReady = false;
+    localTitleInputArmed = false;
+    titleReadyMask = 0;
+    titleStartFrame = MULTI_NET_INVALID_FRAME;
 }
 
 void MultiPlayerCoordinator::Pump(u32 nowMilliseconds)
@@ -106,6 +168,9 @@ void MultiPlayerCoordinator::Pump(u32 nowMilliseconds)
     {
         session.Pump(nowMilliseconds);
         sessionState = session.GetState();
+        if (config.mode == MULTI_LAUNCH_GUEST && sessionState == MULTI_NET_STATE_CONNECTED &&
+            session.GetSaveRevision() != appliedSaveRevision)
+            ApplyHostSaveProgress();
         if (sessionState != displayedState && g_Supervisor.hwndGameWindow != NULL)
         {
             if (sessionState == MULTI_NET_STATE_LISTENING)
@@ -151,6 +216,92 @@ bool MultiPlayerCoordinator::IsSessionFailed() const
 bool MultiPlayerCoordinator::ShouldSynchronizeInputs() const
 {
     return IsConfigured() && IsConnected();
+}
+
+bool MultiPlayerCoordinator::IsGuestSaveClient() const
+{
+    return initialized && config.mode == MULTI_LAUNCH_GUEST;
+}
+
+bool MultiPlayerCoordinator::HasHostSaveProgress() const
+{
+    return IsGuestSaveClient() && session.GetSaveRevision() != 0;
+}
+
+bool MultiPlayerCoordinator::ApplyHostSaveProgress()
+{
+    const MultiNetWelcomePacket::SaveProgress *saveProgress;
+    u32 saveRevision;
+    u32 shot;
+    u32 difficulty;
+    if (!HasHostSaveProgress())
+        return false;
+    saveRevision = session.GetSaveRevision();
+    if (saveRevision == appliedSaveRevision)
+        return false;
+    saveProgress = session.GetSaveProgress();
+    for (shot = 0; shot < MULTI_NET_SAVE_SHOT_COUNT; ++shot)
+    {
+        for (difficulty = 0; difficulty < MULTI_NET_SAVE_DIFFICULTY_COUNT; ++difficulty)
+        {
+            g_GameManager.clrdData[shot].difficultiesClearedWithoutRetries[difficulty] =
+                saveProgress[shot].clearedWithoutRetries[difficulty];
+            g_GameManager.clrdData[shot].difficultiesClearedWithRetries[difficulty] =
+                saveProgress[shot].clearedWithRetries[difficulty];
+        }
+        g_GameManager.clrdData[shot].pendingEndingSkip =
+            saveProgress[shot].pendingEndingSkip != 0;
+    }
+    g_GameManager.flags.isExtraUnlocked = g_GameManager.IsExtraUnlocked();
+    g_GameManager.flags.isSpellPracticeUnlocked = g_GameManager.IsSpellPracticeUnlocked();
+    g_GameManager.flags.isExtraUnlockedWithAllTeams =
+        g_GameManager.IsExtraUnlockedWithAllTeams();
+    appliedSaveRevision = saveRevision;
+    return true;
+}
+
+void MultiPlayerCoordinator::BeginTitleSynchronization()
+{
+    MultiNetWelcomePacket::SaveProgress saveProgress[MULTI_NET_SAVE_SHOT_COUNT];
+    if (!IsConfigured())
+        return;
+    titleSynchronizationActive = true;
+    localTitleReady = false;
+    localTitleInputArmed = false;
+    titleReadyMask = 0;
+    titleStartFrame = MULTI_NET_INVALID_FRAME;
+    if (config.mode == MULTI_LAUNCH_HOST)
+    {
+        CaptureCurrentSaveProgress(saveProgress);
+        session.UpdateHostSaveProgress(saveProgress);
+    }
+    else
+    {
+        ApplyHostSaveProgress();
+    }
+}
+
+void MultiPlayerCoordinator::MarkLocalTitleReady()
+{
+    if (titleSynchronizationActive)
+        localTitleReady = true;
+}
+
+void MultiPlayerCoordinator::EndTitleSynchronization()
+{
+    titleSynchronizationActive = false;
+    localTitleReady = false;
+    localTitleInputArmed = false;
+    titleReadyMask = 0;
+    titleStartFrame = MULTI_NET_INVALID_FRAME;
+}
+
+bool MultiPlayerCoordinator::IsTitleInputReady() const
+{
+    if (!IsConfigured() || !titleSynchronizationActive)
+        return true;
+    return IsConnected() && titleReadyMask == 3 &&
+           titleStartFrame != MULTI_NET_INVALID_FRAME && networkFrame >= titleStartFrame;
 }
 
 MultiNetSessionState MultiPlayerCoordinator::GetSessionState() const { return session.GetState(); }
@@ -213,9 +364,11 @@ bool MultiPlayerCoordinator::AcquireGameplayInputs(u16 localButtons, u16 *p1Butt
     u32 frame;
     u32 hashFrame;
     u32 hash;
+    bool synchronizeTitle;
     if (!IsConnected())
         return false;
     frame = networkFrame;
+    synchronizeTitle = titleSynchronizationActive && !gameplayActive;
     if (capturedSimulationFrame != frame)
     {
         if (gameplayActive && gameplaySetupStarted && gameplayReadyMask != 3 &&
@@ -232,12 +385,39 @@ bool MultiPlayerCoordinator::AcquireGameplayInputs(u16 localButtons, u16 *p1Butt
             hashFrame = MULTI_NET_INVALID_FRAME;
             hash = 0;
         }
+        if (synchronizeTitle)
+        {
+            if (!IsTitleInputReady())
+                localButtons = localTitleReady ? MULTI_INPUT_TITLE_READY : 0;
+            else if (!localTitleInputArmed)
+            {
+                if (localButtons == 0)
+                    localTitleInputArmed = true;
+                localButtons = 0;
+            }
+        }
         if (!session.CaptureLocalInput(frame, localButtons, hashFrame, hash))
             return false;
         capturedSimulationFrame = frame;
     }
     if (!session.TryGetFrameInputs(frame, p1Buttons, p2Buttons))
         return false;
+    if (synchronizeTitle)
+    {
+        if ((*p1Buttons & MULTI_INPUT_TITLE_READY) != 0)
+            titleReadyMask |= 1;
+        if ((*p2Buttons & MULTI_INPUT_TITLE_READY) != 0)
+            titleReadyMask |= 2;
+        *p1Buttons &= static_cast<u16>(~MULTI_INPUT_TITLE_READY);
+        *p2Buttons &= static_cast<u16>(~MULTI_INPUT_TITLE_READY);
+        if (titleReadyMask == 3 && titleStartFrame == MULTI_NET_INVALID_FRAME)
+            titleStartFrame = frame + session.GetInputDelay() + 2;
+        if (titleStartFrame == MULTI_NET_INVALID_FRAME || frame < titleStartFrame)
+        {
+            *p1Buttons = 0;
+            *p2Buttons = 0;
+        }
+    }
     if (gameplayActive && gameplaySetupStarted && gameplayReadyMask != 3)
     {
         if ((*p1Buttons & TH_BUTTON_RESET) != 0)

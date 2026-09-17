@@ -251,6 +251,29 @@ ChainCallbackResult TitleScreen::OnUpdate(TitleScreen *titleScreen)
         }
     }
 
+#ifdef TH08_MULTI
+    if (g_MultiPlayerCoordinator.IsConfigured())
+    {
+        g_MultiPlayerCoordinator.MarkLocalTitleReady();
+        if (!g_MultiPlayerCoordinator.IsTitleInputReady())
+        {
+            g_LastFrameInput = 0;
+            g_CurFrameInput = 0;
+            g_NumOfFramesInputsWereHeld = 0;
+            if (!g_MultiPlayerCoordinator.IsSessionFailed())
+            {
+                SetWindowTextA(g_Supervisor.hwndGameWindow,
+                               "th08-multi v0.32 - waiting for both title screens");
+            }
+        }
+        else if (titleScreen->currentScreen == TitleCurrentScreen_StartMenu)
+        {
+            SetWindowTextA(g_Supervisor.hwndGameWindow,
+                           "th08-multi v0.32 - connected (menus synchronized)");
+        }
+    }
+#endif
+
     switch (titleScreen->currentScreen)
     {
     case TitleCurrentScreen_StartMenu:
@@ -450,7 +473,11 @@ ChainCallbackResult TitleScreen::OnUpdateStartMenu()
             this->startMenuIdleFrames = 0;
         }
 
+#ifdef TH08_MULTI
+        if (!g_MultiPlayerCoordinator.IsConfigured() && this->startMenuIdleFrames > 1500)
+#else
         if (this->startMenuIdleFrames > 1500)
+#endif
         {
             g_GameManager.currentDemoReplay++;
             g_GameManager.currentDemoReplay %= ARRAY_SIZE_SIGNED(g_DemoReplayFiles);
@@ -3895,12 +3922,21 @@ ZunResult TitleScreen::ActualAddedCallback()
 
     score = ScoreDat::OpenScore("score.dat");
 
+#ifdef TH08_MULTI
+    if (!g_MultiPlayerCoordinator.IsGuestSaveClient())
+        ScoreDat::ParseCLRD(score, g_GameManager.clrdData);
+#else
     ScoreDat::ParseCLRD(score, g_GameManager.clrdData);
+#endif
     ScoreDat::ParsePSCR(score, g_GameManager.pscrData);
     ScoreDat::ParseCATK(score, g_GameManager.catkData);
     ScoreDat::ParseFLSP(score, &g_GameManager.flsp);
 
     ScoreDat::ReleaseScore(score);
+
+#ifdef TH08_MULTI
+    g_MultiPlayerCoordinator.ApplyHostSaveProgress();
+#endif
 
     g_GameManager.flags.isExtraUnlocked = g_GameManager.IsExtraUnlocked();
     g_GameManager.flags.isSpellPracticeUnlocked = g_GameManager.IsSpellPracticeUnlocked();
@@ -3955,6 +3991,9 @@ ZunResult TitleScreen::ActualAddedCallback()
     g_GameManager.demoFrameCount = 0;
 
     this->state = TitleScreenState_Loading;
+#ifdef TH08_MULTI
+    g_MultiPlayerCoordinator.BeginTitleSynchronization();
+#endif
     g_Supervisor.ThreadStart((LPTHREAD_START_ROUTINE)TitleScreen::TitleSetupThread, NULL);
 
     return ZUN_SUCCESS;
@@ -4178,6 +4217,9 @@ ZunResult TitleScreen::AddedCallback(TitleScreen *titleScreen)
 
 ZunResult TitleScreen::DeletedCallback(TitleScreen *titleScreen)
 {
+#ifdef TH08_MULTI
+    g_MultiPlayerCoordinator.EndTitleSynchronization();
+#endif
     g_Supervisor.d3dDevice->ResourceManagerDiscardBytes(0);
 
     g_AnmManager->ReleaseAnm(ANM_FILE_SLOT_TITLE);

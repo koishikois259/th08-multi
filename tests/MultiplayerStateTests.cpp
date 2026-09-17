@@ -347,6 +347,15 @@ void TestEverySharedHudResourceAffectsStateHash()
     --shared.pointItemValue;
     ++shared.totalTimeOrbs;
     Expect(original != state.ComputeStateHash(positions, shared), "shared total Time changes the hash");
+    --shared.totalTimeOrbs;
+    ++shared.currentStage;
+    Expect(original != state.ComputeStateHash(positions, shared), "current stage changes the hash");
+    --shared.currentStage;
+    ++shared.finalStageRoute;
+    Expect(original != state.ComputeStateHash(positions, shared), "final route changes the hash");
+    --shared.finalStageRoute;
+    ++shared.dialogueOption;
+    Expect(original != state.ComputeStateHash(positions, shared), "dialogue choice changes the hash");
 }
 
 } // namespace

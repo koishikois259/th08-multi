@@ -360,6 +360,11 @@ u32 MultiPlayerState::ComputeStateHash(
     hash = MixHash(hash, shared.activeBullets);
     hash = MixHash(hash, static_cast<u32>(shared.bossLife));
     hash = MixHash(hash, static_cast<u32>(shared.bossPhase));
+    hash = MixHash(hash, shared.currentStage);
+    hash = MixHash(hash, shared.finalStageRoute);
+    hash = MixHash(hash, shared.stageTransitionState);
+    hash = MixHash(hash, static_cast<u32>(shared.dialogueMessage));
+    hash = MixHash(hash, shared.dialogueOption);
     return hash;
 }
 

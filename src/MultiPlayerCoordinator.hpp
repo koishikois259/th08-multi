@@ -39,6 +39,13 @@ class MultiPlayerCoordinator
     bool IsGameplaySimulationReady() const;
     bool IsSessionFailed() const;
     bool ShouldSynchronizeInputs() const;
+    bool IsGuestSaveClient() const;
+    bool HasHostSaveProgress() const;
+    bool ApplyHostSaveProgress();
+    void BeginTitleSynchronization();
+    void MarkLocalTitleReady();
+    void EndTitleSynchronization();
+    bool IsTitleInputReady() const;
     MultiNetSessionState GetSessionState() const;
     MultiNetSessionError GetSessionError() const;
 
@@ -69,6 +76,12 @@ class MultiPlayerCoordinator
     u32 gameplayStartFrame;
     u8 selectedTeams[2];
     MultiNetSessionState displayedState;
+    u32 appliedSaveRevision;
+    bool titleSynchronizationActive;
+    bool localTitleReady;
+    bool localTitleInputArmed;
+    u8 titleReadyMask;
+    u32 titleStartFrame;
 };
 
 extern MultiPlayerCoordinator g_MultiPlayerCoordinator;

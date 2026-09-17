@@ -15,7 +15,11 @@ namespace
 const u32 MULTI_NET_MAGIC = 0x54483038; // "TH08" on the wire.
 const u32 MULTI_NET_COMMON_HEADER_SIZE = 12;
 const u32 MULTI_NET_HELLO_SIZE = 28;
-const u32 MULTI_NET_WELCOME_SIZE = 36;
+const u32 MULTI_NET_SAVE_PROGRESS_SIZE = 21;
+const u32 MULTI_NET_WELCOME_PROGRESS_OFFSET = 40;
+const u32 MULTI_NET_WELCOME_SIZE =
+    MULTI_NET_WELCOME_PROGRESS_OFFSET +
+    MULTI_NET_SAVE_SHOT_COUNT * MULTI_NET_SAVE_PROGRESS_SIZE;
 const u32 MULTI_NET_INPUT_HEADER_SIZE = 32;
 const u32 MULTI_NET_INPUT_SAMPLE_SIZE = 6;
 const u32 MULTI_NET_DISCONNECT_SIZE = 20;
@@ -117,11 +121,20 @@ bool DecodeMultiNetHelloPacket(const u8 *data, u32 dataSize, MultiNetHelloPacket
 bool EncodeMultiNetWelcomePacket(
     const MultiNetWelcomePacket &packet, u8 *output, u32 outputCapacity, u32 *outputSize)
 {
+    u32 shot;
+    u32 difficulty;
+    u32 cursor;
     if (output == NULL || outputSize == NULL || outputCapacity < MULTI_NET_WELCOME_SIZE ||
         packet.sessionId == 0 || packet.hostNonce == 0 || packet.randomSeed == 0 ||
+        packet.saveRevision == 0 ||
         packet.hostTeam >= 4 || packet.guestTeam >= 4 || packet.assignedSlot != 1 ||
         packet.inputDelay < MULTI_NET_MIN_INPUT_DELAY || packet.inputDelay > MULTI_NET_MAX_INPUT_DELAY)
         return false;
+    for (shot = 0; shot < MULTI_NET_SAVE_SHOT_COUNT; ++shot)
+    {
+        if (packet.saveProgress[shot].pendingEndingSkip > 1)
+            return false;
+    }
     WriteHeader(output, MULTI_NET_PACKET_WELCOME, 0, MULTI_NET_WELCOME_SIZE);
     WriteU32(output + 12, packet.sessionId);
     WriteU32(output + 16, packet.hostNonce);
@@ -131,13 +144,34 @@ bool EncodeMultiNetWelcomePacket(
     output[30] = packet.hostTeam;
     output[31] = packet.guestTeam;
     output[32] = packet.assignedSlot;
-    output[33] = output[34] = output[35] = 0;
+    output[33] = MULTI_NET_SAVE_SNAPSHOT_VERSION;
+    output[34] = MULTI_NET_SAVE_SHOT_COUNT;
+    output[35] = MULTI_NET_SAVE_DIFFICULTY_COUNT;
+    WriteU32(output + 36, packet.saveRevision);
+    cursor = MULTI_NET_WELCOME_PROGRESS_OFFSET;
+    for (shot = 0; shot < MULTI_NET_SAVE_SHOT_COUNT; ++shot)
+    {
+        for (difficulty = 0; difficulty < MULTI_NET_SAVE_DIFFICULTY_COUNT; ++difficulty)
+        {
+            WriteU16(output + cursor, packet.saveProgress[shot].clearedWithoutRetries[difficulty]);
+            cursor += 2;
+        }
+        for (difficulty = 0; difficulty < MULTI_NET_SAVE_DIFFICULTY_COUNT; ++difficulty)
+        {
+            WriteU16(output + cursor, packet.saveProgress[shot].clearedWithRetries[difficulty]);
+            cursor += 2;
+        }
+        output[cursor++] = packet.saveProgress[shot].pendingEndingSkip;
+    }
     *outputSize = MULTI_NET_WELCOME_SIZE;
     return true;
 }
 
 bool DecodeMultiNetWelcomePacket(const u8 *data, u32 dataSize, MultiNetWelcomePacket *packet)
 {
+    u32 shot;
+    u32 difficulty;
+    u32 cursor;
     if (packet == NULL || dataSize != MULTI_NET_WELCOME_SIZE ||
         !ValidateHeader(data, dataSize, MULTI_NET_PACKET_WELCOME) || data[9] != 0)
         return false;
@@ -149,8 +183,29 @@ bool DecodeMultiNetWelcomePacket(const u8 *data, u32 dataSize, MultiNetWelcomePa
     packet->hostTeam = data[30];
     packet->guestTeam = data[31];
     packet->assignedSlot = data[32];
+    packet->saveRevision = ReadU32(data + 36);
+    if (data[33] != MULTI_NET_SAVE_SNAPSHOT_VERSION ||
+        data[34] != MULTI_NET_SAVE_SHOT_COUNT ||
+        data[35] != MULTI_NET_SAVE_DIFFICULTY_COUNT || packet->saveRevision == 0)
+        return false;
+    cursor = MULTI_NET_WELCOME_PROGRESS_OFFSET;
+    for (shot = 0; shot < MULTI_NET_SAVE_SHOT_COUNT; ++shot)
+    {
+        for (difficulty = 0; difficulty < MULTI_NET_SAVE_DIFFICULTY_COUNT; ++difficulty)
+        {
+            packet->saveProgress[shot].clearedWithoutRetries[difficulty] = ReadU16(data + cursor);
+            cursor += 2;
+        }
+        for (difficulty = 0; difficulty < MULTI_NET_SAVE_DIFFICULTY_COUNT; ++difficulty)
+        {
+            packet->saveProgress[shot].clearedWithRetries[difficulty] = ReadU16(data + cursor);
+            cursor += 2;
+        }
+        packet->saveProgress[shot].pendingEndingSkip = data[cursor++];
+        if (packet->saveProgress[shot].pendingEndingSkip > 1)
+            return false;
+    }
     return packet->sessionId != 0 && packet->hostNonce != 0 && packet->randomSeed != 0 &&
-           data[33] == 0 && data[34] == 0 && data[35] == 0 &&
            packet->hostTeam < 4 && packet->guestTeam < 4 &&
            packet->assignedSlot == 1 && packet->inputDelay >= MULTI_NET_MIN_INPUT_DELAY &&
            packet->inputDelay <= MULTI_NET_MAX_INPUT_DELAY;

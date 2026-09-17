@@ -40,7 +40,7 @@ void TestRoundTrip()
 {
     MultiNetInputPacket input = CreatePacket();
     MultiNetInputPacket output = { 0 };
-    u8 wire[256];
+    u8 wire[512];
     u32 wireSize = 0;
 
     Expect(EncodeMultiNetInputPacket(input, wire, sizeof(wire), &wireSize), "input packet encodes");
@@ -61,7 +61,7 @@ void TestRejectsMalformedPackets()
 {
     MultiNetInputPacket packet = CreatePacket();
     MultiNetInputPacket decoded = { 0 };
-    u8 wire[256];
+    u8 wire[512];
     u32 wireSize = 0;
 
     packet.sampleCount = MULTI_NET_MAX_REDUNDANT_INPUTS + 1;
@@ -96,7 +96,7 @@ void TestHandshakeAndDisconnectGuards()
     MultiNetHelloPacket decodedHello = { 0 };
     MultiNetWelcomePacket decodedWelcome = { 0 };
     MultiNetDisconnectPacket decodedDisconnect = { 0 };
-    u8 wire[256];
+    u8 wire[512];
     u32 wireSize;
 
     hello.buildFingerprint = 0x00020026;
@@ -122,13 +122,28 @@ void TestHandshakeAndDisconnectGuards()
     welcome.hostTeam = 1;
     welcome.guestTeam = 2;
     welcome.assignedSlot = 1;
+    welcome.saveRevision = 7;
+    welcome.saveProgress[0].clearedWithoutRetries[0] = 0x1234;
+    welcome.saveProgress[0].clearedWithRetries[4] = 0x5678;
+    welcome.saveProgress[12].pendingEndingSkip = 1;
     Expect(EncodeMultiNetWelcomePacket(welcome, wire, sizeof(wire), &wireSize),
            "valid welcome encodes");
     Expect(DecodeMultiNetWelcomePacket(wire, wireSize, &decodedWelcome),
            "valid welcome decodes");
-    wire[35] = 1;
+    Expect(decodedWelcome.saveRevision == 7, "save revision round-trips");
+    Expect(decodedWelcome.saveProgress[0].clearedWithoutRetries[0] == 0x1234,
+           "save clear progress round-trips");
+    Expect(decodedWelcome.saveProgress[0].clearedWithRetries[4] == 0x5678,
+           "save retry progress round-trips");
+    Expect(decodedWelcome.saveProgress[12].pendingEndingSkip == 1,
+           "save ending flag round-trips");
+    wire[33] = 0;
     Expect(!DecodeMultiNetWelcomePacket(wire, wireSize, &decodedWelcome),
-           "nonzero welcome reserved byte is rejected");
+           "wrong save snapshot version is rejected");
+    wire[33] = MULTI_NET_SAVE_SNAPSHOT_VERSION;
+    wire[60] = 2;
+    Expect(!DecodeMultiNetWelcomePacket(wire, wireSize, &decodedWelcome),
+           "invalid save ending flag is rejected");
 
     disconnect.sessionId = 0x11223344;
     disconnect.reason = MULTI_NET_DISCONNECT_USER;
@@ -172,7 +187,7 @@ void ExerciseAllDecoders(const u8 *data, u32 size)
 
 void TestDeterministicMalformedCorpus()
 {
-    u8 data[256];
+    u8 data[512];
     unsigned long state = 0x54483038UL;
     u32 size;
     u32 iteration;

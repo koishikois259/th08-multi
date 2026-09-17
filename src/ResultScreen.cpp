@@ -3,6 +3,9 @@
 #include "AsciiManager.hpp"
 #include "Config.hpp"
 #include "GameManager.hpp"
+#ifdef TH08_MULTI
+#include "MultiPlayerCoordinator.hpp"
+#endif
 #include "ResultScreen.hpp"
 #include "ScreenEffect.hpp"
 #include "SoundPlayer.hpp"
@@ -150,6 +153,13 @@ void ResultScreen::WriteScore(ResultScreen *result)
     u8 *bytes;
     u8 xorValue;
     u8 byteValue;
+
+#ifdef TH08_MULTI
+    // P2 uses P1's in-memory progress for the connected session, but must not
+    // persist that authoritative snapshot over P2's own score.dat.
+    if (g_MultiPlayerCoordinator.IsGuestSaveClient())
+        return;
+#endif
 
     currentOffset = 0;
 
@@ -2958,7 +2968,13 @@ ZunResult ResultScreen::AddedCallback(ResultScreen *result)
         result->currentState != RESULT_SCREEN_STATE_INITIAL_SCORE_SAVE)
     {
         ScoreDat::ParseCATK(result->scoreDat, g_GameManager.catkData);
+#ifdef TH08_MULTI
+        if (!g_MultiPlayerCoordinator.IsGuestSaveClient())
+            ScoreDat::ParseCLRD(result->scoreDat, g_GameManager.clrdData);
+        g_MultiPlayerCoordinator.ApplyHostSaveProgress();
+#else
         ScoreDat::ParseCLRD(result->scoreDat, g_GameManager.clrdData);
+#endif
         // Another of what appears to be an if statement with no block.
         if (g_GameManager.IsPhantasmUnlocked())
         {
