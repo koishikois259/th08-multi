@@ -76,11 +76,6 @@ struct MultiPlayerSharedSnapshot
     u32 activeBullets;
     i32 bossLife;
     i32 bossPhase;
-    u32 currentStage;
-    u32 finalStageRoute;
-    u32 stageTransitionState;
-    i32 dialogueMessage;
-    u32 dialogueOption;
 };
 
 class MultiPlayerState

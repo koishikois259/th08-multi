@@ -72,6 +72,7 @@ class MultiPlayerCoordinator
     bool initialized;
     bool gameplayActive;
     bool gameplaySetupStarted;
+    bool gameplayRngSynchronized;
     u8 gameplayReadyMask;
     u32 gameplayStartFrame;
     u8 selectedTeams[2];

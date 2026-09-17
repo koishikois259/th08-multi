@@ -38,9 +38,34 @@ void CaptureCurrentSaveProgress(
     }
 }
 
+u32 FingerprintSaveProgress(
+    const MultiNetWelcomePacket::SaveProgress saveProgress[MULTI_NET_SAVE_SHOT_COUNT])
+{
+    u32 hash = 2166136261u;
+    u32 shot;
+    u32 difficulty;
+    for (shot = 0; shot < MULTI_NET_SAVE_SHOT_COUNT; ++shot)
+    {
+        for (difficulty = 0; difficulty < MULTI_NET_SAVE_DIFFICULTY_COUNT; ++difficulty)
+        {
+            hash = (hash ^ saveProgress[shot].clearedWithoutRetries[difficulty]) * 16777619u;
+            hash = (hash ^ saveProgress[shot].clearedWithRetries[difficulty]) * 16777619u;
+        }
+        hash = (hash ^ saveProgress[shot].pendingEndingSkip) * 16777619u;
+    }
+    return hash;
+}
+
 void ClearCurrentSaveProgress()
 {
+    MultiNetWelcomePacket::SaveProgress localSaveProgress[MULTI_NET_SAVE_SHOT_COUNT];
     u32 shot;
+    CaptureCurrentSaveProgress(localSaveProgress);
+    g_GameErrorContext.Log(
+        "multi save: ignored guest local progress fingerprint=%08x team0-normal=%04x/%04x\n",
+        FingerprintSaveProgress(localSaveProgress),
+        localSaveProgress[SHOT_REIMU_YUKARI].clearedWithoutRetries[NORMAL],
+        localSaveProgress[SHOT_REIMU_YUKARI].clearedWithRetries[NORMAL]);
     for (shot = 0; shot < MULTI_NET_SAVE_SHOT_COUNT; ++shot)
     {
         memset(g_GameManager.clrdData[shot].difficultiesClearedWithoutRetries, 0,
@@ -93,6 +118,7 @@ MultiPlayerCoordinator::MultiPlayerCoordinator()
     initialized = false;
     gameplayActive = false;
     gameplaySetupStarted = false;
+    gameplayRngSynchronized = false;
     gameplayReadyMask = 0;
     gameplayStartFrame = MULTI_NET_INVALID_FRAME;
     selectedTeams[0] = 0;
@@ -129,6 +155,11 @@ bool MultiPlayerCoordinator::Initialize()
     {
         GenerateSecureRandomNonZeroU32(&seed);
         CaptureCurrentSaveProgress(saveProgress);
+        g_GameErrorContext.Log(
+            "multi save: host progress fingerprint=%08x team0-normal=%04x/%04x\n",
+            FingerprintSaveProgress(saveProgress),
+            saveProgress[SHOT_REIMU_YUKARI].clearedWithoutRetries[NORMAL],
+            saveProgress[SHOT_REIMU_YUKARI].clearedWithRetries[NORMAL]);
     }
     if (config.mode == MULTI_LAUNCH_HOST)
         return session.OpenHost(config.localPort, config.bindAddress,
@@ -146,6 +177,7 @@ void MultiPlayerCoordinator::Shutdown()
     initialized = false;
     gameplayActive = false;
     gameplaySetupStarted = false;
+    gameplayRngSynchronized = false;
     gameplayReadyMask = 0;
     gameplayStartFrame = MULTI_NET_INVALID_FRAME;
     capturedSimulationFrame = MULTI_NET_INVALID_FRAME;
@@ -257,6 +289,11 @@ bool MultiPlayerCoordinator::ApplyHostSaveProgress()
     g_GameManager.flags.isExtraUnlockedWithAllTeams =
         g_GameManager.IsExtraUnlockedWithAllTeams();
     appliedSaveRevision = saveRevision;
+    g_GameErrorContext.Log(
+        "multi save: applied host revision=%u fingerprint=%08x team0-normal=%04x/%04x\n",
+        saveRevision, FingerprintSaveProgress(saveProgress),
+        saveProgress[SHOT_REIMU_YUKARI].clearedWithoutRetries[NORMAL],
+        saveProgress[SHOT_REIMU_YUKARI].clearedWithRetries[NORMAL]);
     return true;
 }
 
@@ -318,6 +355,9 @@ void MultiPlayerCoordinator::BeginGameplay(bool newRun, i32 initialLives,
                                  initialLives, initialBombs, initialPower);
     gameplayActive = true;
     gameplaySetupStarted = true;
+    gameplayRngSynchronized = false;
+    gameplayReadyMask = 0;
+    gameplayStartFrame = MULTI_NET_INVALID_FRAME;
     capturedSimulationFrame = MULTI_NET_INVALID_FRAME;
     if (g_Supervisor.hwndGameWindow != NULL)
     {
@@ -336,6 +376,7 @@ void MultiPlayerCoordinator::PrepareGameplay(i32 initialLives, i32 initialBombs,
                              initialLives, initialBombs, initialPower);
     gameplayActive = true;
     gameplaySetupStarted = false;
+    gameplayRngSynchronized = false;
     gameplayReadyMask = 0;
     gameplayStartFrame = MULTI_NET_INVALID_FRAME;
     capturedSimulationFrame = MULTI_NET_INVALID_FRAME;
@@ -369,6 +410,13 @@ bool MultiPlayerCoordinator::AcquireGameplayInputs(u16 localButtons, u16 *p1Butt
         return false;
     frame = networkFrame;
     synchronizeTitle = titleSynchronizationActive && !gameplayActive;
+    if (IsGameplaySimulationReady() && !gameplayRngSynchronized)
+    {
+        u16 synchronizedSeed = static_cast<u16>(session.GetRandomSeed());
+        *reinterpret_cast<u16 *>(&g_Rng) = synchronizedSeed;
+        g_GameManager.stageRngSeed = synchronizedSeed;
+        gameplayRngSynchronized = true;
+    }
     if (capturedSimulationFrame != frame)
     {
         if (gameplayActive && gameplaySetupStarted && gameplayReadyMask != 3 &&
@@ -377,7 +425,10 @@ bool MultiPlayerCoordinator::AcquireGameplayInputs(u16 localButtons, u16 *p1Butt
         if (IsGameplaySimulationReady() &&
             g_MultiPlayerState.frameNumber % 30 == 0)
         {
-            hashFrame = g_MultiPlayerState.frameNumber;
+            // networkFrame is monotonic for the whole connection.  The
+            // gameplay counter resets for a new run, so using it here can
+            // collide with a stale hash from the previous run.
+            hashFrame = frame;
             hash = ComputeCurrentMultiPlayerStateHash();
         }
         else
@@ -444,6 +495,7 @@ void MultiPlayerCoordinator::EndGameplay()
 {
     gameplayActive = false;
     gameplaySetupStarted = false;
+    gameplayRngSynchronized = false;
     gameplayReadyMask = 0;
     gameplayStartFrame = MULTI_NET_INVALID_FRAME;
     capturedSimulationFrame = MULTI_NET_INVALID_FRAME;
