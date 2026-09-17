@@ -1,4 +1,4 @@
-# th08-multi v0.32 validation ledger
+# th08-multi v0.33 validation ledger
 
 This ledger separates implemented code, automated rule checks, and observed
 two-process gameplay. An item is accepted only after the relevant observable
@@ -72,9 +72,16 @@ Use [the manual network testing guide](MULTIPLAYER_TESTING.md) and the bundled
   both window titles reported `connected (select teams in game / delay 3)`,
   then a v0.32 same-team smoke run reached
   `playing (P1 team 0 / P2 team 0 / delay 3)` on both processes.
-- The v0.32 six-file patch archive includes the GitHub source and release URLs
-  in its README and has SHA-256
-  `e5f898bbb829eda54603e5130aa17bae88dac140689b4d958baac6216a9a0267`.
+- A v0.33 isolated save-authority run used progressed P1 clear data
+  (`8077/8077`) and a fresh P2 save (`0001/0001`). P2 ignored its local clear
+  state, applied the same `e3a81225` normalized progress fingerprint as P1,
+  and both peers produced identical gameplay hashes after entering Stage 1.
+- The v0.33 title readiness barrier held both menus until both processes were
+  ready. Post-load RNG resynchronization eliminated the first gameplay-hash
+  split caused by different loading histories.
+- The v0.33 seven-file patch archive includes the GitHub source and release
+  URLs in its README, includes `联机教程.txt`, and has SHA-256
+  `2c686f1d85f223724be413c32d44fd5954106fbb68aa316814e011318549c37d`.
 - Installation into the verified `th08-origin` directory preserved the original
   `th08.exe` hash, all installed payload hashes matched, and the installed
   launcher remained alive during its startup smoke test.

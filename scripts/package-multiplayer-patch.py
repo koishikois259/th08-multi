@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create and optionally install the data-free th08-multi v0.32 patch."""
+"""Create and optionally install the data-free th08-multi v0.33 patch."""
 
 from __future__ import annotations
 
@@ -11,10 +11,10 @@ import zipfile
 
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_OUTPUT = ROOT.parent / "th08-multi-v0.32-patch.zip"
+DEFAULT_OUTPUT = ROOT.parent / "th08-multi-v0.33-patch.zip"
 EXPECTED_TH08_SIZE = 840_704
 EXPECTED_TH08_SHA256 = "330fbdbf58a710829d65277b4f312cfbb38d5448b3df523e79350b879213d924"
-ZIP_TIMESTAMP = (2026, 9, 13, 0, 0, 0)
+ZIP_TIMESTAMP = (2026, 9, 17, 0, 0, 0)
 
 PAYLOAD_SOURCES = {
     "th08-multi.exe": ROOT / "build" / "th08-multi.exe",
@@ -22,6 +22,7 @@ PAYLOAD_SOURCES = {
     "th08_multi.ini.example": ROOT / "th08_multi.ini.example",
     "th08-multi-README.txt": ROOT / "docs" / "MULTIPLAYER_PATCH_README.txt",
     "th08-multi-LICENSE.txt": ROOT / "LICENSE",
+    "联机教程.txt": ROOT.parent / "联机教程.txt",
 }
 
 
@@ -50,7 +51,7 @@ def load_payload() -> dict[str, bytes]:
     checksums = "".join(
         f"{sha256(payload[name])}  {name}\n" for name in sorted(payload)
     )
-    payload["SHA256SUMS.txt"] = checksums.encode("ascii")
+    payload["SHA256SUMS.txt"] = checksums.encode("utf-8")
     forbidden = {"th08.exe", "th08.dat", "thbgm.dat", "score.dat"}
     if forbidden.intersection(payload):
         raise RuntimeError("patch payload contains copyrighted or user-owned game files")

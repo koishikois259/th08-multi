@@ -1,4 +1,4 @@
-th08-multi v0.32 联机补丁
+th08-multi v0.33 联机补丁
 ========================
 
 一、项目性质与权利声明
@@ -24,7 +24,7 @@ https://touhou-project.news/guidelines_en/
   330fbdbf58a710829d65277b4f312cfbb38d5448b3df523e79350b879213d924
 
 汉化版、体验版、其他版本或经过修改的游戏数据不在支持范围内。
-联机双方必须使用完全相同的 v0.32 补丁和相同版本的原版游戏数据。
+联机双方必须使用完全相同的 v0.33 补丁和相同版本的原版游戏数据。
 
 三、补丁内容与分发边界
 ----------------------
@@ -35,6 +35,7 @@ https://touhou-project.news/guidelines_en/
 - th08_multi.ini.example
 - th08-multi-README.txt
 - th08-multi-LICENSE.txt
+- 联机教程.txt
 - SHA256SUMS.txt
 
 补丁不包含原版 th08.exe、th08.dat、thbgm.dat、音乐、美术素材、存档或
@@ -60,8 +61,8 @@ GitHub Release 页面公布的值为准。
 GitHub 源码：
 https://github.com/koishikois259/th08-multi
 
-v0.32 发布页：
-https://github.com/koishikois259/th08-multi/releases/tag/v0.32
+v0.33 发布页：
+https://github.com/koishikois259/th08-multi/releases/tag/v0.33
 
 五、网络与安全限制
 ------------------
@@ -83,16 +84,20 @@ https://github.com/koishikois259/th08-multi/releases/tag/v0.32
 - 连接及异常状态显示在游戏窗口标题栏，诊断信息写入游戏目录 log.txt。
 - 本项目仍处于测试阶段；请保留存档备份，并优先在可信环境测试。
 
-v0.32 主要修复：
-- 校验声音队列索引、声音缓冲区及 DirectSound 播放状态。
-- 限制放射特效的动态顶点数量，防止写出已分配的顶点缓冲区。
-- 校验 ECL 弹幕变换、激光、Boss、附着特效及远程 Boss 操作的槽位。
-- 校验敌机轨迹长度、碰撞长度、采样步长和轨迹顶点数量。
-- 校验 SHT 文件结构、射击回调、火力档位、持续射击时间线和射击轨迹。
+v0.33 主要修复：
+- 联机时由 P1 的通关进度决定路线、Extra 解锁和其他存档进度条件，
+  P2 的本地通关进度不参与本次联机。
+- 只同步经过边界校验的进度快照，不传输原始 score.dat；P2 的磁盘存档不会被
+  P1 存档覆盖。
+- 双方均进入主菜单后才解锁 P1 的菜单操作，加载期间提前按下的按键会被清除。
+- 联机模式禁用主菜单自动 Demo，因为本版仍不支持 Replay。
+- 在双方完成关卡加载后的共同模拟起点重新统一 RNG，避免加载速度或存档不同
+  导致随机弹幕分叉和 network error 7。
+- 状态校验改用联机会话内单调递增的网络帧标识，避免不断线再开一局时命中上一局的
+  旧校验记录。
 
-以上项目针对 v0.31 崩溃转储所显示的堆损坏风险增加防护。由于转储只能
-显示最终在内存释放路径崩溃，仍需通过 4、5、6、EX 面长时间双机测试确认
-原崩溃是否已完全消失。
+v0.33 包含 v0.32 的全部内存安全防护。仍建议在可信环境中对 4、5、6、EX 面进行
+长时间双机测试。
 
 七、源码、许可证与致谢
 ----------------------
@@ -141,6 +146,7 @@ reporting，请使用该入口；否则请先私下联系维护者，不要在�
 - th08_multi.ini.example
 - th08-multi-README.txt
 - th08-multi-LICENSE.txt
+- 联机教程.txt
 - SHA256SUMS.txt
 
 如需保留联机设置，请在卸载前备份 th08_multi.ini。

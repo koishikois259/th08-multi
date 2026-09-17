@@ -263,13 +263,13 @@ ChainCallbackResult TitleScreen::OnUpdate(TitleScreen *titleScreen)
             if (!g_MultiPlayerCoordinator.IsSessionFailed())
             {
                 SetWindowTextA(g_Supervisor.hwndGameWindow,
-                               "th08-multi v0.32 - waiting for both title screens");
+                               "th08-multi v0.33 - waiting for both title screens");
             }
         }
         else if (titleScreen->currentScreen == TitleCurrentScreen_StartMenu)
         {
             SetWindowTextA(g_Supervisor.hwndGameWindow,
-                           "th08-multi v0.32 - connected (menus synchronized)");
+                           "th08-multi v0.33 - connected (menus synchronized)");
         }
     }
 #endif
@@ -2069,7 +2069,7 @@ ChainCallbackResult TitleScreen::OnUpdateMultiPlayerCharacterSelect()
     this->stateTimer++;
     this->stateTimer2++;
     wsprintfA(windowTitle,
-              "th08-multi v0.32 - team select (P1=%d%s / P2=%d%s)",
+              "th08-multi v0.33 - team select (P1=%d%s / P2=%d%s)",
               this->cursor, (this->multiTeamReadyMask & 1) != 0 ? " READY" : "",
               this->cursor2, (this->multiTeamReadyMask & 2) != 0 ? " READY" : "");
     SetWindowTextA(g_Supervisor.hwndGameWindow, windowTitle);

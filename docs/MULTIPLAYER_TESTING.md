@@ -1,11 +1,11 @@
-# th08-multi v0.32 manual network testing
+# th08-multi v0.33 manual network testing
 
 `th08-multi-launcher.exe` writes `th08_multi.ini`, establishes the pre-game
 connection, and starts `th08-multi.exe` on both peers after the Host issues the
 start command. Keep both executables in the same directory as the legally
 obtained TH08 1.00d data files.
 
-The distributable `th08-multi-v0.32-patch.zip` contains no original game data.
+The distributable `th08-multi-v0.33-patch.zip` contains no original game data.
 Extract all of its files directly into a Japanese TH08 1.00d directory, then
 start `th08-multi-launcher.exe`. The original `th08.exe` remains untouched.
 
@@ -34,7 +34,8 @@ On the Guest PC:
 The launcher reports waiting, connecting, connected, and synchronized-start
 states. After launch, the game window title reports listening, connecting,
 connected, team-select, playing, and network-error states. Both computers must
-use the same v0.32 build and the same Japanese TH08 1.00d game data.
+use the same v0.33 build and the same Japanese TH08 1.00d game data. The title
+menu remains input-locked until both game instances have finished loading it.
 
 ## Security boundary
 

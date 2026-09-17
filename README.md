@@ -1,4 +1,4 @@
-# th08-multi v0.32 Online Multiplayer Patch
+# th08-multi v0.33 Online Multiplayer Patch
 
 ## 1. Project Nature and Rights Notice
 
@@ -21,7 +21,7 @@ Only the Japanese original version 1.00d of *Touhou Eiyashou ~ Imperishable Nigh
 
 Translated versions, trial versions, other releases, or modified game data are not supported.
 
-Both players must use exactly the same v0.32 patch and the same version of the original game data.
+Both players must use exactly the same v0.33 patch and the same version of the original game data.
 
 ## 3. Patch Contents and Distribution Boundaries
 
@@ -32,6 +32,7 @@ This patch archive contains only:
 - `th08_multi.ini.example`
 - `th08-multi-README.txt`
 - `th08-multi-LICENSE.txt`
+- `联机教程.txt`
 - `SHA256SUMS.txt`
 
 The patch does **not** include the original `th08.exe`, `th08.dat`, `thbgm.dat`, music, artwork, save data, or Replay files.
@@ -50,16 +51,15 @@ Do not repackage any of the above original game files, extracted original assets
 6. Both players must configure the same **Input delay**, then click **Connect**.
 7. Once both sides show **Connected**, the Host should click **Start both games**. Both games will then launch from the same start command.
 
-**Important:**
-Always wait until both the Guest and the Host have fully entered the game’s main menu before the Host begins stage or mode selection.
-
-If the Host starts the game while the Guest has not yet reached the main menu, the two clients may become desynchronized.
+The v0.33 game executable keeps title-menu input locked until both peers have
+finished loading the main menu. P1 controls the shared mode and difficulty
+selection after the synchronized menu state is reached.
 
 GitHub source repository:
 https://github.com/koishikois259/th08-multi
 
-v0.32 release page:
-https://github.com/koishikois259/th08-multi/releases/tag/v0.32
+v0.33 release page:
+https://github.com/koishikois259/th08-multi/releases/tag/v0.33
 
 ## 5. Network and Security Limitations
 
@@ -82,16 +82,23 @@ When using a tunneling service, use only a temporary mapping, share the connecti
 - Diagnostic information is written to `log.txt` in the game directory.
 - This project is still in the testing stage. Please keep backups of your save data and test primarily in trusted environments.
 
-### Major fixes in v0.32
+### Major fixes in v0.33
 
-- Validated sound queue indices, sound buffers, and DirectSound playback state before use.
-- Bounded radial-effect geometry before allocating or writing dynamic vertices.
-- Validated ECL bullet transforms, laser slots, Boss slots, attached effects, and remote Boss operations.
-- Validated enemy trail history, collision length, sample stride, and generated trail vertices.
-- Validated SHT structure, shot callbacks, option indices, power tables, persistent-shot timelines, and shot-trail lengths.
-- Accepted valid compact SHT terminators used by the original game data, fixing the initial v0.32 player-initialization rejection.
+- P1 is authoritative for multiplayer clear progress, route availability, and
+  unlock decisions; P2's local clear progress is ignored for the session.
+- P1 progress is transferred as a validated bounded snapshot rather than as a
+  raw `score.dat` file, and P2's disk save is not overwritten with P1 data.
+- Title-menu input is blocked until both peers have reached the ready state;
+  inputs held during loading must be released before menu control resumes.
+- Multiplayer title-screen Demo playback is disabled because Replay remains
+  unsupported.
+- The gameplay RNG is reset at the common post-load simulation boundary, so
+  different loading times or saves cannot split random bullet behavior.
+- Desync hash identifiers now use the monotonic connection timeline, avoiding
+  stale-hash collisions when starting another run without reconnecting.
 
-These changes address the highest-risk heap-corruption candidates indicated by v0.31 crash dumps. A dump reveals the final invalid heap operation rather than necessarily identifying the earlier corrupting write, so sustained two-PC testing through Stages 4, 5, 6, and Extra is still required.
+v0.33 includes all defensive memory-safety checks introduced in v0.32. Long
+two-PC runs through Stages 4, 5, 6, and Extra remain recommended.
 
 ## 7. Source Code, License, and Credits
 
@@ -140,6 +147,7 @@ After closing the game, delete the following patch files:
 - `th08_multi.ini.example`
 - `th08-multi-README.txt`
 - `th08-multi-LICENSE.txt`
+- `联机教程.txt`
 - `SHA256SUMS.txt`
 
 The original game files will not be affected. If you wish to keep your multiplayer configuration, back up `th08_multi.ini` before uninstalling.
