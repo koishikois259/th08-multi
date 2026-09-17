@@ -22,7 +22,7 @@ PAYLOAD_SOURCES = {
     "th08_multi.ini.example": ROOT / "th08_multi.ini.example",
     "th08-multi-README.txt": ROOT / "docs" / "MULTIPLAYER_PATCH_README.txt",
     "th08-multi-LICENSE.txt": ROOT / "LICENSE",
-    "联机教程.txt": ROOT.parent / "联机教程.txt",
+    "联机教程.txt": ROOT / "docs" / "联机教程.txt",
 }
 
 

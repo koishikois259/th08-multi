@@ -81,7 +81,7 @@ Use [the manual network testing guide](MULTIPLAYER_TESTING.md) and the bundled
   split caused by different loading histories.
 - The v0.33 seven-file patch archive includes the GitHub source and release
   URLs in its README, includes `联机教程.txt`, and has SHA-256
-  `2c686f1d85f223724be413c32d44fd5954106fbb68aa316814e011318549c37d`.
+  `4b3542e0b492f29d423d593dd9c7169851e05133ff16795a336d83c014f840ef`.
 - Installation into the verified `th08-origin` directory preserved the original
   `th08.exe` hash, all installed payload hashes matched, and the installed
   launcher remained alive during its startup smoke test.
