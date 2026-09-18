@@ -59,6 +59,7 @@ class MultiPlayerCoordinator
     u8 GetHostTeam() const;
     u8 GetGuestTeam() const;
     u8 GetLocalSlot() const;
+    u8 GetInitialLives() const;
     u32 GetRandomSeed() const;
     u32 GetDesyncFrame() const;
     u32 GetLatestRemoteFrame() const;

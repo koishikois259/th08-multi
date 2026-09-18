@@ -16,7 +16,7 @@ const u32 MULTI_NET_MAGIC = 0x54483038; // "TH08" on the wire.
 const u32 MULTI_NET_COMMON_HEADER_SIZE = 12;
 const u32 MULTI_NET_HELLO_SIZE = 28;
 const u32 MULTI_NET_SAVE_PROGRESS_SIZE = 21;
-const u32 MULTI_NET_WELCOME_PROGRESS_OFFSET = 40;
+const u32 MULTI_NET_WELCOME_PROGRESS_OFFSET = 44;
 const u32 MULTI_NET_WELCOME_SIZE =
     MULTI_NET_WELCOME_PROGRESS_OFFSET +
     MULTI_NET_SAVE_SHOT_COUNT * MULTI_NET_SAVE_PROGRESS_SIZE;
@@ -128,6 +128,7 @@ bool EncodeMultiNetWelcomePacket(
         packet.sessionId == 0 || packet.hostNonce == 0 || packet.randomSeed == 0 ||
         packet.saveRevision == 0 ||
         packet.hostTeam >= 4 || packet.guestTeam >= 4 || packet.assignedSlot != 1 ||
+        packet.initialLives > MULTI_NET_MAX_INITIAL_LIVES ||
         packet.inputDelay < MULTI_NET_MIN_INPUT_DELAY || packet.inputDelay > MULTI_NET_MAX_INPUT_DELAY)
         return false;
     for (shot = 0; shot < MULTI_NET_SAVE_SHOT_COUNT; ++shot)
@@ -148,6 +149,8 @@ bool EncodeMultiNetWelcomePacket(
     output[34] = MULTI_NET_SAVE_SHOT_COUNT;
     output[35] = MULTI_NET_SAVE_DIFFICULTY_COUNT;
     WriteU32(output + 36, packet.saveRevision);
+    output[40] = packet.initialLives;
+    output[41] = output[42] = output[43] = 0;
     cursor = MULTI_NET_WELCOME_PROGRESS_OFFSET;
     for (shot = 0; shot < MULTI_NET_SAVE_SHOT_COUNT; ++shot)
     {
@@ -184,9 +187,12 @@ bool DecodeMultiNetWelcomePacket(const u8 *data, u32 dataSize, MultiNetWelcomePa
     packet->guestTeam = data[31];
     packet->assignedSlot = data[32];
     packet->saveRevision = ReadU32(data + 36);
+    packet->initialLives = data[40];
     if (data[33] != MULTI_NET_SAVE_SNAPSHOT_VERSION ||
         data[34] != MULTI_NET_SAVE_SHOT_COUNT ||
-        data[35] != MULTI_NET_SAVE_DIFFICULTY_COUNT || packet->saveRevision == 0)
+        data[35] != MULTI_NET_SAVE_DIFFICULTY_COUNT || packet->saveRevision == 0 ||
+        packet->initialLives > MULTI_NET_MAX_INITIAL_LIVES ||
+        data[41] != 0 || data[42] != 0 || data[43] != 0)
         return false;
     cursor = MULTI_NET_WELCOME_PROGRESS_OFFSET;
     for (shot = 0; shot < MULTI_NET_SAVE_SHOT_COUNT; ++shot)

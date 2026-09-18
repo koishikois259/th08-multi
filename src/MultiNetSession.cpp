@@ -67,6 +67,7 @@ void MultiNetSession::ResetState()
     hostTeam = 0;
     guestTeam = 0;
     localSlot = 0;
+    initialLives = 0;
     lastSendTime = 0;
     lastReceiveTime = 0;
     currentTime = 0;
@@ -124,6 +125,7 @@ bool MultiNetSession::OpenSocket(u16 localPort, u32 bindAddress)
 bool MultiNetSession::OpenHost(u16 localPort, const char *bindAddress,
                                u8 selectedTeam, u16 delay,
                                u32 fingerprint, u32 hostNonce, u32 seed,
+                               u8 hostInitialLives,
                                const MultiNetWelcomePacket::SaveProgress
                                    initialSaveProgress[MULTI_NET_SAVE_SHOT_COUNT])
 {
@@ -143,10 +145,13 @@ bool MultiNetSession::OpenHost(u16 localPort, const char *bindAddress,
         error = MULTI_NET_ERROR_ADDRESS;
         return false;
     }
-    if (selectedTeam >= 4 || !OpenSocket(localPort, localAddress))
+    if (selectedTeam >= 4 || hostInitialLives > MULTI_NET_MAX_INITIAL_LIVES ||
+        !OpenSocket(localPort, localAddress))
     {
         state = MULTI_NET_STATE_ERROR;
-        error = selectedTeam >= 4 ? MULTI_NET_ERROR_PROTOCOL : MULTI_NET_ERROR_SOCKET;
+        error = selectedTeam >= 4 || hostInitialLives > MULTI_NET_MAX_INITIAL_LIVES
+                    ? MULTI_NET_ERROR_PROTOCOL
+                    : MULTI_NET_ERROR_SOCKET;
         return false;
     }
     role = MULTI_NET_ROLE_HOST;
@@ -159,6 +164,7 @@ bool MultiNetSession::OpenHost(u16 localPort, const char *bindAddress,
     localTeam = selectedTeam;
     hostTeam = selectedTeam;
     localSlot = 0;
+    initialLives = hostInitialLives;
     memcpy(saveProgress, initialSaveProgress, sizeof(saveProgress));
     saveRevision = 1;
     return true;
@@ -266,6 +272,7 @@ void MultiNetSession::SendWelcome()
     packet.hostTeam = hostTeam;
     packet.guestTeam = guestTeam;
     packet.assignedSlot = 1;
+    packet.initialLives = initialLives;
     packet.saveRevision = saveRevision;
     memcpy(packet.saveProgress, saveProgress, sizeof(packet.saveProgress));
     if (!EncodeMultiNetWelcomePacket(packet, data, sizeof(data), &size))
@@ -455,6 +462,7 @@ void MultiNetSession::HandleWelcome(const u8 *data, u32 size, u32 address, u16 p
     hostTeam = packet.hostTeam;
     guestTeam = packet.guestTeam;
     localSlot = packet.assignedSlot;
+    initialLives = packet.initialLives;
     if (packet.saveRevision >= saveRevision)
     {
         saveRevision = packet.saveRevision;
@@ -470,6 +478,23 @@ void MultiNetSession::UpdateHostSaveProgress(
     if (role != MULTI_NET_ROLE_HOST || updatedSaveProgress == NULL)
         return;
     memcpy(saveProgress, updatedSaveProgress, sizeof(saveProgress));
+    ++saveRevision;
+    if (saveRevision == 0)
+        saveRevision = 1;
+    if (state == MULTI_NET_STATE_CONNECTED)
+    {
+        SendWelcome();
+        lastSendTime = currentTime;
+    }
+}
+
+void MultiNetSession::UpdateHostInitialLives(u8 updatedInitialLives)
+{
+    if (role != MULTI_NET_ROLE_HOST ||
+        updatedInitialLives > MULTI_NET_MAX_INITIAL_LIVES ||
+        initialLives == updatedInitialLives)
+        return;
+    initialLives = updatedInitialLives;
     ++saveRevision;
     if (saveRevision == 0)
         saveRevision = 1;
@@ -620,6 +645,7 @@ u32 MultiNetSession::GetRandomSeed() const { return randomSeed; }
 u32 MultiNetSession::GetLatestRemoteFrame() const { return latestRemoteFrame; }
 u32 MultiNetSession::GetLatestAcknowledgedFrame() const { return latestAcknowledgedFrame; }
 u32 MultiNetSession::GetDesyncFrame() const { return desyncFrame; }
+u8 MultiNetSession::GetInitialLives() const { return initialLives; }
 u32 MultiNetSession::GetSaveRevision() const { return saveRevision; }
 const MultiNetWelcomePacket::SaveProgress *MultiNetSession::GetSaveProgress() const
 {

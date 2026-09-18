@@ -122,6 +122,7 @@ void TestHandshakeAndDisconnectGuards()
     welcome.hostTeam = 1;
     welcome.guestTeam = 2;
     welcome.assignedSlot = 1;
+    welcome.initialLives = 5;
     welcome.saveRevision = 7;
     welcome.saveProgress[0].clearedWithoutRetries[0] = 0x1234;
     welcome.saveProgress[0].clearedWithRetries[4] = 0x5678;
@@ -131,17 +132,32 @@ void TestHandshakeAndDisconnectGuards()
     Expect(DecodeMultiNetWelcomePacket(wire, wireSize, &decodedWelcome),
            "valid welcome decodes");
     Expect(decodedWelcome.saveRevision == 7, "save revision round-trips");
+    Expect(decodedWelcome.initialLives == 5, "host initial lives round-trips");
     Expect(decodedWelcome.saveProgress[0].clearedWithoutRetries[0] == 0x1234,
            "save clear progress round-trips");
     Expect(decodedWelcome.saveProgress[0].clearedWithRetries[4] == 0x5678,
            "save retry progress round-trips");
     Expect(decodedWelcome.saveProgress[12].pendingEndingSkip == 1,
            "save ending flag round-trips");
+    welcome.initialLives = MULTI_NET_MAX_INITIAL_LIVES + 1;
+    Expect(!EncodeMultiNetWelcomePacket(welcome, wire, sizeof(wire), &wireSize),
+           "invalid host initial lives do not encode");
+    welcome.initialLives = 5;
+    Expect(EncodeMultiNetWelcomePacket(welcome, wire, sizeof(wire), &wireSize),
+           "valid welcome re-encodes after initial-lives guard");
     wire[33] = 0;
     Expect(!DecodeMultiNetWelcomePacket(wire, wireSize, &decodedWelcome),
            "wrong save snapshot version is rejected");
     wire[33] = MULTI_NET_SAVE_SNAPSHOT_VERSION;
-    wire[60] = 2;
+    wire[40] = MULTI_NET_MAX_INITIAL_LIVES + 1;
+    Expect(!DecodeMultiNetWelcomePacket(wire, wireSize, &decodedWelcome),
+           "invalid host initial lives are rejected");
+    wire[40] = 5;
+    wire[41] = 1;
+    Expect(!DecodeMultiNetWelcomePacket(wire, wireSize, &decodedWelcome),
+           "nonzero welcome settings reserved byte is rejected");
+    wire[41] = 0;
+    wire[64] = 2;
     Expect(!DecodeMultiNetWelcomePacket(wire, wireSize, &decodedWelcome),
            "invalid save ending flag is rejected");
 

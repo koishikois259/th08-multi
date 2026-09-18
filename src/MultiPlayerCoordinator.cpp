@@ -11,7 +11,7 @@
 namespace th08
 {
 
-const u32 TH08_MULTI_BUILD_FINGERPRINT = 0x00030003;
+const u32 TH08_MULTI_BUILD_FINGERPRINT = 0x00030004;
 const u16 MULTI_INPUT_TITLE_READY = 0x8000;
 
 namespace
@@ -156,15 +156,17 @@ bool MultiPlayerCoordinator::Initialize()
         GenerateSecureRandomNonZeroU32(&seed);
         CaptureCurrentSaveProgress(saveProgress);
         g_GameErrorContext.Log(
-            "multi save: host progress fingerprint=%08x team0-normal=%04x/%04x\n",
+            "multi save: host progress fingerprint=%08x team0-normal=%04x/%04x initial-lives=%u\n",
             FingerprintSaveProgress(saveProgress),
             saveProgress[SHOT_REIMU_YUKARI].clearedWithoutRetries[NORMAL],
-            saveProgress[SHOT_REIMU_YUKARI].clearedWithRetries[NORMAL]);
+            saveProgress[SHOT_REIMU_YUKARI].clearedWithRetries[NORMAL],
+            g_Supervisor.cfg.lifeCount);
     }
     if (config.mode == MULTI_LAUNCH_HOST)
         return session.OpenHost(config.localPort, config.bindAddress,
                                 config.selectedTeam, config.inputDelay,
-                                TH08_MULTI_BUILD_FINGERPRINT, nonce, seed, saveProgress);
+                                TH08_MULTI_BUILD_FINGERPRINT, nonce, seed,
+                                g_Supervisor.cfg.lifeCount, saveProgress);
     return session.OpenGuest(config.localPort, config.bindAddress,
                              config.hostAddress, config.hostPort,
                              config.selectedTeam, config.inputDelay,
@@ -198,6 +200,8 @@ void MultiPlayerCoordinator::Pump(u32 nowMilliseconds)
         Initialize();
     if (config.mode != MULTI_LAUNCH_DISABLED)
     {
+        if (config.mode == MULTI_LAUNCH_HOST)
+            session.UpdateHostInitialLives(g_Supervisor.cfg.lifeCount);
         session.Pump(nowMilliseconds);
         sessionState = session.GetState();
         if (config.mode == MULTI_LAUNCH_GUEST && sessionState == MULTI_NET_STATE_CONNECTED &&
@@ -290,10 +294,12 @@ bool MultiPlayerCoordinator::ApplyHostSaveProgress()
         g_GameManager.IsExtraUnlockedWithAllTeams();
     appliedSaveRevision = saveRevision;
     g_GameErrorContext.Log(
-        "multi save: applied host revision=%u fingerprint=%08x team0-normal=%04x/%04x\n",
+        "multi save: applied host revision=%u fingerprint=%08x team0-normal=%04x/%04x "
+        "initial-lives=%u local-initial-lives-ignored=%u\n",
         saveRevision, FingerprintSaveProgress(saveProgress),
         saveProgress[SHOT_REIMU_YUKARI].clearedWithoutRetries[NORMAL],
-        saveProgress[SHOT_REIMU_YUKARI].clearedWithRetries[NORMAL]);
+        saveProgress[SHOT_REIMU_YUKARI].clearedWithRetries[NORMAL],
+        session.GetInitialLives(), g_Supervisor.cfg.lifeCount);
     return true;
 }
 
@@ -504,6 +510,12 @@ void MultiPlayerCoordinator::EndGameplay()
 u8 MultiPlayerCoordinator::GetHostTeam() const { return selectedTeams[0]; }
 u8 MultiPlayerCoordinator::GetGuestTeam() const { return selectedTeams[1]; }
 u8 MultiPlayerCoordinator::GetLocalSlot() const { return session.GetLocalSlot(); }
+u8 MultiPlayerCoordinator::GetInitialLives() const
+{
+    if (IsConfigured())
+        return session.GetInitialLives();
+    return g_Supervisor.cfg.lifeCount;
+}
 u32 MultiPlayerCoordinator::GetRandomSeed() const { return session.GetRandomSeed(); }
 u32 MultiPlayerCoordinator::GetDesyncFrame() const { return session.GetDesyncFrame(); }
 u32 MultiPlayerCoordinator::GetLatestRemoteFrame() const { return session.GetLatestRemoteFrame(); }

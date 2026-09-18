@@ -7,7 +7,7 @@ namespace th08
 
 enum MultiNetProtocolConstant
 {
-    MULTI_NET_PROTOCOL_VERSION = 0x00010001,
+    MULTI_NET_PROTOCOL_VERSION = 0x00010002,
     MULTI_NET_MIN_INPUT_DELAY = 1,
     MULTI_NET_MAX_INPUT_DELAY = 12,
     MULTI_NET_MAX_REDUNDANT_INPUTS = 15,
@@ -16,6 +16,7 @@ enum MultiNetProtocolConstant
     MULTI_NET_SAVE_SHOT_COUNT = 13,
     MULTI_NET_SAVE_DIFFICULTY_COUNT = 5,
     MULTI_NET_SAVE_SNAPSHOT_VERSION = 1,
+    MULTI_NET_MAX_INITIAL_LIVES = 6,
 };
 
 enum MultiNetDisconnectReason
@@ -46,6 +47,7 @@ struct MultiNetWelcomePacket
     u8 hostTeam;
     u8 guestTeam;
     u8 assignedSlot;
+    u8 initialLives;
     u32 saveRevision;
     struct SaveProgress
     {

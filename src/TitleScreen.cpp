@@ -2049,7 +2049,7 @@ ChainCallbackResult TitleScreen::OnUpdateMultiPlayerCharacterSelect()
             // frame, so initialize shared co-op state here rather than from
             // the independently scheduled gameplay loading threads.
             g_MultiPlayerCoordinator.PrepareGameplay(
-                g_Supervisor.cfg.lifeCount, 3, 0);
+                g_MultiPlayerCoordinator.GetInitialLives(), 3, 0);
             g_GameManager.shotType = this->cursor;
             g_GameManager.fullShotType = 0;
             g_GameManager.difficulty = g_Supervisor.cfg.defaultDifficulty;

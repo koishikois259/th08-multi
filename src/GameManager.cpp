@@ -722,7 +722,7 @@ void __fastcall GameManager::GameplaySetupThread(void *unused)
         *reinterpret_cast<u16 *>(&g_Rng) =
             static_cast<u16>(g_MultiPlayerCoordinator.GetRandomSeed());
         g_MultiPlayerCoordinator.BeginGameplay(
-            multiNewRun, g_Supervisor.cfg.lifeCount, 3, 0);
+            multiNewRun, g_MultiPlayerCoordinator.GetInitialLives(), 3, 0);
     }
 #endif
     gameManager->gameplaySetupWaitFrames = 0;
@@ -764,6 +764,10 @@ void __fastcall GameManager::GameplaySetupThread(void *unused)
         gameManager->globals = newGlobals;
         GameManager::InitializeAntiTamper();
         *gameManager->cfg = g_Supervisor.cfg;
+#ifdef TH08_MULTI
+        if (g_MultiPlayerCoordinator.IsConnected())
+            gameManager->cfg->lifeCount = g_MultiPlayerCoordinator.GetInitialLives();
+#endif
         allocation = reinterpret_cast<void *>(gameManager->antiTamperHeapJitterAllocation);
         free(allocation);
 
