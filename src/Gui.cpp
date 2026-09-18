@@ -251,6 +251,60 @@ static void DrawMultiPlayerHudPair(
     g_AsciiManager.SetScale(1.0f, 1.0f);
 }
 
+static void DrawMultiPlayerResourceStarRow(AnmVm *vm, i32 count, f32 y)
+{
+    Float2 originalScale;
+    i32 index;
+    f32 x;
+
+    if (vm == NULL || count <= 0)
+        return;
+
+    originalScale = vm->scale;
+    vm->scale.x = 0.5f;
+    vm->scale.y = 0.5f;
+    for (index = 0, x = 524.0f; index < count; ++index, x += 8.0f)
+    {
+        vm->pos = Float3(x, y, 0.46f);
+        g_AnmManager->DrawNoRotation(vm);
+    }
+    vm->scale = originalScale;
+}
+
+static void DrawMultiPlayerResourceStars(
+    Gui *gui, const MultiPlayerSlotState &p1,
+    const MultiPlayerSlotState &p2)
+{
+    Float3 position;
+
+    g_AsciiManager.SetScale(0.5f, 0.5f);
+
+    g_AsciiManager.SetColor(0xffa0d8ff);
+    position = Float3(488.0f, 70.0f, 0.0f);
+    g_AsciiManager.AddFormatText(&position, "PLAYER1:");
+    g_AsciiManager.SetColor(0xffffffff);
+    position = Float3(492.0f, 80.0f, 0.0f);
+    g_AsciiManager.AddFormatText(&position, "LIFE");
+    position = Float3(492.0f, 90.0f, 0.0f);
+    g_AsciiManager.AddFormatText(&position, "BOMB");
+    DrawMultiPlayerResourceStarRow(&gui->impl->frontVms[10], p1.lives, 80.0f);
+    DrawMultiPlayerResourceStarRow(&gui->impl->frontVms[11], p1.bombs, 90.0f);
+
+    g_AsciiManager.SetColor(0xffffb0d0);
+    position = Float3(488.0f, 102.0f, 0.0f);
+    g_AsciiManager.AddFormatText(&position, "PLAYER2:");
+    g_AsciiManager.SetColor(0xffffffff);
+    position = Float3(492.0f, 112.0f, 0.0f);
+    g_AsciiManager.AddFormatText(&position, "LIFE");
+    position = Float3(492.0f, 122.0f, 0.0f);
+    g_AsciiManager.AddFormatText(&position, "BOMB");
+    DrawMultiPlayerResourceStarRow(&gui->impl->frontVms[10], p2.lives, 112.0f);
+    DrawMultiPlayerResourceStarRow(&gui->impl->frontVms[11], p2.bombs, 122.0f);
+
+    g_AsciiManager.SetColor(0xffffffff);
+    g_AsciiManager.SetScale(1.0f, 1.0f);
+}
+
 // Dialogue consumes the synchronized pair directly. Controls already held
 // when a message opens remain blocked until released, matching retail's
 // press-edge behavior without letting either peer skip the complete message.
@@ -1882,8 +1936,7 @@ void Gui::DrawGameScene()
         {
             const MultiPlayerSlotState &p1 = g_MultiPlayerState.GetSlot(MULTI_PLAYER_P1);
             const MultiPlayerSlotState &p2 = g_MultiPlayerState.GetSlot(MULTI_PLAYER_P2);
-            DrawMultiPlayerHudPair(88.0f, "LIFE", p1.lives, p2.lives);
-            DrawMultiPlayerHudPair(104.0f, "BOMB", p1.bombs, p2.bombs);
+            DrawMultiPlayerResourceStars(this, p1, p2);
             DrawMultiPlayerHudPair(136.0f, "POWER", p1.power, p2.power);
             elemPos = Float3(488.0f, 200.0f, 0.0f);
             g_AsciiManager.SetColor(0xffffffff);
