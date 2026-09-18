@@ -80,8 +80,9 @@ static void ProtectOtherPlayerDuringLastSpellFailure(Player *hitPlayer)
 
 static u8 GetPlayerRenderAlpha(Player *player, u8 originalAlpha)
 {
-    const f32 fadeRadius = 48.0f;
-    const f32 minimumOpacity = 0.25f;
+    const f32 fadeRadius = 64.0f;
+    const f32 minimumOpacity = 0.15f;
+    const f32 maximumOpacity = 0.55f;
     f32 dx;
     f32 dy;
     f32 distanceSquared;
@@ -97,13 +98,14 @@ static u8 GetPlayerRenderAlpha(Player *player, u8 originalAlpha)
     dy = g_Player.position.y - g_Player2.position.y;
     distanceSquared = dx * dx + dy * dy;
     if (distanceSquared >= fadeRadius * fadeRadius)
-        return originalAlpha;
+        return (u8)((f32)originalAlpha * maximumOpacity);
 
-    // Smoothly fade only the remote player as the sprites overlap.  Scaling
-    // the existing alpha preserves retail death, spawn and invulnerability
-    // effects instead of replacing them.
+    // The remote player remains translucent even at long range, then fades
+    // further as the sprites overlap. Scaling the existing alpha preserves
+    // retail death, spawn and invulnerability effects instead of replacing
+    // them.
     opacity = minimumOpacity +
-              (1.0f - minimumOpacity) *
+              (maximumOpacity - minimumOpacity) *
                   sqrtf(distanceSquared) / fadeRadius;
     return (u8)((f32)originalAlpha * opacity);
 }

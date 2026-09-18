@@ -53,8 +53,6 @@ static i32 RejectInvalidRadialTrailGeometry(Effect *effect,
 static bool ShouldHideRemoteFocusEffect(Effect *effect)
 {
     MultiPlayerSlot owner;
-    f32 dx;
-    f32 dy;
 
     if (!g_MultiPlayerState.IsEnabled() ||
         effect->effectId != EFFECT_FOCUS_AURA ||
@@ -63,14 +61,10 @@ static bool ShouldHideRemoteFocusEffect(Effect *effect)
         return false;
 
     owner = static_cast<MultiPlayerSlot>(effect->unconsumedDword344 - 1);
-    if (owner == static_cast<MultiPlayerSlot>(
-                     g_MultiPlayerCoordinator.GetLocalSlot()) ||
-        !g_MultiPlayerState.IsPhysical(owner))
-        return false;
-
-    dx = g_Player.position.x - g_Player2.position.x;
-    dy = g_Player.position.y - g_Player2.position.y;
-    return dx * dx + dy * dy < 48.0f * 48.0f;
+    // A player's white focus marker is private visual information. Never
+    // render the remote marker, regardless of distance or player state.
+    return owner != static_cast<MultiPlayerSlot>(
+                        g_MultiPlayerCoordinator.GetLocalSlot());
 }
 #endif
 
