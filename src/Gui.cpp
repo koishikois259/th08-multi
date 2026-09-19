@@ -268,7 +268,7 @@ static void DrawMultiPlayerResourceStarRow(i32 count, f32 y, D3DCOLOR color)
     // The ASCII '*' is already used by the P1/P2 local-player marker. Queue
     // resource marks through that same visible sidebar text path.
     position = Float3(524.0f, y, 0.0f);
-    g_AsciiManager.SetScale(0.9f, 0.9f);
+    g_AsciiManager.SetScale(1.0f, 1.0f);
     g_AsciiManager.SetColor(color);
     g_AsciiManager.AddString(&position, stars);
     g_AsciiManager.SetScale(0.5f, 0.5f);
