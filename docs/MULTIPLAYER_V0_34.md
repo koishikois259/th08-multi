@@ -9,9 +9,10 @@ v0.34 is a local patch based on v0.33. It has not been uploaded to GitHub.
 - The remote character renders at 50% opacity when the two characters are at
   least 64 pixels apart and 10% when closer. The remote white focus hitbox is
   not rendered in the local player's view.
-- The right sidebar has separate P1 and P2 LIFE/BOMB rows. Larger red and blue
-  ASCII star marks use the same visible draw path as the other sidebar text.
-  The user confirmed the marks are visible in a local game test.
+- The right sidebar has separate P1 and P2 LIFE/BOMB rows. Normal-size (1.0x)
+  red and blue ASCII star marks use the same visible draw path as the other
+  sidebar text. The user confirmed the marks are visible at the previous 0.9x
+  scale; the final size still needs a visual check.
 - The bundled Chinese connection guide now states the initial-lives rule.
 
 ## Compatibility and distribution
