@@ -1,4 +1,4 @@
-# th08-multi v0.33 Online Multiplayer Patch
+# th08-multi v0.34 Online Multiplayer Patch
 
 ## 1. Project Nature and Rights Notice
 
@@ -21,7 +21,7 @@ Only the Japanese original version 1.00d of *Touhou Eiyashou ~ Imperishable Nigh
 
 Translated versions, trial versions, other releases, or modified game data are not supported.
 
-Both players must use exactly the same v0.33 patch and the same version of the original game data.
+Both players must use exactly the same v0.34 patch and the same version of the original game data.
 
 ## 3. Patch Contents and Distribution Boundaries
 
@@ -51,15 +51,16 @@ Do not repackage any of the above original game files, extracted original assets
 6. Both players must configure the same **Input delay**, then click **Connect**.
 7. Once both sides show **Connected**, the Host should click **Start both games**. Both games will then launch from the same start command.
 
-The v0.33 game executable keeps title-menu input locked until both peers have
+The game executable keeps title-menu input locked until both peers have
 finished loading the main menu. P1 controls the shared mode and difficulty
 selection after the synchronized menu state is reached.
+At the start of a multiplayer run, both players use the Host/P1 initial-lives
+setting; the Guest/P2 setting is ignored. The unchanged default is two.
 
 GitHub source repository:
 https://github.com/koishikois259/th08-multi
 
-v0.33 release page:
-https://github.com/koishikois259/th08-multi/releases/tag/v0.33
+The local v0.34 patch has not yet been uploaded as a GitHub Release.
 
 ## 5. Network and Security Limitations
 
@@ -82,7 +83,16 @@ When using a tunneling service, use only a temporary mapping, share the connecti
 - Diagnostic information is written to `log.txt` in the game directory.
 - This project is still in the testing stage. Please keep backups of your save data and test primarily in trusted environments.
 
-### Major fixes in v0.33
+### Changes in v0.34
+
+- Both players' initial lives follow the Host/P1 game setting, even when the
+  Guest/P2 setting differs. The default remains two.
+- The sidebar shows separate P1 and P2 LIFE and BOMB rows with larger red and
+  blue star-shaped text marks. Other resource displays remain unchanged.
+- The remote player's opacity is 50% when at least 64 pixels away and 10%
+  when closer; the remote white focus hitbox is hidden from the local view.
+
+### Major fixes inherited from v0.33
 
 - P1 is authoritative for multiplayer clear progress, route availability, and
   unlock decisions; P2's local clear progress is ignored for the session.
@@ -97,7 +107,7 @@ When using a tunneling service, use only a temporary mapping, share the connecti
 - Desync hash identifiers now use the monotonic connection timeline, avoiding
   stale-hash collisions when starting another run without reconnecting.
 
-v0.33 includes all defensive memory-safety checks introduced in v0.32. Long
+v0.34 includes all defensive memory-safety checks introduced in v0.32. Long
 two-PC runs through Stages 4, 5, 6, and Extra remain recommended.
 
 ## 7. Source Code, License, and Credits

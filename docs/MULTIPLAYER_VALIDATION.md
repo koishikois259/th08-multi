@@ -1,4 +1,4 @@
-# th08-multi v0.33 validation ledger
+# th08-multi v0.34 validation ledger
 
 This ledger separates implemented code, automated rule checks, and observed
 two-process gameplay. An item is accepted only after the relevant observable
@@ -46,11 +46,13 @@ The multiplayer right-side HUD has these intended rows:
 - Score and high score: the existing canonical shared displays.
 - Human-youkai gauge: numeric P1 and P2 values below the standard resource
   rows; spirit state and revival progress appear when active.
+- LIFE and BOMB: separate P1 and P2 rows with red and blue star marks. The
+  enlarged marks were visually confirmed by the user in a local two-player
+  test; other HUD elements retain their existing layout.
 
-The VC7 multiplayer and normal builds pass. Visual two-window HUD acceptance is
-still **PENDING** because the current automation surface cannot capture or send
-input to native DirectX game windows. Do not mark the HUD complete until both
-Host and Guest views have been inspected.
+The VC7 multiplayer and normal builds pass. The resource marks were visually
+confirmed, but complete two-window HUD acceptance is still **PENDING**. Do not
+mark the entire HUD complete until both Host and Guest views have been checked.
 
 Use [the manual network testing guide](MULTIPLAYER_TESTING.md) and the bundled
 `th08-multi-launcher.exe` only for trusted-peer two-PC tests.
@@ -85,6 +87,11 @@ Use [the manual network testing guide](MULTIPLAYER_TESTING.md) and the bundled
 - Installation into the verified `th08-origin` directory preserved the original
   `th08.exe` hash, all installed payload hashes matched, and the installed
   launcher remained alive during its startup smoke test.
+- The v0.34 multiplayer build and focused state/network tests pass. The
+  seven-file local patch has SHA-256
+  `d74c261e46a2d8f41cc31e3717fdb4983a4d3c4da6a0cbaf6ad9153dc49cc8ad`
+  and was installed into the verified `th08-origin` directory. The initial
+  lives authority and remote-opacity changes need a new packaged two-PC run.
 - Button-level visual inspection and cross-PC trusted LAN/VPN testing remain
   manual checks because native Win32 windows are unavailable to the current
   automation surface. Public-IPv4 testing is intentionally unsupported.

@@ -782,7 +782,7 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR, int showCommand)
         return 1;
 
     window = CreateWindowExA(
-        0, windowClass.lpszClassName, "th08-multi v0.33 Network Launcher",
+        0, windowClass.lpszClassName, "th08-multi v0.34 Network Launcher",
         WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
         CW_USEDEFAULT, CW_USEDEFAULT, 540, 386,
         NULL, NULL, instance, NULL);

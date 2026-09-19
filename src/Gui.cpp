@@ -251,29 +251,31 @@ static void DrawMultiPlayerHudPair(
     g_AsciiManager.SetScale(1.0f, 1.0f);
 }
 
-static void DrawMultiPlayerResourceStarRow(AnmVm *vm, i32 count, f32 y)
+static void DrawMultiPlayerResourceStarRow(i32 count, f32 y, D3DCOLOR color)
 {
-    Float2 originalScale;
+    char stars[9];
     i32 index;
-    f32 x;
+    Float3 position;
 
-    if (vm == NULL || count <= 0)
-        return;
+    if (count < 0)
+        count = 0;
+    if (count > 8)
+        count = 8;
+    for (index = 0; index < count; ++index)
+        stars[index] = '*';
+    stars[count] = '\0';
 
-    originalScale = vm->scale;
-    vm->scale.x = 0.5f;
-    vm->scale.y = 0.5f;
-    for (index = 0, x = 524.0f; index < count; ++index, x += 8.0f)
-    {
-        vm->pos = Float3(x, y, 0.46f);
-        g_AnmManager->DrawNoRotation(vm);
-    }
-    vm->scale = originalScale;
+    // The ASCII '*' is already used by the P1/P2 local-player marker. Queue
+    // resource marks through that same visible sidebar text path.
+    position = Float3(524.0f, y, 0.0f);
+    g_AsciiManager.SetScale(0.9f, 0.9f);
+    g_AsciiManager.SetColor(color);
+    g_AsciiManager.AddString(&position, stars);
+    g_AsciiManager.SetScale(0.5f, 0.5f);
 }
 
 static void DrawMultiPlayerResourceStars(
-    Gui *gui, const MultiPlayerSlotState &p1,
-    const MultiPlayerSlotState &p2)
+    const MultiPlayerSlotState &p1, const MultiPlayerSlotState &p2)
 {
     Float3 position;
 
@@ -283,23 +285,23 @@ static void DrawMultiPlayerResourceStars(
     position = Float3(488.0f, 70.0f, 0.0f);
     g_AsciiManager.AddFormatText(&position, "PLAYER1:");
     g_AsciiManager.SetColor(0xffffffff);
-    position = Float3(492.0f, 80.0f, 0.0f);
+    position = Float3(492.0f, 78.0f, 0.0f);
     g_AsciiManager.AddFormatText(&position, "LIFE");
     position = Float3(492.0f, 90.0f, 0.0f);
     g_AsciiManager.AddFormatText(&position, "BOMB");
-    DrawMultiPlayerResourceStarRow(&gui->impl->frontVms[10], p1.lives, 80.0f);
-    DrawMultiPlayerResourceStarRow(&gui->impl->frontVms[11], p1.bombs, 90.0f);
+    DrawMultiPlayerResourceStarRow(p1.lives, 78.0f, 0xffff6060);
+    DrawMultiPlayerResourceStarRow(p1.bombs, 90.0f, 0xff80b0ff);
 
     g_AsciiManager.SetColor(0xffffb0d0);
     position = Float3(488.0f, 102.0f, 0.0f);
     g_AsciiManager.AddFormatText(&position, "PLAYER2:");
     g_AsciiManager.SetColor(0xffffffff);
-    position = Float3(492.0f, 112.0f, 0.0f);
+    position = Float3(492.0f, 110.0f, 0.0f);
     g_AsciiManager.AddFormatText(&position, "LIFE");
     position = Float3(492.0f, 122.0f, 0.0f);
     g_AsciiManager.AddFormatText(&position, "BOMB");
-    DrawMultiPlayerResourceStarRow(&gui->impl->frontVms[10], p2.lives, 112.0f);
-    DrawMultiPlayerResourceStarRow(&gui->impl->frontVms[11], p2.bombs, 122.0f);
+    DrawMultiPlayerResourceStarRow(p2.lives, 110.0f, 0xffff6060);
+    DrawMultiPlayerResourceStarRow(p2.bombs, 122.0f, 0xff80b0ff);
 
     g_AsciiManager.SetColor(0xffffffff);
     g_AsciiManager.SetScale(1.0f, 1.0f);
@@ -1802,6 +1804,14 @@ void Gui::DrawGameScene()
         }
 #endif
     }
+#ifdef TH08_MULTI
+    if (g_MultiPlayerState.IsEnabled())
+    {
+        const MultiPlayerSlotState &p1 = g_MultiPlayerState.GetSlot(MULTI_PLAYER_P1);
+        const MultiPlayerSlotState &p2 = g_MultiPlayerState.GetSlot(MULTI_PLAYER_P2);
+        DrawMultiPlayerResourceStars(p1, p2);
+    }
+#endif
     if ((this->flags.bombDisplayUpdateFrames || this->flags.lifeDisplayUpdateFrames) &&
         (((*reinterpret_cast<u32 *>(&g_GameManager.flags) >>
            GameManagerFlags::PLAYER_DEATH_DISSOLVE_SHIFT) &
@@ -1936,7 +1946,6 @@ void Gui::DrawGameScene()
         {
             const MultiPlayerSlotState &p1 = g_MultiPlayerState.GetSlot(MULTI_PLAYER_P1);
             const MultiPlayerSlotState &p2 = g_MultiPlayerState.GetSlot(MULTI_PLAYER_P2);
-            DrawMultiPlayerResourceStars(this, p1, p2);
             DrawMultiPlayerHudPair(136.0f, "POWER", p1.power, p2.power);
             elemPos = Float3(488.0f, 200.0f, 0.0f);
             g_AsciiManager.SetColor(0xffffffff);

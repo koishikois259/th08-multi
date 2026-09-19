@@ -210,14 +210,14 @@ void MultiPlayerCoordinator::Pump(u32 nowMilliseconds)
         if (sessionState != displayedState && g_Supervisor.hwndGameWindow != NULL)
         {
             if (sessionState == MULTI_NET_STATE_LISTENING)
-                wsprintfA(title, "th08-multi v0.33 - HOST waiting on UDP %u", config.localPort);
+                wsprintfA(title, "th08-multi v0.34 - HOST waiting on UDP %u", config.localPort);
             else if (sessionState == MULTI_NET_STATE_CONNECTING)
-                wsprintfA(title, "th08-multi v0.33 - connecting to %s:%u", config.hostAddress, config.hostPort);
+                wsprintfA(title, "th08-multi v0.34 - connecting to %s:%u", config.hostAddress, config.hostPort);
             else if (sessionState == MULTI_NET_STATE_CONNECTED)
-                wsprintfA(title, "th08-multi v0.33 - connected (select teams in game / delay %u)",
+                wsprintfA(title, "th08-multi v0.34 - connected (select teams in game / delay %u)",
                           session.GetInputDelay());
             else
-                wsprintfA(title, "th08-multi v0.33 - network error %u", session.GetError());
+                wsprintfA(title, "th08-multi v0.34 - network error %u", session.GetError());
             SetWindowTextA(g_Supervisor.hwndGameWindow, title);
             displayedState = sessionState;
         }
@@ -367,7 +367,7 @@ void MultiPlayerCoordinator::BeginGameplay(bool newRun, i32 initialLives,
     capturedSimulationFrame = MULTI_NET_INVALID_FRAME;
     if (g_Supervisor.hwndGameWindow != NULL)
     {
-        wsprintfA(title, "th08-multi v0.33 - playing (P1 team %u / P2 team %u / delay %u)",
+        wsprintfA(title, "th08-multi v0.34 - playing (P1 team %u / P2 team %u / delay %u)",
                   selectedTeams[0], selectedTeams[1], session.GetInputDelay());
         SetWindowTextA(g_Supervisor.hwndGameWindow, title);
     }
