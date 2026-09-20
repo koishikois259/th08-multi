@@ -1,8 +1,8 @@
-# th08-multi v0.34 Online Multiplayer Patch
+# th08-multi v0.4 Multiplayer Patch
 
 ## 1. Project Nature and Rights Notice
 
-th08-multi is an unofficial fan-made online multiplayer project based on *Touhou Eiyashou ~ Imperishable Night*. It is not affiliated with, authorized by, endorsed by, or developed in cooperation with Team Shanghai Alice, ZUN, or any official publisher or distributor. Please do not mistake this project for an official product or official update.
+th08-multi is an unofficial fan-made multiplayer project based on *Touhou Eiyashou ~ Imperishable Night*. It is not affiliated with, authorized by, endorsed by, or developed in cooperation with Team Shanghai Alice, ZUN, or any official publisher or distributor. Please do not mistake this project for an official product or official update.
 
 “Touhou Project,” *Touhou Eiyashou ~ Imperishable Night*, and all characters, artwork, music, text, and other original game content remain the property of their respective rights holders. This project does not grant users any right to copy or redistribute the original game content.
 
@@ -21,7 +21,7 @@ Only the Japanese original version 1.00d of *Touhou Eiyashou ~ Imperishable Nigh
 
 Translated versions, trial versions, other releases, or modified game data are not supported.
 
-Both players must use exactly the same v0.34 patch and the same version of the original game data.
+For online play, both players must use exactly the same v0.4 patch and the same version of the original game data.
 
 ## 3. Patch Contents and Distribution Boundaries
 
@@ -51,6 +51,15 @@ Do not repackage any of the above original game files, extracted original assets
 6. Both players must configure the same **Input delay**, then click **Connect**.
 7. Once both sides show **Connected**, the Host should click **Start both games**. Both games will then launch from the same start command.
 
+For single-process local co-op, choose **Local play (multi input)** instead. Press
+the Confirm key once on each input device, one device at a time, then assign
+different devices to P1 and P2 and click **Start local game**. Keyboard Confirm
+is **Z**; on a gamepad, use its confirm/shot button. Device identification
+accepts any gamepad button to accommodate custom mappings. P1 chooses and
+confirms a team first, followed by P2. Two keyboards, keyboard plus gamepad,
+and two gamepads are supported. This new mode still needs broader physical
+device testing; see [local-play notes](docs/LOCAL_PLAY.md).
+
 The game executable keeps title-menu input locked until both peers have
 finished loading the main menu. P1 controls the shared mode and difficulty
 selection after the synchronized menu state is reached.
@@ -60,7 +69,7 @@ setting; the Guest/P2 setting is ignored. The unchanged default is two.
 GitHub source repository:
 https://github.com/koishikois259/th08-multi
 
-The local v0.34 patch has not yet been uploaded as a GitHub Release.
+The local v0.4 patch has not yet been uploaded as a GitHub Release.
 
 ## 5. Network and Security Limitations
 
@@ -78,12 +87,21 @@ When using a tunneling service, use only a temporary mapping, share the connecti
 
 - P1 and P2 may select teams independently.
 - P1 and P2 may select the same team.
-- Replay is currently not supported in online multiplayer mode.
+- Replay is currently not supported in multiplayer mode.
 - Connection and abnormal status information is displayed in the game window title bar.
 - Diagnostic information is written to `log.txt` in the game directory.
 - This project is still in the testing stage. Please keep backups of your save data and test primarily in trusted environments.
 
-### Changes in v0.34
+### Changes in v0.4
+
+- Added experimental single-process local co-op with two distinct input devices.
+  Physical keyboards are identified by their Confirm key; gamepads are
+  identified by a button press, with simultaneous duplicate DirectInput
+  interfaces treated as one device.
+- P1 selects and confirms a team before P2; gameplay continues in one window
+  with the existing shared and independent multiplayer resource rules.
+
+### Changes inherited from v0.34
 
 - Both players' initial lives follow the Host/P1 game setting, even when the
   Guest/P2 setting differs. The default remains two.
@@ -109,7 +127,7 @@ When using a tunneling service, use only a temporary mapping, share the connecti
 - Desync hash identifiers now use the monotonic connection timeline, avoiding
   stale-hash collisions when starting another run without reconnecting.
 
-v0.34 includes all defensive memory-safety checks introduced in v0.32. Long
+v0.4 includes all defensive memory-safety checks introduced in v0.32. Long
 two-PC runs through Stages 4, 5, 6, and Extra remain recommended.
 
 ## 7. Source Code, License, and Credits

@@ -3,7 +3,7 @@
 ; in-game character-select screen after the connection is established.
 
 [network]
-; disabled, host, or guest
+; disabled, host, guest, or local (the launcher writes local mode automatically)
 mode=disabled
 ; The launcher manages this automatically and listens on all local IPv4 interfaces.
 bind_address=0.0.0.0

@@ -1,4 +1,4 @@
-# Local play (development build)
+# Local play (v0.4 experimental)
 
 This mode runs two co-op players in one `th08-multi.exe` process and one game
 window. It does not create a UDP socket or wait for a peer. Gameplay, shared
@@ -28,7 +28,7 @@ selected device is unplugged or its identifier changes, return to the launcher
 and refresh the list. Raw Input requires Windows; this mode is not available
 in the portable Linux build.
 
-Hardware validation still needed before release: two physical keyboards,
+Hardware validation still needed before marking this mode stable: two physical keyboards,
 internal-plus-external keyboard, keyboard-plus-gamepad, two gamepads, hot-plug
 failure handling, team selection/cancel, stage transition, and returning to
 the title after a completed run. The current automated multiplayer state and

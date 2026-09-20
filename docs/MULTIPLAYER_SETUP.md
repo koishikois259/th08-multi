@@ -51,18 +51,25 @@ the launchers exchange a start acknowledgement, release their rendezvous
 sockets, and start both game processes. The games then establish their normal
 lockstep session on the configured game port.
 
-The v0.34 game executable keeps title-menu input locked until both peers have
+The v0.4 game executable keeps title-menu input locked until both peers have
 reported ready. P1 (the host) controls shared title-menu and
 difficulty choices. On the character-select screen P1 and P2 independently
 move and confirm their own team cursor; identical teams are allowed and play
 starts after both cursors are locked. Both players control their own characters
 once gameplay starts. Either player can open or close the in-game pause menu.
-The v0.34 multiplayer menu supports Story and Extra runs; Practice and Spell
+The v0.4 multiplayer menu supports Story and Extra runs; Practice and Spell
 Practice remain single-player-only.
 
 The internal replay bookkeeping object remains present because retail enemy
 logic depends on it, but multiplayer replay selection and saving are disabled
-for v0.34.
+for v0.4.
 
 Both players start with the Host/P1 initial-lives setting. The Guest/P2 local
 setting is ignored for the multiplayer run; the unchanged default is two.
+
+For one-machine co-op, choose **Local play (multi input)** instead of Host or
+Guest. Press Confirm once on each physical input device, one at a time; assign
+the discovered devices to P1 and P2, then choose **Start local game**. Keyboard
+Confirm is Z. Any gamepad button identifies a controller, including a custom
+confirm/shot mapping. See [local-play notes](LOCAL_PLAY.md) for the manual
+hardware checks still needed.

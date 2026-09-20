@@ -60,7 +60,7 @@ enum LauncherPacketType
 };
 
 static const unsigned long LAUNCHER_PACKET_MAGIC = 0x54384D4C;
-static const unsigned long LAUNCHER_PROTOCOL_VERSION = 0x00030004;
+static const unsigned long LAUNCHER_PROTOCOL_VERSION = 0x00040000;
 static const int LAUNCHER_PACKET_SIZE = 16;
 static const UINT_PTR LAUNCHER_TIMER_ID = 1;
 static const UINT_PTR LOCAL_INPUT_TIMER_ID = 2;
@@ -1289,7 +1289,7 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR, int showCommand)
         return 1;
 
     window = CreateWindowExA(
-        0, windowClass.lpszClassName, "th08-multi v0.34 Network Launcher",
+        0, windowClass.lpszClassName, "th08-multi v0.4 Network Launcher",
         WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
         CW_USEDEFAULT, CW_USEDEFAULT, 540, 400,
         NULL, NULL, instance, NULL);
