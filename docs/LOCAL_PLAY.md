@@ -5,10 +5,11 @@ window. It does not create a UDP socket or wait for a peer. Gameplay, shared
 resources, stage routes, and team choices use the existing multiplayer rules.
 
 Open `th08-multi-launcher.exe`, choose **Local play (multi input device)**,
-then assign two different physical devices. The page lists attached Raw Input
-keyboards and DirectInput game controllers. Pressing a key identifies which
-listed keyboard generated it. Use **Refresh devices** after plugging in or
-removing hardware. Supported combinations are two keyboards (including an
+then assign two different physical devices. Gamepads are listed automatically.
+Press **Z** once on each physical keyboard to reveal it in the device list;
+this avoids counting virtual and auxiliary HID keyboard interfaces as extra
+players. Use **Refresh devices** after plugging in or removing hardware, then
+press Z again on each keyboard. Supported combinations are two keyboards (including an
 internal laptop keyboard plus an external keyboard), keyboard plus gamepad,
 and two gamepads. Two players cannot share one device in this mode.
 

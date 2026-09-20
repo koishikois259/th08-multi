@@ -90,6 +90,8 @@ static HWND g_mainWindow = NULL;
 static HWND g_localWindow = NULL;
 static LocalDevice g_localDevices[64];
 static int g_localDeviceCount = 0;
+static LocalDevice g_keyboardCandidates[64];
+static int g_keyboardCandidateCount = 0;
 
 static void FormatGamepadGuid(const GUID &guid, char *text)
 {
@@ -124,6 +126,7 @@ static void EnumerateLocalDevices()
     UINT index;
     LPDIRECTINPUT8A directInput = NULL;
     g_localDeviceCount = 0;
+    g_keyboardCandidateCount = 0;
     if (GetRawInputDeviceList(NULL, &count, sizeof(RAWINPUTDEVICELIST)) != (UINT)-1 && count != 0)
     {
         devices = static_cast<RAWINPUTDEVICELIST *>(malloc(sizeof(RAWINPUTDEVICELIST) * count));
@@ -132,26 +135,25 @@ static void EnumerateLocalDevices()
             if (GetRawInputDeviceList(devices, &count, sizeof(RAWINPUTDEVICELIST)) != (UINT)-1)
             {
                 for (index = 0; index < count &&
-                     g_localDeviceCount < static_cast<int>(sizeof(g_localDevices) / sizeof(g_localDevices[0]));
+                     g_keyboardCandidateCount < static_cast<int>(sizeof(g_keyboardCandidates) / sizeof(g_keyboardCandidates[0]));
                      ++index)
                 {
                     LocalDevice *entry;
                     UINT nameLength;
-                    int prefixLength;
                     if (devices[index].dwType != RIM_TYPEKEYBOARD)
                         continue;
-                    entry = &g_localDevices[g_localDeviceCount];
+                    // Raw Input reports auxiliary HID keyboard collections,
+                    // mouse hotkey interfaces and virtual keyboards too. Keep
+                    // them as candidates, but show a keyboard only after a
+                    // real gameplay key comes from that exact device handle.
+                    entry = &g_keyboardCandidates[g_keyboardCandidateCount];
                     nameLength = sizeof(entry->identifier);
                     if (GetRawInputDeviceInfoA(devices[index].hDevice, RIDI_DEVICENAME,
                                                entry->identifier, &nameLength) == (UINT)-1)
                         continue;
                     entry->type = LOCAL_DEVICE_KEYBOARD;
                     entry->rawHandle = devices[index].hDevice;
-                    wsprintfA(entry->label, "Keyboard %d: ", g_localDeviceCount + 1);
-                    prefixLength = lstrlenA(entry->label);
-                    lstrcpynA(entry->label + prefixLength, entry->identifier,
-                              sizeof(entry->label) - prefixLength);
-                    ++g_localDeviceCount;
+                    ++g_keyboardCandidateCount;
                 }
             }
             free(devices);
@@ -210,12 +212,8 @@ static void RefreshLocalDeviceControls(HWND window)
         savedIndex[1] = savedIndex[0] == 0 ? 1 : 0;
     SendMessageA(p1, CB_SETCURSEL, savedIndex[0], 0);
     SendMessageA(p2, CB_SETCURSEL, savedIndex[1], 0);
-    if (g_localDeviceCount < 2)
-        SetDlgItemTextA(window, IDC_LOCAL_STATUS,
-                        "Connect two distinct physical keyboards/gamepads, then Refresh.");
-    else
-        SetDlgItemTextA(window, IDC_LOCAL_STATUS,
-                        "Choose one physical device per player. P1 selects a team first.");
+    SetDlgItemTextA(window, IDC_LOCAL_STATUS,
+                    "Press Z on each keyboard to identify it. Gamepads appear automatically.");
     EnableWindow(GetDlgItem(window, IDC_LOCAL_START), g_localDeviceCount >= 2);
     keyboard.usUsagePage = 1;
     keyboard.usUsage = 6;
@@ -230,21 +228,56 @@ static void IdentifyLocalKeyboard(HWND window, HRAWINPUT input)
     UINT size = sizeof(raw);
     char status[160];
     int index;
+    int keyboardNumber;
+    LocalDevice *entry;
     if (GetRawInputData(input, RID_INPUT, &raw, &size,
                         sizeof(RAWINPUTHEADER)) == (UINT)-1 ||
         raw.header.dwType != RIM_TYPEKEYBOARD ||
-        (raw.data.keyboard.Flags & RI_KEY_BREAK) != 0)
+        (raw.data.keyboard.Flags & RI_KEY_BREAK) != 0 ||
+        (raw.data.keyboard.MakeCode & 0x7f) != DIK_Z ||
+        (raw.data.keyboard.Flags & RI_KEY_E0) != 0)
         return;
     for (index = 0; index < g_localDeviceCount; ++index)
     {
         if (g_localDevices[index].type == LOCAL_DEVICE_KEYBOARD &&
             g_localDevices[index].rawHandle == raw.header.hDevice)
         {
-            wsprintfA(status, "Last key came from Keyboard %d. Select it for P1 or P2.", index + 1);
+            wsprintfA(status, "Keyboard %d is already detected. Press Z on the other keyboard.",
+                      index + 1);
             SetDlgItemTextA(window, IDC_LOCAL_STATUS, status);
             return;
         }
     }
+    for (index = 0; index < g_keyboardCandidateCount; ++index)
+    {
+        if (g_keyboardCandidates[index].rawHandle != raw.header.hDevice)
+            continue;
+        if (g_localDeviceCount >= static_cast<int>(sizeof(g_localDevices) / sizeof(g_localDevices[0])))
+            return;
+        keyboardNumber = 1;
+        for (int existing = 0; existing < g_localDeviceCount; ++existing)
+            if (g_localDevices[existing].type == LOCAL_DEVICE_KEYBOARD)
+                ++keyboardNumber;
+        entry = &g_localDevices[g_localDeviceCount];
+        *entry = g_keyboardCandidates[index];
+        wsprintfA(entry->label, "Keyboard %d (Z key detected)", keyboardNumber);
+        SendMessageA(GetDlgItem(window, IDC_LOCAL_P1), CB_ADDSTRING, 0,
+                     reinterpret_cast<LPARAM>(entry->label));
+        SendMessageA(GetDlgItem(window, IDC_LOCAL_P2), CB_ADDSTRING, 0,
+                     reinterpret_cast<LPARAM>(entry->label));
+        if (SendMessageA(GetDlgItem(window, IDC_LOCAL_P1), CB_GETCURSEL, 0, 0) == CB_ERR)
+            SendMessageA(GetDlgItem(window, IDC_LOCAL_P1), CB_SETCURSEL, g_localDeviceCount, 0);
+        else if (SendMessageA(GetDlgItem(window, IDC_LOCAL_P2), CB_GETCURSEL, 0, 0) == CB_ERR)
+            SendMessageA(GetDlgItem(window, IDC_LOCAL_P2), CB_SETCURSEL, g_localDeviceCount, 0);
+        ++g_localDeviceCount;
+        EnableWindow(GetDlgItem(window, IDC_LOCAL_START), g_localDeviceCount >= 2);
+        wsprintfA(status, "Keyboard %d detected. Choose P1/P2 devices, or press Z on another keyboard.",
+                  keyboardNumber);
+        SetDlgItemTextA(window, IDC_LOCAL_STATUS, status);
+        return;
+    }
+    SetDlgItemTextA(window, IDC_LOCAL_STATUS,
+                    "Keyboard changed. Click Refresh devices, then press Z again.");
 }
 
 static HWND CreateLauncherControl(
@@ -500,7 +533,7 @@ static LRESULT CALLBACK LocalWindowProc(HWND window, UINT message,
                               CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP,
                               130, 99, 375, 250, IDC_LOCAL_P2);
         CreateLauncherControl(window, "STATIC",
-                              "Two physical keyboards, keyboard + pad, or two pads are supported.",
+                              "Press Z on each keyboard to detect it. Gamepads appear automatically.",
                               0, 20, 147, 490, 20, 0);
         CreateLauncherControl(window, "STATIC", "", SS_LEFT,
                               20, 176, 490, 38, IDC_LOCAL_STATUS);
@@ -508,8 +541,8 @@ static LRESULT CALLBACK LocalWindowProc(HWND window, UINT message,
                               20, 235, 135, 30, IDC_LOCAL_REFRESH);
         CreateLauncherControl(window, "BUTTON", "Back", WS_TABSTOP,
                               260, 235, 90, 30, IDC_LOCAL_BACK);
-        CreateLauncherControl(window, "BUTTON", "Start game", BS_DEFPUSHBUTTON | WS_TABSTOP,
-                              360, 235, 145, 30, IDC_LOCAL_START);
+        CreateLauncherControl(window, "BUTTON", "Start local game", BS_DEFPUSHBUTTON | WS_TABSTOP,
+                              350, 235, 155, 30, IDC_LOCAL_START);
         RefreshLocalDeviceControls(window);
         return 0;
     case WM_COMMAND:
@@ -1006,9 +1039,9 @@ static LRESULT CALLBACK LauncherWindowProc(
                               370, 258, 135, 30, IDC_LAUNCH);
         CreateLauncherControl(window, "STATIC", "", SS_LEFT,
                               20, 264, 220, 40, IDC_STATUS);
-        CreateLauncherControl(window, "BUTTON", "Local play (multi input device)",
+        CreateLauncherControl(window, "BUTTON", "Local play (multi input)",
                               BS_PUSHBUTTON | WS_TABSTOP,
-                              150, 309, 250, 30, IDC_LOCAL_PAGE);
+                              330, 309, 175, 30, IDC_LOCAL_PAGE);
         LoadSettings(window);
         SetConnectionControls(window);
         SetTimer(window, LAUNCHER_TIMER_ID, LAUNCHER_TIMER_INTERVAL_MS, NULL);
