@@ -271,40 +271,56 @@ static void DrawMultiPlayerResourceStarRow(i32 count, f32 y, D3DCOLOR color)
     g_AsciiManager.SetScale(1.0f, 1.0f);
     g_AsciiManager.SetColor(color);
     g_AsciiManager.AddString(&position, stars);
-    g_AsciiManager.SetScale(0.5f, 0.5f);
+    g_AsciiManager.SetScale(0.5f, 1.0f);
+}
+
+static const char *GetMultiPlayerHudTeamName(u32 team)
+{
+    static const char *const teamNames[SHOT_ALL] = {
+        "REIMU/YUKARI", "MARISA/ALICE", "SAKUYA/REMILIA", "YOUMU/YUYUKO",
+        "REIMU", "YUKARI", "MARISA", "ALICE",
+        "SAKUYA", "REMILIA", "YOUMU", "YUYUKO"};
+    return team < SHOT_ALL ? teamNames[team] : "UNKNOWN";
+}
+
+static void DrawMultiPlayerResourceGroup(
+    const MultiPlayerSlotState &slot, i32 playerNumber, f32 headerY,
+    D3DCOLOR playerColor)
+{
+    Float3 position;
+
+    g_AsciiManager.SetScale(0.5f, 0.75f);
+    g_AsciiManager.SetColor(playerColor);
+    position = Float3(488.0f, headerY, 0.0f);
+    g_AsciiManager.AddFormatText(
+        &position, "PLAYER%d %s", playerNumber,
+        GetMultiPlayerHudTeamName(slot.team));
+
+    g_AsciiManager.SetScale(0.5f, 1.0f);
+    g_AsciiManager.SetColor(0xffffffff);
+    position = Float3(492.0f, headerY + 16.0f, 0.0f);
+    g_AsciiManager.AddFormatText(&position, "LIFE");
+    DrawMultiPlayerResourceStarRow(slot.lives, headerY + 16.0f, 0xffff6060);
+
+    position = Float3(492.0f, headerY + 32.0f, 0.0f);
+    g_AsciiManager.AddFormatText(&position, "BOMB");
+    DrawMultiPlayerResourceStarRow(slot.bombs, headerY + 32.0f, 0xff80b0ff);
+
+    position = Float3(492.0f, headerY + 48.0f, 0.0f);
+    g_AsciiManager.AddFormatText(&position, "POWER");
+    g_AsciiManager.SetColor(playerColor);
+    position = Float3(524.0f, headerY + 48.0f, 0.0f);
+    g_AsciiManager.AddFormatText(&position, "%d/128", slot.power);
+
+    g_AsciiManager.SetColor(0xffffffff);
+    g_AsciiManager.SetScale(1.0f, 1.0f);
 }
 
 static void DrawMultiPlayerResourceStars(
     const MultiPlayerSlotState &p1, const MultiPlayerSlotState &p2)
 {
-    Float3 position;
-
-    g_AsciiManager.SetScale(0.5f, 0.5f);
-
-    g_AsciiManager.SetColor(0xffa0d8ff);
-    position = Float3(488.0f, 70.0f, 0.0f);
-    g_AsciiManager.AddFormatText(&position, "PLAYER1:");
-    g_AsciiManager.SetColor(0xffffffff);
-    position = Float3(492.0f, 78.0f, 0.0f);
-    g_AsciiManager.AddFormatText(&position, "LIFE");
-    position = Float3(492.0f, 90.0f, 0.0f);
-    g_AsciiManager.AddFormatText(&position, "BOMB");
-    DrawMultiPlayerResourceStarRow(p1.lives, 78.0f, 0xffff6060);
-    DrawMultiPlayerResourceStarRow(p1.bombs, 90.0f, 0xff80b0ff);
-
-    g_AsciiManager.SetColor(0xffffb0d0);
-    position = Float3(488.0f, 102.0f, 0.0f);
-    g_AsciiManager.AddFormatText(&position, "PLAYER2:");
-    g_AsciiManager.SetColor(0xffffffff);
-    position = Float3(492.0f, 110.0f, 0.0f);
-    g_AsciiManager.AddFormatText(&position, "LIFE");
-    position = Float3(492.0f, 122.0f, 0.0f);
-    g_AsciiManager.AddFormatText(&position, "BOMB");
-    DrawMultiPlayerResourceStarRow(p2.lives, 110.0f, 0xffff6060);
-    DrawMultiPlayerResourceStarRow(p2.bombs, 122.0f, 0xff80b0ff);
-
-    g_AsciiManager.SetColor(0xffffffff);
-    g_AsciiManager.SetScale(1.0f, 1.0f);
+    DrawMultiPlayerResourceGroup(p1, 1, 72.0f, 0xffa0d8ff);
+    DrawMultiPlayerResourceGroup(p2, 2, 144.0f, 0xffffb0d0);
 }
 
 // Dialogue consumes the synchronized pair directly. Controls already held
@@ -1868,7 +1884,7 @@ void Gui::DrawGameScene()
             if (g_MultiPlayerState.IsEnabled())
             {
                 DrawMultiPlayerHudPair(
-                    152.0f, "GRAZE",
+                    216.0f, "GRAZE",
                     g_MultiPlayerState.GetSlot(MULTI_PLAYER_P1).graze,
                     g_MultiPlayerState.GetSlot(MULTI_PLAYER_P2).graze);
             }
@@ -1886,7 +1902,7 @@ void Gui::DrawGameScene()
             {
                 g_AsciiManager.SetScale(0.45f, 1.0f);
                 g_AsciiManager.SetColor(0xfff0f0c0);
-                elemPos = Float3(488.0f, 168.0f, 0.0f);
+                elemPos = Float3(488.0f, 232.0f, 0.0f);
                 g_AsciiManager.AddFormatText(
                     &elemPos, "POINT %d/%d MAX %d",
                     g_GameManager.globals->pointItemsCollected,
@@ -1917,7 +1933,7 @@ void Gui::DrawGameScene()
                 else
                     g_AsciiManager.SetColor(0xfff0f0c0);
                 g_AsciiManager.SetScale(0.5f, 1.0f);
-                elemPos = Float3(488.0f, 184.0f, 0.0f);
+                elemPos = Float3(488.0f, 248.0f, 0.0f);
                 g_AsciiManager.AddFormatText(
                     &elemPos, "SH:%d/%d T:%d",
                     g_GameManager.GetTimeOrbs(),
@@ -1946,8 +1962,7 @@ void Gui::DrawGameScene()
         {
             const MultiPlayerSlotState &p1 = g_MultiPlayerState.GetSlot(MULTI_PLAYER_P1);
             const MultiPlayerSlotState &p2 = g_MultiPlayerState.GetSlot(MULTI_PLAYER_P2);
-            DrawMultiPlayerHudPair(136.0f, "POWER", p1.power, p2.power);
-            elemPos = Float3(488.0f, 200.0f, 0.0f);
+            elemPos = Float3(488.0f, 264.0f, 0.0f);
             g_AsciiManager.SetColor(0xffffffff);
             g_AsciiManager.SetScale(0.5f, 1.0f);
             g_AsciiManager.AddFormatText(
@@ -1957,7 +1972,7 @@ void Gui::DrawGameScene()
             {
                 const MultiPlayerSlotState &rescuer =
                     p1.presence == MULTI_PLAYER_SPIRIT ? p2 : p1;
-                elemPos = Float3(488.0f, 216.0f, 0.0f);
+                elemPos = Float3(488.0f, 280.0f, 0.0f);
                 g_AsciiManager.SetColor(0xffffff80);
                 g_AsciiManager.SetScale(0.5f, 1.0f);
                 g_AsciiManager.AddFormatText(
