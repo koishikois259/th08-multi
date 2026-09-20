@@ -10,6 +10,7 @@ enum MultiPlayerLaunchMode
     MULTI_LAUNCH_DISABLED = 0,
     MULTI_LAUNCH_HOST = 1,
     MULTI_LAUNCH_GUEST = 2,
+    MULTI_LAUNCH_LOCAL = 3,
 };
 
 struct MultiPlayerLaunchConfig
@@ -35,6 +36,7 @@ class MultiPlayerCoordinator
     void Pump(u32 nowMilliseconds);
     bool IsConfigured() const;
     bool IsConnected() const;
+    bool IsLocalPlay() const;
     bool IsGameplayActive() const;
     bool IsGameplaySimulationReady() const;
     bool IsSessionFailed() const;
@@ -54,6 +56,7 @@ class MultiPlayerCoordinator
     void SetInitialPlayerResources(i32 p1Bombs, i32 p2Bombs, i32 initialPower);
     void SetSelectedTeams(u8 p1Team, u8 p2Team);
     bool AcquireGameplayInputs(u16 localButtons, u16 *p1Buttons, u16 *p2Buttons);
+    u16 GetLocalInput();
     void EndGameplay();
 
     u8 GetHostTeam() const;
@@ -84,6 +87,8 @@ class MultiPlayerCoordinator
     bool localTitleInputArmed;
     u8 titleReadyMask;
     u32 titleStartFrame;
+    u32 localRandomSeed;
+    bool localInputFailed;
 };
 
 extern MultiPlayerCoordinator g_MultiPlayerCoordinator;

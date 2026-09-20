@@ -1,4 +1,6 @@
+#ifndef TH08_MULTI
 #define _WIN32_WINNT 0x0500
+#endif
 
 #include "th_pch.h"
 
@@ -17,6 +19,9 @@
 #include "diffbuild.hpp"
 #include "i18n.hpp"
 #include "inttypes.hpp"
+#ifdef TH08_MULTI
+#include "MultiLocalInput.hpp"
+#endif
 #ifdef TH08_MODERN_PORT
 #include "modern/windows_runtime.hpp"
 #endif
@@ -500,6 +505,11 @@ LRESULT __stdcall GameWindow::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LP
 {
     switch (uMsg)
     {
+#ifdef TH08_MULTI
+    case WM_INPUT:
+        g_MultiLocalInput.OnRawInput(reinterpret_cast<HRAWINPUT>(lParam));
+        break;
+#endif
     case WM_ERASEBKGND:
         return 1; // Indicates that IN can erase the background
     case MM_MOM_DONE:
@@ -511,6 +521,10 @@ LRESULT __stdcall GameWindow::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LP
         break;
     case WM_ACTIVATEAPP:
         g_GameWindow.windowIsActive = wParam;
+#ifdef TH08_MULTI
+        if (!wParam)
+            g_MultiLocalInput.OnFocusLost();
+#endif
 
         if (g_GameWindow.windowIsActive)
         {

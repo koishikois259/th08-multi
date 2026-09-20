@@ -88,6 +88,7 @@ static u8 GetPlayerRenderAlpha(Player *player, u8 originalAlpha)
     f32 distanceSquared;
 
     if (!g_MultiPlayerState.IsEnabled() ||
+        g_MultiPlayerCoordinator.IsLocalPlay() ||
         GetMultiPlayerSlot(player) ==
             (MultiPlayerSlot)g_MultiPlayerCoordinator.GetLocalSlot() ||
         !g_MultiPlayerState.IsPhysical(GetMultiPlayerSlot(player)))

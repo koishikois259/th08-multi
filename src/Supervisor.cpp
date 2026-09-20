@@ -128,8 +128,9 @@ ChainCallbackResult Supervisor::OnUpdate(Supervisor *s)
     g_SoundPlayer.UpdateFades();
 
 #ifdef TH08_MULTI
-    if (g_MultiPlayerCoordinator.IsGameplayActive() &&
-        g_MultiPlayerCoordinator.IsSessionFailed())
+    if (g_MultiPlayerCoordinator.IsSessionFailed() &&
+        (g_MultiPlayerCoordinator.IsGameplayActive() ||
+         g_MultiPlayerCoordinator.IsLocalPlay()))
     {
         g_GameErrorContext.Log(
             "multiplayer session stopped, error=%d desyncFrame=%u remoteFrame=%u acknowledgedFrame=%u\n",
@@ -150,7 +151,7 @@ ChainCallbackResult Supervisor::OnUpdate(Supervisor *s)
 #ifdef TH08_MULTI
         if (g_MultiPlayerCoordinator.ShouldSynchronizeInputs())
         {
-            u16 localInput = Controller::GetInput();
+            u16 localInput = g_MultiPlayerCoordinator.GetLocalInput();
             u16 p1Input;
             u16 p2Input;
             if (!g_MultiPlayerCoordinator.AcquireGameplayInputs(localInput, &p1Input, &p2Input))
@@ -163,7 +164,7 @@ ChainCallbackResult Supervisor::OnUpdate(Supervisor *s)
         else
         {
             g_LastFrameInput = g_CurFrameInput;
-            g_CurFrameInput = Controller::GetInput();
+            g_CurFrameInput = g_MultiPlayerCoordinator.GetLocalInput();
         }
 #else
         g_LastFrameInput = g_CurFrameInput;
@@ -205,7 +206,7 @@ ChainCallbackResult Supervisor::OnUpdate(Supervisor *s)
             // is paused; input is captured on the next real simulation tick.
         }
         else
-            g_CurFrameInput |= Controller::GetInput();
+            g_CurFrameInput |= g_MultiPlayerCoordinator.GetLocalInput();
 #else
         g_CurFrameInput |= Controller::GetInput();
 #endif

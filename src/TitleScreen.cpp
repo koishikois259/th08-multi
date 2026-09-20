@@ -269,7 +269,9 @@ ChainCallbackResult TitleScreen::OnUpdate(TitleScreen *titleScreen)
         else if (titleScreen->currentScreen == TitleCurrentScreen_StartMenu)
         {
             SetWindowTextA(g_Supervisor.hwndGameWindow,
-                           "th08-multi v0.34 - connected (menus synchronized)");
+                           g_MultiPlayerCoordinator.IsLocalPlay()
+                               ? "th08-multi - local play (P1 controls menus)"
+                               : "th08-multi v0.34 - connected (menus synchronized)");
         }
     }
 #endif
@@ -2007,6 +2009,11 @@ ChainCallbackResult TitleScreen::OnUpdateMultiPlayerCharacterSelect()
         for (slot = MULTI_PLAYER_P1; slot < MULTI_PLAYER_COUNT;
              slot = static_cast<MultiPlayerSlot>(slot + 1))
         {
+            // In one shared window P1 chooses first. P2's device only becomes
+            // active on the frame after P1 confirms, never on the same press.
+            if (g_MultiPlayerCoordinator.IsLocalPlay() &&
+                slot == MULTI_PLAYER_P2 && (readyMaskBeforeInput & 1) == 0)
+                continue;
             cursor = slot == MULTI_PLAYER_P1 ? &this->cursor : &this->cursor2;
             readyBit = static_cast<u8>(1 << slot);
             if ((this->multiTeamReadyMask & readyBit) == 0)
@@ -3836,18 +3843,23 @@ ChainCallbackResult TitleScreen::OnDraw(TitleScreen *titleScreen)
             position = Float3(344.0f, 354.0f, 0.0f);
             g_AsciiManager.AddFormatText(
                 &position, "P1%s: %s  [%s]",
-                localSlot == MULTI_PLAYER_P1 ? " (YOU)" : "",
+                g_MultiPlayerCoordinator.IsLocalPlay() ? " (DEVICE 1)" :
+                    (localSlot == MULTI_PLAYER_P1 ? " (YOU)" : ""),
                 teamNames[titleScreen->cursor],
                 (titleScreen->multiTeamReadyMask & 1) != 0 ? "READY" : "SELECT");
             position.y += 18.0f;
             g_AsciiManager.AddFormatText(
                 &position, "P2%s: %s  [%s]",
-                localSlot == MULTI_PLAYER_P2 ? " (YOU)" : "",
+                g_MultiPlayerCoordinator.IsLocalPlay() ? " (DEVICE 2)" :
+                    (localSlot == MULTI_PLAYER_P2 ? " (YOU)" : ""),
                 teamNames[titleScreen->cursor2],
                 (titleScreen->multiTeamReadyMask & 2) != 0 ? "READY" : "SELECT");
             position.y += 18.0f;
             g_AsciiManager.AddFormatText(
-                &position, "Move: arrows  Confirm: shot  Unlock: bomb");
+                &position,
+                g_MultiPlayerCoordinator.IsLocalPlay()
+                    ? "P1 first, then P2. Confirm: shot  Unlock: bomb"
+                    : "Move: arrows  Confirm: shot  Unlock: bomb");
         }
         else
 #endif
@@ -4141,7 +4153,11 @@ void TitleScreen::DisplayInfoImage(const char *path)
             ScreenEffect::DrawSquare(&rect2, color2.d3dColor);
         }
 
+#ifdef TH08_MULTI
+        g_CurFrameInput = g_MultiPlayerCoordinator.GetLocalInput();
+#else
         g_CurFrameInput = Controller::GetInput();
+#endif
 
         g_Supervisor.d3dDevice->EndScene();
         if (FAILED(g_Supervisor.d3dDevice->Present(NULL, NULL, NULL, NULL)))

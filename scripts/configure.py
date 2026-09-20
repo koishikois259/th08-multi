@@ -44,7 +44,7 @@ def configure(build_type):
             writer.variable("cl_flags", "$cl_flags /DDIFFBUILD")
             writer.variable("cl_flags_pbg", "$cl_flags_pbg /DDIFFBUILD")
         if build_type == BuildType.MULTI:
-            writer.variable("cl_flags", "$cl_flags /DTH08_MULTI")
+            writer.variable("cl_flags", "$cl_flags /DTH08_MULTI /D_WIN32_WINNT=0x0501")
             writer.variable("cl_flags_pbg", "$cl_flags_pbg /DTH08_MULTI")
         writer.variable("rc", "rc.exe")
         writer.variable("link", "link.exe")
@@ -135,6 +135,7 @@ def configure(build_type):
             "MultiNetSession": debug_codegen,
             "MultiPlayerCoordinator": debug_codegen,
             "MultiPlayerRuntime": debug_codegen,
+            "MultiLocalInput": debug_codegen,
             "ReplayManager": debug_codegen,
             "ResultScreen": small_codegen + " /Oi-",
             "ScoreDat": debug_codegen,
@@ -194,6 +195,7 @@ def configure(build_type):
                 "MultiNetSession",
                 "MultiPlayerCoordinator",
                 "MultiPlayerRuntime",
+                "MultiLocalInput",
             ])
 
         # These ECL translation units have a closed natural production-link
@@ -457,7 +459,7 @@ def configure(build_type):
                 "link",
                 inputs=["$builddir/Th08MultiLauncher.obj"],
                 variables={
-                    "link_libs": "kernel32.lib user32.lib gdi32.lib advapi32.lib wsock32.lib",
+                    "link_libs": "dxguid.lib dinput8.lib kernel32.lib user32.lib gdi32.lib advapi32.lib wsock32.lib",
                     "link_flags": "/subsystem:windows /machine:X86 /incremental:no",
                 },
             )

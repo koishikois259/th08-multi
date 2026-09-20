@@ -55,6 +55,7 @@ static bool ShouldHideRemoteFocusEffect(Effect *effect)
     MultiPlayerSlot owner;
 
     if (!g_MultiPlayerState.IsEnabled() ||
+        g_MultiPlayerCoordinator.IsLocalPlay() ||
         effect->effectId != EFFECT_FOCUS_AURA ||
         effect->unconsumedDword344 < MULTI_PLAYER_P1 + 1 ||
         effect->unconsumedDword344 > MULTI_PLAYER_P2 + 1)

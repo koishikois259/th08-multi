@@ -6,6 +6,7 @@
 #include "MultiPlayerCoordinator.hpp"
 #include "MultiPlayerRuntime.hpp"
 #include "MultiPlayerState.hpp"
+#include "MultiLocalInput.hpp"
 #include "SecureRandom.hpp"
 
 namespace th08
@@ -92,6 +93,8 @@ void MultiPlayerLaunchConfig::Load()
         mode = MULTI_LAUNCH_HOST;
     else if (lstrcmpiA(modeText, "guest") == 0)
         mode = MULTI_LAUNCH_GUEST;
+    else if (lstrcmpiA(modeText, "local") == 0)
+        mode = MULTI_LAUNCH_LOCAL;
     else
         mode = MULTI_LAUNCH_DISABLED;
 
@@ -132,6 +135,8 @@ MultiPlayerCoordinator::MultiPlayerCoordinator()
     localTitleInputArmed = false;
     titleReadyMask = 0;
     titleStartFrame = MULTI_NET_INVALID_FRAME;
+    localRandomSeed = 0;
+    localInputFailed = false;
 }
 
 bool MultiPlayerCoordinator::Initialize()
@@ -145,6 +150,23 @@ bool MultiPlayerCoordinator::Initialize()
     initialized = true;
     if (config.mode == MULTI_LAUNCH_DISABLED)
         return true;
+    if (config.mode == MULTI_LAUNCH_LOCAL)
+    {
+        if (!g_MultiLocalInput.Initialize(g_Supervisor.hwndGameWindow))
+        {
+            localInputFailed = true;
+            return false;
+        }
+        seed = 0;
+        if (!GenerateSecureRandomNonZeroU32(&seed))
+        {
+            localInputFailed = true;
+            g_MultiLocalInput.Shutdown();
+            return false;
+        }
+        localRandomSeed = seed;
+        return true;
+    }
     titleSynchronizationActive = true;
     if (config.mode == MULTI_LAUNCH_GUEST)
         ClearCurrentSaveProgress();
@@ -175,6 +197,8 @@ bool MultiPlayerCoordinator::Initialize()
 
 void MultiPlayerCoordinator::Shutdown()
 {
+    if (config.mode == MULTI_LAUNCH_LOCAL)
+        g_MultiLocalInput.Shutdown();
     session.Close(MULTI_NET_DISCONNECT_USER);
     initialized = false;
     gameplayActive = false;
@@ -190,6 +214,7 @@ void MultiPlayerCoordinator::Shutdown()
     localTitleInputArmed = false;
     titleReadyMask = 0;
     titleStartFrame = MULTI_NET_INVALID_FRAME;
+    localInputFailed = false;
 }
 
 void MultiPlayerCoordinator::Pump(u32 nowMilliseconds)
@@ -198,6 +223,13 @@ void MultiPlayerCoordinator::Pump(u32 nowMilliseconds)
     char title[128];
     if (!initialized)
         Initialize();
+    if (config.mode == MULTI_LAUNCH_LOCAL)
+    {
+        if (!localInputFailed &&
+            !g_MultiLocalInput.RebindWindow(g_Supervisor.hwndGameWindow))
+            localInputFailed = true;
+        return;
+    }
     if (config.mode != MULTI_LAUNCH_DISABLED)
     {
         if (config.mode == MULTI_LAUNCH_HOST)
@@ -231,13 +263,23 @@ bool MultiPlayerCoordinator::IsConfigured() const
 
 bool MultiPlayerCoordinator::IsConnected() const
 {
+    if (config.mode == MULTI_LAUNCH_LOCAL)
+        return initialized && !localInputFailed;
     return session.GetState() == MULTI_NET_STATE_CONNECTED;
+}
+
+bool MultiPlayerCoordinator::IsLocalPlay() const
+{
+    return initialized && config.mode == MULTI_LAUNCH_LOCAL;
 }
 
 bool MultiPlayerCoordinator::IsGameplayActive() const { return gameplayActive; }
 
 bool MultiPlayerCoordinator::IsGameplaySimulationReady() const
 {
+    if (IsLocalPlay())
+        return gameplayActive && gameplaySetupStarted &&
+               g_GameManager.gameplaySetupState == GAMEPLAY_SETUP_COMPLETE;
     return gameplayActive && gameplayReadyMask == 3 &&
            gameplayStartFrame != MULTI_NET_INVALID_FRAME &&
            networkFrame >= gameplayStartFrame;
@@ -245,6 +287,8 @@ bool MultiPlayerCoordinator::IsGameplaySimulationReady() const
 
 bool MultiPlayerCoordinator::IsSessionFailed() const
 {
+    if (IsLocalPlay())
+        return localInputFailed;
     return session.GetState() == MULTI_NET_STATE_DISCONNECTED ||
            session.GetState() == MULTI_NET_STATE_ERROR;
 }
@@ -308,6 +352,8 @@ void MultiPlayerCoordinator::BeginTitleSynchronization()
     MultiNetWelcomePacket::SaveProgress saveProgress[MULTI_NET_SAVE_SHOT_COUNT];
     if (!IsConfigured())
         return;
+    if (IsLocalPlay())
+        return;
     titleSynchronizationActive = true;
     localTitleReady = false;
     localTitleInputArmed = false;
@@ -341,6 +387,8 @@ void MultiPlayerCoordinator::EndTitleSynchronization()
 
 bool MultiPlayerCoordinator::IsTitleInputReady() const
 {
+    if (IsLocalPlay())
+        return true;
     if (!IsConfigured() || !titleSynchronizationActive)
         return true;
     return IsConnected() && titleReadyMask == 3 &&
@@ -365,10 +413,19 @@ void MultiPlayerCoordinator::BeginGameplay(bool newRun, i32 initialLives,
     gameplayReadyMask = 0;
     gameplayStartFrame = MULTI_NET_INVALID_FRAME;
     capturedSimulationFrame = MULTI_NET_INVALID_FRAME;
+    if (IsLocalPlay())
+    {
+        gameplayReadyMask = 3;
+        gameplayStartFrame = networkFrame;
+    }
     if (g_Supervisor.hwndGameWindow != NULL)
     {
-        wsprintfA(title, "th08-multi v0.34 - playing (P1 team %u / P2 team %u / delay %u)",
-                  selectedTeams[0], selectedTeams[1], session.GetInputDelay());
+        if (IsLocalPlay())
+            wsprintfA(title, "th08-multi - local play (P1 team %u / P2 team %u)",
+                      selectedTeams[0], selectedTeams[1]);
+        else
+            wsprintfA(title, "th08-multi v0.34 - playing (P1 team %u / P2 team %u / delay %u)",
+                      selectedTeams[0], selectedTeams[1], session.GetInputDelay());
         SetWindowTextA(g_Supervisor.hwndGameWindow, title);
     }
 }
@@ -386,6 +443,12 @@ void MultiPlayerCoordinator::PrepareGameplay(i32 initialLives, i32 initialBombs,
     gameplayReadyMask = 0;
     gameplayStartFrame = MULTI_NET_INVALID_FRAME;
     capturedSimulationFrame = MULTI_NET_INVALID_FRAME;
+}
+
+u16 MultiPlayerCoordinator::GetLocalInput()
+{
+    return IsLocalPlay() ? g_MultiLocalInput.GetInput(MULTI_PLAYER_P1)
+                         : Controller::GetInput();
 }
 
 void MultiPlayerCoordinator::SetInitialPlayerResources(i32 p1Bombs, i32 p2Bombs, i32 initialPower)
@@ -414,6 +477,17 @@ bool MultiPlayerCoordinator::AcquireGameplayInputs(u16 localButtons, u16 *p1Butt
     bool synchronizeTitle;
     if (!IsConnected())
         return false;
+    if (IsLocalPlay())
+    {
+        *p1Buttons = localButtons;
+        *p2Buttons = g_MultiLocalInput.GetInput(MULTI_PLAYER_P2);
+        g_MultiPlayerState.GetInput(MULTI_PLAYER_P1).Advance(*p1Buttons);
+        g_MultiPlayerState.GetInput(MULTI_PLAYER_P2).Advance(*p2Buttons);
+        if (IsGameplaySimulationReady())
+            ++g_MultiPlayerState.frameNumber;
+        ++networkFrame;
+        return true;
+    }
     frame = networkFrame;
     synchronizeTitle = titleSynchronizationActive && !gameplayActive;
     if (IsGameplaySimulationReady() && !gameplayRngSynchronized)
@@ -509,14 +583,20 @@ void MultiPlayerCoordinator::EndGameplay()
 
 u8 MultiPlayerCoordinator::GetHostTeam() const { return selectedTeams[0]; }
 u8 MultiPlayerCoordinator::GetGuestTeam() const { return selectedTeams[1]; }
-u8 MultiPlayerCoordinator::GetLocalSlot() const { return session.GetLocalSlot(); }
+u8 MultiPlayerCoordinator::GetLocalSlot() const
+{
+    return IsLocalPlay() ? MULTI_PLAYER_P1 : session.GetLocalSlot();
+}
 u8 MultiPlayerCoordinator::GetInitialLives() const
 {
-    if (IsConfigured())
+    if (IsConfigured() && !IsLocalPlay())
         return session.GetInitialLives();
     return g_Supervisor.cfg.lifeCount;
 }
-u32 MultiPlayerCoordinator::GetRandomSeed() const { return session.GetRandomSeed(); }
+u32 MultiPlayerCoordinator::GetRandomSeed() const
+{
+    return IsLocalPlay() ? localRandomSeed : session.GetRandomSeed();
+}
 u32 MultiPlayerCoordinator::GetDesyncFrame() const { return session.GetDesyncFrame(); }
 u32 MultiPlayerCoordinator::GetLatestRemoteFrame() const { return session.GetLatestRemoteFrame(); }
 u32 MultiPlayerCoordinator::GetLatestAcknowledgedFrame() const

@@ -1,5 +1,6 @@
 #include <windows.h>
 #include <winsock.h>
+#include <dinput.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -17,6 +18,27 @@ enum LauncherControlId
     IDC_CONNECT,
     IDC_LAUNCH,
     IDC_STATUS,
+    IDC_LOCAL_PAGE,
+    IDC_LOCAL_P1,
+    IDC_LOCAL_P2,
+    IDC_LOCAL_REFRESH,
+    IDC_LOCAL_BACK,
+    IDC_LOCAL_START,
+    IDC_LOCAL_STATUS,
+};
+
+enum LocalDeviceType
+{
+    LOCAL_DEVICE_KEYBOARD,
+    LOCAL_DEVICE_GAMEPAD,
+};
+
+struct LocalDevice
+{
+    LocalDeviceType type;
+    char identifier[512];
+    char label[160];
+    HANDLE rawHandle;
 };
 
 enum LauncherConnectionState
@@ -64,6 +86,166 @@ static DWORD g_lastSendTime = 0;
 static DWORD g_lastReceiveTime = 0;
 static DWORD g_startRequestTime = 0;
 static DWORD g_launchAt = 0;
+static HWND g_mainWindow = NULL;
+static HWND g_localWindow = NULL;
+static LocalDevice g_localDevices[64];
+static int g_localDeviceCount = 0;
+
+static void FormatGamepadGuid(const GUID &guid, char *text)
+{
+    wsprintfA(text,
+              "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+              guid.Data1, guid.Data2, guid.Data3,
+              guid.Data4[0], guid.Data4[1], guid.Data4[2], guid.Data4[3],
+              guid.Data4[4], guid.Data4[5], guid.Data4[6], guid.Data4[7]);
+}
+
+static BOOL CALLBACK EnumerateLocalGamepad(const DIDEVICEINSTANCEA *device, VOID *)
+{
+    LocalDevice *entry;
+    int prefixLength;
+    if (g_localDeviceCount >= static_cast<int>(sizeof(g_localDevices) / sizeof(g_localDevices[0])))
+        return DIENUM_STOP;
+    entry = &g_localDevices[g_localDeviceCount++];
+    entry->type = LOCAL_DEVICE_GAMEPAD;
+    entry->rawHandle = NULL;
+    FormatGamepadGuid(device->guidInstance, entry->identifier);
+    wsprintfA(entry->label, "Gamepad %d: ", g_localDeviceCount);
+    prefixLength = lstrlenA(entry->label);
+    lstrcpynA(entry->label + prefixLength, device->tszInstanceName,
+              sizeof(entry->label) - prefixLength);
+    return DIENUM_CONTINUE;
+}
+
+static void EnumerateLocalDevices()
+{
+    UINT count = 0;
+    RAWINPUTDEVICELIST *devices;
+    UINT index;
+    LPDIRECTINPUT8A directInput = NULL;
+    g_localDeviceCount = 0;
+    if (GetRawInputDeviceList(NULL, &count, sizeof(RAWINPUTDEVICELIST)) != (UINT)-1 && count != 0)
+    {
+        devices = static_cast<RAWINPUTDEVICELIST *>(malloc(sizeof(RAWINPUTDEVICELIST) * count));
+        if (devices != NULL)
+        {
+            if (GetRawInputDeviceList(devices, &count, sizeof(RAWINPUTDEVICELIST)) != (UINT)-1)
+            {
+                for (index = 0; index < count &&
+                     g_localDeviceCount < static_cast<int>(sizeof(g_localDevices) / sizeof(g_localDevices[0]));
+                     ++index)
+                {
+                    LocalDevice *entry;
+                    UINT nameLength;
+                    int prefixLength;
+                    if (devices[index].dwType != RIM_TYPEKEYBOARD)
+                        continue;
+                    entry = &g_localDevices[g_localDeviceCount];
+                    nameLength = sizeof(entry->identifier);
+                    if (GetRawInputDeviceInfoA(devices[index].hDevice, RIDI_DEVICENAME,
+                                               entry->identifier, &nameLength) == (UINT)-1)
+                        continue;
+                    entry->type = LOCAL_DEVICE_KEYBOARD;
+                    entry->rawHandle = devices[index].hDevice;
+                    wsprintfA(entry->label, "Keyboard %d: ", g_localDeviceCount + 1);
+                    prefixLength = lstrlenA(entry->label);
+                    lstrcpynA(entry->label + prefixLength, entry->identifier,
+                              sizeof(entry->label) - prefixLength);
+                    ++g_localDeviceCount;
+                }
+            }
+            free(devices);
+        }
+    }
+    if (SUCCEEDED(DirectInput8Create(GetModuleHandleA(NULL), DIRECTINPUT_VERSION,
+                                     IID_IDirectInput8A,
+                                     reinterpret_cast<void **>(&directInput), NULL)))
+    {
+        directInput->EnumDevices(DI8DEVCLASS_GAMECTRL, EnumerateLocalGamepad,
+                                 NULL, DIEDFL_ATTACHEDONLY);
+        directInput->Release();
+    }
+}
+
+static void RefreshLocalDeviceControls(HWND window)
+{
+    HWND p1 = GetDlgItem(window, IDC_LOCAL_P1);
+    HWND p2 = GetDlgItem(window, IDC_LOCAL_P2);
+    char savedType[16];
+    char savedId[512];
+    char key[16];
+    int slot;
+    int index;
+    int savedIndex[2] = {-1, -1};
+    RAWINPUTDEVICE keyboard;
+    EnumerateLocalDevices();
+    SendMessageA(p1, CB_RESETCONTENT, 0, 0);
+    SendMessageA(p2, CB_RESETCONTENT, 0, 0);
+    for (index = 0; index < g_localDeviceCount; ++index)
+    {
+        SendMessageA(p1, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(g_localDevices[index].label));
+        SendMessageA(p2, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(g_localDevices[index].label));
+    }
+    for (slot = 0; slot < 2; ++slot)
+    {
+        wsprintfA(key, "p%d_type", slot + 1);
+        GetPrivateProfileStringA("local", key, "", savedType, sizeof(savedType), g_iniPath);
+        wsprintfA(key, "p%d_id", slot + 1);
+        GetPrivateProfileStringA("local", key, "", savedId, sizeof(savedId), g_iniPath);
+        for (index = 0; index < g_localDeviceCount; ++index)
+        {
+            const char *type = g_localDevices[index].type == LOCAL_DEVICE_KEYBOARD
+                                   ? "keyboard" : "gamepad";
+            if (lstrcmpiA(savedType, type) == 0 &&
+                lstrcmpiA(savedId, g_localDevices[index].identifier) == 0)
+            {
+                savedIndex[slot] = index;
+                break;
+            }
+        }
+    }
+    if (savedIndex[0] < 0 && g_localDeviceCount > 0)
+        savedIndex[0] = 0;
+    if (savedIndex[1] < 0 && g_localDeviceCount > 1)
+        savedIndex[1] = savedIndex[0] == 0 ? 1 : 0;
+    SendMessageA(p1, CB_SETCURSEL, savedIndex[0], 0);
+    SendMessageA(p2, CB_SETCURSEL, savedIndex[1], 0);
+    if (g_localDeviceCount < 2)
+        SetDlgItemTextA(window, IDC_LOCAL_STATUS,
+                        "Connect two distinct physical keyboards/gamepads, then Refresh.");
+    else
+        SetDlgItemTextA(window, IDC_LOCAL_STATUS,
+                        "Choose one physical device per player. P1 selects a team first.");
+    EnableWindow(GetDlgItem(window, IDC_LOCAL_START), g_localDeviceCount >= 2);
+    keyboard.usUsagePage = 1;
+    keyboard.usUsage = 6;
+    keyboard.dwFlags = 0;
+    keyboard.hwndTarget = window;
+    RegisterRawInputDevices(&keyboard, 1, sizeof(keyboard));
+}
+
+static void IdentifyLocalKeyboard(HWND window, HRAWINPUT input)
+{
+    RAWINPUT raw;
+    UINT size = sizeof(raw);
+    char status[160];
+    int index;
+    if (GetRawInputData(input, RID_INPUT, &raw, &size,
+                        sizeof(RAWINPUTHEADER)) == (UINT)-1 ||
+        raw.header.dwType != RIM_TYPEKEYBOARD ||
+        (raw.data.keyboard.Flags & RI_KEY_BREAK) != 0)
+        return;
+    for (index = 0; index < g_localDeviceCount; ++index)
+    {
+        if (g_localDevices[index].type == LOCAL_DEVICE_KEYBOARD &&
+            g_localDevices[index].rawHandle == raw.header.hDevice)
+        {
+            wsprintfA(status, "Last key came from Keyboard %d. Select it for P1 or P2.", index + 1);
+            SetDlgItemTextA(window, IDC_LOCAL_STATUS, status);
+            return;
+        }
+    }
+}
 
 static HWND CreateLauncherControl(
     HWND parent, const char *className, const char *text, DWORD style,
@@ -255,6 +437,140 @@ static bool LaunchGame(HWND window)
     return true;
 }
 
+static bool SaveLocalSelection(HWND window)
+{
+    int p1 = static_cast<int>(SendMessageA(GetDlgItem(window, IDC_LOCAL_P1),
+                                          CB_GETCURSEL, 0, 0));
+    int p2 = static_cast<int>(SendMessageA(GetDlgItem(window, IDC_LOCAL_P2),
+                                          CB_GETCURSEL, 0, 0));
+    const LocalDevice *first;
+    const LocalDevice *second;
+    if (p1 < 0 || p2 < 0 || p1 >= g_localDeviceCount || p2 >= g_localDeviceCount)
+    {
+        MessageBoxA(window, "Select two connected input devices.",
+                    "Local play input", MB_OK | MB_ICONWARNING);
+        return false;
+    }
+    first = &g_localDevices[p1];
+    second = &g_localDevices[p2];
+    if (first->type == second->type &&
+        lstrcmpiA(first->identifier, second->identifier) == 0)
+    {
+        MessageBoxA(window, "P1 and P2 must use different physical devices.",
+                    "Local play input", MB_OK | MB_ICONWARNING);
+        return false;
+    }
+    if (!WritePrivateProfileStringA("local", "p1_type",
+                                    first->type == LOCAL_DEVICE_KEYBOARD ? "keyboard" : "gamepad",
+                                    g_iniPath) ||
+        !WritePrivateProfileStringA("local", "p1_id", first->identifier, g_iniPath) ||
+        !WritePrivateProfileStringA("local", "p2_type",
+                                    second->type == LOCAL_DEVICE_KEYBOARD ? "keyboard" : "gamepad",
+                                    g_iniPath) ||
+        !WritePrivateProfileStringA("local", "p2_id", second->identifier, g_iniPath) ||
+        !WritePrivateProfileStringA("network", "mode", "local", g_iniPath))
+    {
+        MessageBoxA(window, "Could not save th08_multi.ini beside the launcher.",
+                    "Local play setup failed", MB_OK | MB_ICONERROR);
+        return false;
+    }
+    WritePrivateProfileStringA(NULL, NULL, NULL, g_iniPath);
+    return true;
+}
+
+static LRESULT CALLBACK LocalWindowProc(HWND window, UINT message,
+                                        WPARAM wParam, LPARAM lParam)
+{
+    switch (message)
+    {
+    case WM_INPUT:
+        IdentifyLocalKeyboard(window, reinterpret_cast<HRAWINPUT>(lParam));
+        break;
+    case WM_CREATE:
+        CreateLauncherControl(window, "STATIC", "Local play - two input devices, one game window", 0,
+                              20, 17, 490, 22, 0);
+        CreateLauncherControl(window, "STATIC", "Player 1:", 0,
+                              20, 61, 105, 20, 0);
+        CreateLauncherControl(window, "COMBOBOX", "",
+                              CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP,
+                              130, 55, 375, 250, IDC_LOCAL_P1);
+        CreateLauncherControl(window, "STATIC", "Player 2:", 0,
+                              20, 105, 105, 20, 0);
+        CreateLauncherControl(window, "COMBOBOX", "",
+                              CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP,
+                              130, 99, 375, 250, IDC_LOCAL_P2);
+        CreateLauncherControl(window, "STATIC",
+                              "Two physical keyboards, keyboard + pad, or two pads are supported.",
+                              0, 20, 147, 490, 20, 0);
+        CreateLauncherControl(window, "STATIC", "", SS_LEFT,
+                              20, 176, 490, 38, IDC_LOCAL_STATUS);
+        CreateLauncherControl(window, "BUTTON", "Refresh devices", WS_TABSTOP,
+                              20, 235, 135, 30, IDC_LOCAL_REFRESH);
+        CreateLauncherControl(window, "BUTTON", "Back", WS_TABSTOP,
+                              260, 235, 90, 30, IDC_LOCAL_BACK);
+        CreateLauncherControl(window, "BUTTON", "Start game", BS_DEFPUSHBUTTON | WS_TABSTOP,
+                              360, 235, 145, 30, IDC_LOCAL_START);
+        RefreshLocalDeviceControls(window);
+        return 0;
+    case WM_COMMAND:
+        switch (LOWORD(wParam))
+        {
+        case IDC_LOCAL_REFRESH:
+            RefreshLocalDeviceControls(window);
+            return 0;
+        case IDC_LOCAL_BACK:
+            DestroyWindow(window);
+            ShowWindow(g_mainWindow, SW_SHOW);
+            return 0;
+        case IDC_LOCAL_START:
+            if (SaveLocalSelection(window) && LaunchGame(window))
+            {
+                DestroyWindow(window);
+                DestroyWindow(g_mainWindow);
+            }
+            return 0;
+        default:
+            break;
+        }
+        break;
+    case WM_CLOSE:
+        DestroyWindow(window);
+        ShowWindow(g_mainWindow, SW_SHOW);
+        return 0;
+    case WM_DESTROY:
+        {
+            RAWINPUTDEVICE keyboard;
+            keyboard.usUsagePage = 1;
+            keyboard.usUsage = 6;
+            keyboard.dwFlags = RIDEV_REMOVE;
+            keyboard.hwndTarget = NULL;
+            RegisterRawInputDevices(&keyboard, 1, sizeof(keyboard));
+        }
+        g_localWindow = NULL;
+        return 0;
+    default:
+        break;
+    }
+    return DefWindowProcA(window, message, wParam, lParam);
+}
+
+static void OpenLocalPage(HWND mainWindow)
+{
+    if (g_localWindow != NULL)
+        return;
+    g_localWindow = CreateWindowExA(
+        0, "Th08MultiLocalWindow", "th08-multi Local play",
+        WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
+        CW_USEDEFAULT, CW_USEDEFAULT, 540, 315,
+        NULL, NULL, GetModuleHandleA(NULL), NULL);
+    if (g_localWindow != NULL)
+    {
+        ShowWindow(mainWindow, SW_HIDE);
+        ShowWindow(g_localWindow, SW_SHOW);
+        UpdateWindow(g_localWindow);
+    }
+}
+
 static void SetSocketErrorStatus(HWND window, const char *operation)
 {
     char text[192];
@@ -275,6 +591,7 @@ static void SetConnectionControls(HWND window)
     EnableWindow(GetDlgItem(window, IDC_LOCAL_PORT), !active);
     EnableWindow(GetDlgItem(window, IDC_INPUT_DELAY), !active);
     EnableWindow(GetDlgItem(window, IDC_LAUNCH), hostCanLaunch);
+    EnableWindow(GetDlgItem(window, IDC_LOCAL_PAGE), !active);
 }
 
 static void CloseLauncherConnection(HWND window)
@@ -689,6 +1006,9 @@ static LRESULT CALLBACK LauncherWindowProc(
                               370, 258, 135, 30, IDC_LAUNCH);
         CreateLauncherControl(window, "STATIC", "", SS_LEFT,
                               20, 264, 220, 40, IDC_STATUS);
+        CreateLauncherControl(window, "BUTTON", "Local play (multi input device)",
+                              BS_PUSHBUTTON | WS_TABSTOP,
+                              150, 309, 250, 30, IDC_LOCAL_PAGE);
         LoadSettings(window);
         SetConnectionControls(window);
         SetTimer(window, LAUNCHER_TIMER_ID, LAUNCHER_TIMER_INTERVAL_MS, NULL);
@@ -737,6 +1057,10 @@ static LRESULT CALLBACK LauncherWindowProc(
                 SendLauncherPacket(LAUNCHER_PACKET_START);
             }
             return 0;
+        case IDC_LOCAL_PAGE:
+            if (g_connectionState == LAUNCHER_CONNECTION_IDLE)
+                OpenLocalPage(window);
+            return 0;
         default:
             break;
         }
@@ -764,6 +1088,7 @@ static LRESULT CALLBACK LauncherWindowProc(
 int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR, int showCommand)
 {
     WNDCLASSEXA windowClass;
+    WNDCLASSEXA localClass;
     HWND window;
     MSG message;
 
@@ -781,19 +1106,26 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR, int showCommand)
     if (!RegisterClassExA(&windowClass))
         return 1;
 
+    localClass = windowClass;
+    localClass.lpfnWndProc = LocalWindowProc;
+    localClass.lpszClassName = "Th08MultiLocalWindow";
+    if (!RegisterClassExA(&localClass))
+        return 1;
+
     window = CreateWindowExA(
         0, windowClass.lpszClassName, "th08-multi v0.34 Network Launcher",
         WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
-        CW_USEDEFAULT, CW_USEDEFAULT, 540, 386,
+        CW_USEDEFAULT, CW_USEDEFAULT, 540, 400,
         NULL, NULL, instance, NULL);
     if (window == NULL)
         return 1;
+    g_mainWindow = window;
 
     ShowWindow(window, showCommand);
     UpdateWindow(window);
     while (GetMessageA(&message, NULL, 0, 0) > 0)
     {
-        if (!IsDialogMessageA(window, &message))
+        if (!IsDialogMessageA(g_localWindow != NULL ? g_localWindow : window, &message))
         {
             TranslateMessage(&message);
             DispatchMessageA(&message);
