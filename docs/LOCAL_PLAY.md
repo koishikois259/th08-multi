@@ -5,11 +5,14 @@ window. It does not create a UDP socket or wait for a peer. Gameplay, shared
 resources, stage routes, and team choices use the existing multiplayer rules.
 
 Open `th08-multi-launcher.exe`, choose **Local play (multi input device)**,
-then assign two different physical devices. Gamepads are listed automatically.
-Press **Z** once on each physical keyboard to reveal it in the device list;
-this avoids counting virtual and auxiliary HID keyboard interfaces as extra
-players. Use **Refresh devices** after plugging in or removing hardware, then
-press Z again on each keyboard. Supported combinations are two keyboards (including an
+then press **Confirm** once on each physical input device, one device at a time,
+to reveal it in the device list. On a keyboard, Confirm is **Z**; on a gamepad,
+use its confirm/shot button. The launcher accepts any gamepad button for this
+identification step to accommodate custom button mappings. This avoids counting
+virtual and auxiliary HID interfaces as extra players; gamepad interfaces that
+report the same button press together are also merged. Use **Refresh devices**
+after plugging in or removing hardware, then identify each device again.
+Supported combinations are two keyboards (including an
 internal laptop keyboard plus an external keyboard), keyboard plus gamepad,
 and two gamepads. Two players cannot share one device in this mode.
 

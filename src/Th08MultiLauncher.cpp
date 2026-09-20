@@ -63,6 +63,8 @@ static const unsigned long LAUNCHER_PACKET_MAGIC = 0x54384D4C;
 static const unsigned long LAUNCHER_PROTOCOL_VERSION = 0x00030004;
 static const int LAUNCHER_PACKET_SIZE = 16;
 static const UINT_PTR LAUNCHER_TIMER_ID = 1;
+static const UINT_PTR LOCAL_INPUT_TIMER_ID = 2;
+static const UINT LOCAL_INPUT_TIMER_INTERVAL_MS = 50;
 static const UINT LAUNCHER_TIMER_INTERVAL_MS = 100;
 static const DWORD LAUNCHER_SEND_INTERVAL_MS = 500;
 static const DWORD LAUNCHER_START_SEND_INTERVAL_MS = 100;
@@ -92,6 +94,22 @@ static LocalDevice g_localDevices[64];
 static int g_localDeviceCount = 0;
 static LocalDevice g_keyboardCandidates[64];
 static int g_keyboardCandidateCount = 0;
+struct LocalGamepadCandidate
+{
+    LocalDevice device;
+    LPDIRECTINPUTDEVICE8A input;
+    bool buttonWasDown;
+    bool identified;
+    bool ignored;
+};
+static LocalGamepadCandidate g_gamepadCandidates[64];
+static int g_gamepadCandidateCount = 0;
+static DWORD g_lastGamepadDetectionTime = 0;
+struct LocalGamepadEnumerationContext
+{
+    LPDIRECTINPUT8A directInput;
+    HWND window;
+};
 
 static void FormatGamepadGuid(const GUID &guid, char *text)
 {
@@ -102,29 +120,58 @@ static void FormatGamepadGuid(const GUID &guid, char *text)
               guid.Data4[4], guid.Data4[5], guid.Data4[6], guid.Data4[7]);
 }
 
-static BOOL CALLBACK EnumerateLocalGamepad(const DIDEVICEINSTANCEA *device, VOID *)
+static void ReleaseLocalGamepads()
 {
-    LocalDevice *entry;
-    int prefixLength;
-    if (g_localDeviceCount >= static_cast<int>(sizeof(g_localDevices) / sizeof(g_localDevices[0])))
+    int index;
+    for (index = 0; index < g_gamepadCandidateCount; ++index)
+    {
+        if (g_gamepadCandidates[index].input != NULL)
+        {
+            g_gamepadCandidates[index].input->Unacquire();
+            g_gamepadCandidates[index].input->Release();
+            g_gamepadCandidates[index].input = NULL;
+        }
+    }
+    g_gamepadCandidateCount = 0;
+}
+
+static BOOL CALLBACK EnumerateLocalGamepad(const DIDEVICEINSTANCEA *device, VOID *context)
+{
+    LocalGamepadCandidate *candidate;
+    LocalGamepadEnumerationContext *enumeration =
+        static_cast<LocalGamepadEnumerationContext *>(context);
+    if (g_gamepadCandidateCount >= static_cast<int>(sizeof(g_gamepadCandidates) / sizeof(g_gamepadCandidates[0])))
         return DIENUM_STOP;
-    entry = &g_localDevices[g_localDeviceCount++];
-    entry->type = LOCAL_DEVICE_GAMEPAD;
-    entry->rawHandle = NULL;
-    FormatGamepadGuid(device->guidInstance, entry->identifier);
-    wsprintfA(entry->label, "Gamepad %d: ", g_localDeviceCount);
-    prefixLength = lstrlenA(entry->label);
-    lstrcpynA(entry->label + prefixLength, device->tszInstanceName,
-              sizeof(entry->label) - prefixLength);
+    candidate = &g_gamepadCandidates[g_gamepadCandidateCount];
+    ZeroMemory(candidate, sizeof(*candidate));
+    candidate->device.type = LOCAL_DEVICE_GAMEPAD;
+    FormatGamepadGuid(device->guidInstance, candidate->device.identifier);
+    lstrcpynA(candidate->device.label, device->tszInstanceName,
+              sizeof(candidate->device.label));
+    if (FAILED(enumeration->directInput->CreateDevice(device->guidInstance, &candidate->input, NULL)))
+        return DIENUM_CONTINUE;
+    if (FAILED(candidate->input->SetDataFormat(&c_dfDIJoystick2)) ||
+        FAILED(candidate->input->SetCooperativeLevel(enumeration->window,
+                                                    DISCL_FOREGROUND | DISCL_NONEXCLUSIVE)))
+    {
+        candidate->input->Release();
+        candidate->input = NULL;
+        return DIENUM_CONTINUE;
+    }
+    candidate->input->Acquire();
+    ++g_gamepadCandidateCount;
     return DIENUM_CONTINUE;
 }
 
-static void EnumerateLocalDevices()
+static void EnumerateLocalDevices(HWND window)
 {
     UINT count = 0;
     RAWINPUTDEVICELIST *devices;
     UINT index;
     LPDIRECTINPUT8A directInput = NULL;
+    LocalGamepadEnumerationContext enumeration;
+    ReleaseLocalGamepads();
+    g_lastGamepadDetectionTime = 0;
     g_localDeviceCount = 0;
     g_keyboardCandidateCount = 0;
     if (GetRawInputDeviceList(NULL, &count, sizeof(RAWINPUTDEVICELIST)) != (UINT)-1 && count != 0)
@@ -163,8 +210,10 @@ static void EnumerateLocalDevices()
                                      IID_IDirectInput8A,
                                      reinterpret_cast<void **>(&directInput), NULL)))
     {
+        enumeration.directInput = directInput;
+        enumeration.window = window;
         directInput->EnumDevices(DI8DEVCLASS_GAMECTRL, EnumerateLocalGamepad,
-                                 NULL, DIEDFL_ATTACHEDONLY);
+                                 &enumeration, DIEDFL_ATTACHEDONLY);
         directInput->Release();
     }
 }
@@ -180,7 +229,7 @@ static void RefreshLocalDeviceControls(HWND window)
     int index;
     int savedIndex[2] = {-1, -1};
     RAWINPUTDEVICE keyboard;
-    EnumerateLocalDevices();
+    EnumerateLocalDevices(window);
     SendMessageA(p1, CB_RESETCONTENT, 0, 0);
     SendMessageA(p2, CB_RESETCONTENT, 0, 0);
     for (index = 0; index < g_localDeviceCount; ++index)
@@ -213,7 +262,7 @@ static void RefreshLocalDeviceControls(HWND window)
     SendMessageA(p1, CB_SETCURSEL, savedIndex[0], 0);
     SendMessageA(p2, CB_SETCURSEL, savedIndex[1], 0);
     SetDlgItemTextA(window, IDC_LOCAL_STATUS,
-                    "Press Z on each keyboard to identify it. Gamepads appear automatically.");
+                    "Press Confirm on each device, one at a time, to identify it.");
     EnableWindow(GetDlgItem(window, IDC_LOCAL_START), g_localDeviceCount >= 2);
     keyboard.usUsagePage = 1;
     keyboard.usUsage = 6;
@@ -242,7 +291,7 @@ static void IdentifyLocalKeyboard(HWND window, HRAWINPUT input)
         if (g_localDevices[index].type == LOCAL_DEVICE_KEYBOARD &&
             g_localDevices[index].rawHandle == raw.header.hDevice)
         {
-            wsprintfA(status, "Keyboard %d is already detected. Press Z on the other keyboard.",
+            wsprintfA(status, "Keyboard %d is already detected. Press Confirm on the other device.",
                       index + 1);
             SetDlgItemTextA(window, IDC_LOCAL_STATUS, status);
             return;
@@ -260,7 +309,7 @@ static void IdentifyLocalKeyboard(HWND window, HRAWINPUT input)
                 ++keyboardNumber;
         entry = &g_localDevices[g_localDeviceCount];
         *entry = g_keyboardCandidates[index];
-        wsprintfA(entry->label, "Keyboard %d (Z key detected)", keyboardNumber);
+        wsprintfA(entry->label, "Keyboard %d (Confirm detected)", keyboardNumber);
         SendMessageA(GetDlgItem(window, IDC_LOCAL_P1), CB_ADDSTRING, 0,
                      reinterpret_cast<LPARAM>(entry->label));
         SendMessageA(GetDlgItem(window, IDC_LOCAL_P2), CB_ADDSTRING, 0,
@@ -271,13 +320,100 @@ static void IdentifyLocalKeyboard(HWND window, HRAWINPUT input)
             SendMessageA(GetDlgItem(window, IDC_LOCAL_P2), CB_SETCURSEL, g_localDeviceCount, 0);
         ++g_localDeviceCount;
         EnableWindow(GetDlgItem(window, IDC_LOCAL_START), g_localDeviceCount >= 2);
-        wsprintfA(status, "Keyboard %d detected. Choose P1/P2 devices, or press Z on another keyboard.",
+        wsprintfA(status, "Keyboard %d detected. Press Confirm on the other device.",
                   keyboardNumber);
         SetDlgItemTextA(window, IDC_LOCAL_STATUS, status);
         return;
     }
     SetDlgItemTextA(window, IDC_LOCAL_STATUS,
-                    "Keyboard changed. Click Refresh devices, then press Z again.");
+                    "Keyboard changed. Click Refresh devices, then press Confirm again.");
+}
+
+static void IdentifyLocalGamepads(HWND window)
+{
+    bool newlyPressed[64];
+    bool knownPressed = false;
+    int firstNew = -1;
+    int index;
+    int gamepadNumber = 1;
+    DWORD now = GetTickCount();
+    char status[160];
+    for (index = 0; index < g_gamepadCandidateCount; ++index)
+    {
+        LocalGamepadCandidate *candidate = &g_gamepadCandidates[index];
+        DIJOYSTATE2 state;
+        bool buttonDown = false;
+        int button;
+        newlyPressed[index] = false;
+        if (candidate->input == NULL || candidate->ignored)
+            continue;
+        if (FAILED(candidate->input->Poll()))
+            candidate->input->Acquire();
+        ZeroMemory(&state, sizeof(state));
+        if (FAILED(candidate->input->GetDeviceState(sizeof(state), &state)))
+        {
+            candidate->buttonWasDown = false;
+            continue;
+        }
+        // The game's confirm button is its mapped shot button. Any pad button
+        // can identify the device here, so custom shot mappings work too.
+        for (button = 0; button < 128; ++button)
+            if ((state.rgbButtons[button] & 0x80) != 0)
+            {
+                buttonDown = true;
+                break;
+            }
+        newlyPressed[index] = buttonDown && !candidate->buttonWasDown;
+        candidate->buttonWasDown = buttonDown;
+        if (!newlyPressed[index])
+            continue;
+        if (candidate->identified)
+            knownPressed = true;
+        else if (firstNew < 0)
+            firstNew = index;
+    }
+    if (firstNew < 0)
+        return;
+    // Several DirectInput interfaces can mirror one physical button press.
+    // Treat interfaces activated together as aliases of the same controller.
+    if (knownPressed || (g_lastGamepadDetectionTime != 0 &&
+                         now - g_lastGamepadDetectionTime < 200))
+    {
+        for (index = 0; index < g_gamepadCandidateCount; ++index)
+            if (newlyPressed[index] && !g_gamepadCandidates[index].identified)
+                g_gamepadCandidates[index].ignored = true;
+        return;
+    }
+    if (g_localDeviceCount >= static_cast<int>(sizeof(g_localDevices) / sizeof(g_localDevices[0])))
+        return;
+    for (index = 0; index < g_localDeviceCount; ++index)
+        if (g_localDevices[index].type == LOCAL_DEVICE_GAMEPAD)
+            ++gamepadNumber;
+    LocalDevice *entry = &g_localDevices[g_localDeviceCount];
+    *entry = g_gamepadCandidates[firstNew].device;
+    wsprintfA(entry->label, "Gamepad %d: ", gamepadNumber);
+    lstrcpynA(entry->label + lstrlenA(entry->label),
+              g_gamepadCandidates[firstNew].device.label,
+              sizeof(entry->label) - lstrlenA(entry->label));
+    SendMessageA(GetDlgItem(window, IDC_LOCAL_P1), CB_ADDSTRING, 0,
+                 reinterpret_cast<LPARAM>(entry->label));
+    SendMessageA(GetDlgItem(window, IDC_LOCAL_P2), CB_ADDSTRING, 0,
+                 reinterpret_cast<LPARAM>(entry->label));
+    if (SendMessageA(GetDlgItem(window, IDC_LOCAL_P1), CB_GETCURSEL, 0, 0) == CB_ERR)
+        SendMessageA(GetDlgItem(window, IDC_LOCAL_P1), CB_SETCURSEL, g_localDeviceCount, 0);
+    else if (SendMessageA(GetDlgItem(window, IDC_LOCAL_P2), CB_GETCURSEL, 0, 0) == CB_ERR)
+        SendMessageA(GetDlgItem(window, IDC_LOCAL_P2), CB_SETCURSEL, g_localDeviceCount, 0);
+    ++g_localDeviceCount;
+    for (index = 0; index < g_gamepadCandidateCount; ++index)
+        if (newlyPressed[index])
+        {
+            g_gamepadCandidates[index].identified = index == firstNew;
+            g_gamepadCandidates[index].ignored = index != firstNew;
+        }
+    g_lastGamepadDetectionTime = now;
+    EnableWindow(GetDlgItem(window, IDC_LOCAL_START), g_localDeviceCount >= 2);
+    wsprintfA(status, "Gamepad %d detected. Press Confirm on the other device.", gamepadNumber);
+    SetDlgItemTextA(window, IDC_LOCAL_STATUS, status);
 }
 
 static HWND CreateLauncherControl(
@@ -533,7 +669,7 @@ static LRESULT CALLBACK LocalWindowProc(HWND window, UINT message,
                               CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP,
                               130, 99, 375, 250, IDC_LOCAL_P2);
         CreateLauncherControl(window, "STATIC",
-                              "Press Z on each keyboard to detect it. Gamepads appear automatically.",
+                              "Press Confirm on each input device, one device at a time.",
                               0, 20, 147, 490, 20, 0);
         CreateLauncherControl(window, "STATIC", "", SS_LEFT,
                               20, 176, 490, 38, IDC_LOCAL_STATUS);
@@ -544,6 +680,11 @@ static LRESULT CALLBACK LocalWindowProc(HWND window, UINT message,
         CreateLauncherControl(window, "BUTTON", "Start local game", BS_DEFPUSHBUTTON | WS_TABSTOP,
                               350, 235, 155, 30, IDC_LOCAL_START);
         RefreshLocalDeviceControls(window);
+        SetTimer(window, LOCAL_INPUT_TIMER_ID, LOCAL_INPUT_TIMER_INTERVAL_MS, NULL);
+        return 0;
+    case WM_TIMER:
+        if (wParam == LOCAL_INPUT_TIMER_ID)
+            IdentifyLocalGamepads(window);
         return 0;
     case WM_COMMAND:
         switch (LOWORD(wParam))
@@ -573,6 +714,8 @@ static LRESULT CALLBACK LocalWindowProc(HWND window, UINT message,
     case WM_DESTROY:
         {
             RAWINPUTDEVICE keyboard;
+            KillTimer(window, LOCAL_INPUT_TIMER_ID);
+            ReleaseLocalGamepads();
             keyboard.usUsagePage = 1;
             keyboard.usUsage = 6;
             keyboard.dwFlags = RIDEV_REMOVE;
