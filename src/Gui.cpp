@@ -309,7 +309,7 @@ static void DrawMultiPlayerResourceGroup(
     position = Float3(492.0f, headerY + 48.0f, 0.0f);
     g_AsciiManager.AddFormatText(&position, "POWER");
     g_AsciiManager.SetColor(playerColor);
-    position = Float3(524.0f, headerY + 48.0f, 0.0f);
+    position = Float3(532.0f, headerY + 48.0f, 0.0f);
     g_AsciiManager.AddFormatText(&position, "%d/128", slot.power);
 
     g_AsciiManager.SetColor(0xffffffff);

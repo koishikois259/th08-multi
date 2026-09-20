@@ -9,10 +9,11 @@ v0.34 is a local patch based on v0.33. It has not been uploaded to GitHub.
 - The remote character renders at 50% opacity when the two characters are at
   least 64 pixels apart and 10% when closer. The remote white focus hitbox is
   not rendered in the local player's view.
-- The right sidebar has separate P1 and P2 LIFE/BOMB rows. Normal-size (1.0x)
-  red and blue ASCII star marks use the same visible draw path as the other
-  sidebar text. The user confirmed the marks are visible at the previous 0.9x
-  scale; the final size still needs a visual check.
+- The right sidebar groups each player's selected team name, LIFE red stars,
+  BOMB blue stars, and `POWER value/128`. POWER and its value have one text
+  character of spacing. The shared resource rows follow both player groups.
+  The normal-size (1.0x) ASCII stars use the same visible sidebar text path;
+  the user confirmed the grouped layout in a local game test.
 - The bundled Chinese connection guide now states the initial-lives rule.
 
 ## Compatibility and distribution

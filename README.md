@@ -87,8 +87,10 @@ When using a tunneling service, use only a temporary mapping, share the connecti
 
 - Both players' initial lives follow the Host/P1 game setting, even when the
   Guest/P2 setting differs. The default remains two.
-- The sidebar shows separate P1 and P2 LIFE and BOMB rows with normal-size
-  (1.0x) red and blue star-shaped text marks. Other displays are unchanged.
+- The sidebar groups each player's selected team, LIFE and BOMB star marks,
+  and `POWER value/128`. A one-character gap separates POWER from its value;
+  shared resource rows appear below the two player groups. The red and blue
+  star-shaped text marks use normal (1.0x) size.
 - The remote player's opacity is 50% when at least 64 pixels away and 10%
   when closer; the remote white focus hitbox is hidden from the local view.
 

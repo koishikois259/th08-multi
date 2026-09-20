@@ -46,13 +46,13 @@ The multiplayer right-side HUD has these intended rows:
 - Score and high score: the existing canonical shared displays.
 - Human-youkai gauge: numeric P1 and P2 values below the standard resource
   rows; spirit state and revival progress appear when active.
-- LIFE and BOMB: separate P1 and P2 rows with red and blue star marks. The
-  marks were visually confirmed at 0.9x scale; the final 1.0x size needs a
-  new visual check. Other HUD elements retain their existing layout.
+- Each player has a selected-team header and individual LIFE red stars, BOMB
+  blue stars, and `POWER value/128`. Shared rows follow the two groups. The
+  grouped layout was visually confirmed by the user; the final POWER spacing
+  still needs a visual check.
 
-The VC7 multiplayer and normal builds pass. The resource marks were visible
-at the previous scale, but complete two-window HUD acceptance is still
-**PENDING**. Do not
+The VC7 multiplayer and normal builds pass. The grouped resource layout was
+visible, but complete two-window HUD acceptance is still **PENDING**. Do not
 mark the entire HUD complete until both Host and Guest views have been checked.
 
 Use [the manual network testing guide](MULTIPLAYER_TESTING.md) and the bundled
@@ -90,12 +90,12 @@ Use [the manual network testing guide](MULTIPLAYER_TESTING.md) and the bundled
   launcher remained alive during its startup smoke test.
 - The v0.34 multiplayer build and focused state/network tests pass. The
   seven-file local patch has SHA-256
-  `b799a00ecdfc43f6a3cea538a0ac4323d13902fe032e6e4ff31f31a80d60339b`
+  `0eff23a3db246aa4c453894e08b782bd86b3ee91281b8e22aa76c1aa88d48bf8`
   and was installed into the verified `th08-origin` directory. The initial
   lives authority and remote-opacity changes need a new packaged two-PC run.
 - Two local v0.34 game windows were visible and both reported
-  `connected (menus synchronized)` before the final 1.0x star adjustment.
-  The final star size and cross-PC trusted LAN/VPN play need manual checks.
+  `connected (menus synchronized)`. The user accepted the grouped HUD layout;
+  the final POWER spacing and cross-PC trusted LAN/VPN play need manual checks.
   Public-IPv4 testing is intentionally unsupported.
 
 ## Reproducible automated checks
