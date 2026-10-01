@@ -47,4 +47,7 @@ hashes of `th08.exe`, `th08.dat`, `thbgm.dat`, `score.dat`, `th08.cfg`, and
 `th08_multi.ini` are unchanged. No game was launched as part of packaging.
 
 ZIP SHA-256:
-`64479177858ba37ce129156e716836da473624c590d50dd9a455775e2b3a7521`
+`77cb0cabb54146268cad32ca43d05f9670f62c21f2422494f250ec077b14cc18`
+
+The local archive was regenerated after shortening tutorial section three to
+only the Local/Host/Guest startup instruction. Executables are unchanged.
