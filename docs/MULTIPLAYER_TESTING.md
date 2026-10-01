@@ -57,6 +57,26 @@ does not show a white focus hitbox.
 6. Local play must still work when the stored network mode is Host or Guest,
    and must preserve that network mode after exit.
 
+## Keyboard focus recovery check
+
+1. Enter team selection or gameplay through an online Host/Guest launch.
+2. Switch to another application, release all keys, then click the game window
+   or switch back. Confirm movement, Z, X, both Shift keys, and menu controls
+   resume without restarting either peer.
+3. While another application is foreground, pressing gameplay keys must not
+   move the background game's keyboard-controlled player. On one PC with two
+   game windows, only the foreground window may sample the shared keyboard.
+4. Repeat several times, including minimizing/restoring the game and switching
+   focus while holding a key. Check that released keys do not remain stuck.
+5. If the original game's configuration disables DirectInput, check the same
+   controls using the foreground fallback. Logs report
+   `multi keyboard: foreground fallback` when this path becomes active.
+6. Repeat a local two-device run separately. It must retain per-device Raw Input
+   routing; the online fallback must not merge P1/P2 keyboards in local mode.
+
+The keyboard tests emulate acquisition/read failures and focus races. They do
+not inject real keyboard input or reproduce a particular user's driver failure.
+
 ## Security boundary
 
 The launcher and game listen on all local IPv4 interfaces. The protocol has no

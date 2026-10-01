@@ -21,6 +21,9 @@
 #include "inttypes.hpp"
 #ifdef TH08_MULTI
 #include "MultiLocalInput.hpp"
+#ifndef TH08_MODERN_LINUX
+#include "MultiKeyboardInput.hpp"
+#endif
 #endif
 #ifdef TH08_MODERN_PORT
 #include "modern/windows_runtime.hpp"
@@ -522,6 +525,9 @@ LRESULT __stdcall GameWindow::WindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LP
     case WM_ACTIVATEAPP:
         g_GameWindow.windowIsActive = wParam;
 #ifdef TH08_MULTI
+#ifndef TH08_MODERN_LINUX
+        NotifyMultiKeyboardFocusChange();
+#endif
         if (!wParam)
             g_MultiLocalInput.OnFocusLost();
 #endif

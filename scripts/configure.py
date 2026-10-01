@@ -136,6 +136,7 @@ def configure(build_type):
             "MultiPlayerCoordinator": debug_codegen,
             "MultiPlayerRuntime": debug_codegen,
             "MultiLocalInput": debug_codegen,
+            "MultiKeyboardInput": debug_codegen,
             "ReplayManager": debug_codegen,
             "ResultScreen": small_codegen + " /Oi-",
             "ScoreDat": debug_codegen,
@@ -196,6 +197,7 @@ def configure(build_type):
                 "MultiPlayerCoordinator",
                 "MultiPlayerRuntime",
                 "MultiLocalInput",
+                "MultiKeyboardInput",
             ])
 
         # These ECL translation units have a closed natural production-link
@@ -518,7 +520,22 @@ def configure(build_type):
                     "$builddir/multiplayer-state-tests.exe",
                     "$builddir/multiplayer-net-tests.exe",
                     "$builddir/multiplayer-launch-mode-tests.exe",
+                    "$builddir/multiplayer-keyboard-tests.exe",
                 ],
+            )
+            writer.build(
+                "$builddir/tests/MultiKeyboardInputTests.obj",
+                "cc",
+                "tests/MultiKeyboardInputTests.cpp",
+            )
+            writer.build(
+                "$builddir/multiplayer-keyboard-tests.exe",
+                "link",
+                inputs=["$builddir/tests/MultiKeyboardInputTests.obj"],
+                variables={
+                    "link_libs": "kernel32.lib user32.lib",
+                    "link_flags": "/subsystem:console /machine:X86 /incremental:no",
+                },
             )
 
         writer.build(

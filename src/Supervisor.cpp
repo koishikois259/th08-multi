@@ -10,6 +10,9 @@
 #ifdef TH08_MULTI
 #include "MultiPlayerCoordinator.hpp"
 #include "MultiPlayerState.hpp"
+#ifndef TH08_MODERN_LINUX
+#include "MultiKeyboardInput.hpp"
+#endif
 #endif
 #include "ReplayManager.hpp"
 #include "ResultScreen.hpp"
@@ -959,6 +962,9 @@ err:
 ZunResult Supervisor::SetupDInput()
 {
     HINSTANCE instance = (HINSTANCE)GetWindowLongA(this->hwndGameWindow, GWL_HINSTANCE);
+#if defined(TH08_MULTI) && !defined(TH08_MODERN_LINUX)
+    ResetMultiKeyboardInput();
+#endif
 
     if (this->cfg.opts.dontUseDirectInput != 0)
     {
@@ -1015,8 +1021,17 @@ ZunResult Supervisor::SetupDInput()
         return ZUN_ERROR;
     }
 
+#if defined(TH08_MULTI) && !defined(TH08_MODERN_LINUX)
+    HRESULT keyboardAcquireResult = this->keyboard->Acquire();
+    if (SUCCEEDED(keyboardAcquireResult))
+        g_GameErrorContext.Log("KeyBoard OK\r\n");
+    else
+        g_GameErrorContext.Log("multi keyboard: initial acquisition failed=%08x; will retry in foreground\n",
+                               static_cast<u32>(keyboardAcquireResult));
+#else
     this->keyboard->Acquire();
     g_GameErrorContext.Log("KeyBoard OK\r\n");
+#endif
     this->dInputIface->EnumDevices(4, Supervisor::EnumGameControllersCb, NULL, DIEDFL_ATTACHEDONLY);
 
     if (this->controller != NULL)

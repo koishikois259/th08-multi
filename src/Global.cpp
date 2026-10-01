@@ -5,6 +5,9 @@
 #endif
 
 #include "Global.hpp"
+#if defined(TH08_MULTI) && !defined(TH08_MODERN_LINUX)
+#include "MultiKeyboardInput.hpp"
+#endif
 #include "Supervisor.hpp"
 #include "ZunMath.hpp"
 #include "i18n.hpp"
@@ -721,6 +724,9 @@ u8 *Controller::GetControllerState()
 
 u16 Controller::GetInput(void)
 {
+#if defined(TH08_MULTI) && !defined(TH08_MODERN_LINUX)
+    return Controller::GetControllerInput(ReadMultiKeyboardButtons());
+#else
     u8 keyboardState[256];
     u16 buttons;
 
@@ -803,6 +809,7 @@ u16 Controller::GetInput(void)
     }
 
     return Controller::GetControllerInput(buttons);
+#endif
 }
 
 void Controller::ResetKeyboard(void)

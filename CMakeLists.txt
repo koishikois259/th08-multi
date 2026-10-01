@@ -88,6 +88,7 @@ if(TH08_ENABLE_MULTIPLAYER)
         list(APPEND TH08_GAME_SOURCES
             src/MultiNetSession.cpp
             src/MultiPlayerCoordinator.cpp
+            src/MultiKeyboardInput.cpp
         )
     endif()
 endif()

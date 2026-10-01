@@ -55,3 +55,37 @@ Physical-device local-to-online transition testing remains manual; see
 [the test checklist](MULTIPLAYER_TESTING.md#local-to-online-input-isolation-check).
 No replacement patch, origin installation, or GitHub upload is part of this
 checkpoint.
+
+## Post-v0.4 keyboard recovery fix (local build only)
+
+- Windows multiplayer input reacquires the keyboard on the next foreground
+  sample after `WM_ACTIVATEAPP`. Unexpected read failures get one acquisition
+  attempt and, on success, an immediate same-sample re-read. There is no
+  acquisition wait loop.
+- If acquisition/read still fails, or DirectInput is disabled/unavailable,
+  foreground-only `GetAsyncKeyState` polling uses the existing action bindings.
+  Only the current-down bit is used. Buffers are cleared before fallback, and
+  focus is checked again before publishing the input.
+- Background/minimized windows provide no keyboard input. Gamepad merging
+  is unchanged. Local Play retains its per-device Raw Input path; it does not
+  use the merged-keyboard fallback.
+- Initialization no longer reports `KeyBoard OK` after a failed acquisition.
+  Input-source transitions are logged without per-key data or per-frame spam.
+- The implementation is guarded by `TH08_MULTI` on Windows. No original class
+  layouts, network packets, game rules, or build fingerprints are changed.
+
+The VC7 multiplayer build and four automated suites (keyboard recovery,
+launch-mode isolation, gameplay state, network protocol) pass. Keyboard tests
+use a fake backend to exercise acquisition failure, read failure, same-sample
+recovery, prolonged failure, focus races, stale-key clearing, and bindings.
+The normal-build input, window procedure, and DirectInput-setup objects compile;
+their three focused comparisons against the hash-verified Japanese 1.00d target
+pass. This is not a whole-object or aggregate reconstruction claim. A broader
+optional diagnostic replay stopped at a missing generated objdiff object.
+Full CI remains blocked by Bash `E_ACCESSDENIED`. Real-device focus switching,
+driver failures, and two-PC gameplay remain manual checks; see
+[the keyboard checklist](MULTIPLAYER_TESTING.md#keyboard-focus-recovery-check).
+No patch replacement, origin installation, or upload is included.
+
+API references: [GetAsyncKeyState](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getasynckeystate)
+and [GetForegroundWindow](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getforegroundwindow).
