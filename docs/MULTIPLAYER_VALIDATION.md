@@ -104,6 +104,7 @@ Use [the manual network testing guide](MULTIPLAYER_TESTING.md) and the bundled
 python scripts/build.py --build-type multi --fresh -j 1 multiplayer-tests
 build\multiplayer-state-tests.exe
 build\multiplayer-net-tests.exe
+build\multiplayer-launch-mode-tests.exe
 python scripts/build.py --build-type normal --fresh -j 1
 python scripts/build.py --build-type multi --fresh -j 1
 python scripts/package-multiplayer-patch.py --install-dir ..\th08-origin

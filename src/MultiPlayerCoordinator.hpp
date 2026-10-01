@@ -1,17 +1,10 @@
 #pragma once
 
 #include "MultiNetSession.hpp"
+#include "MultiLaunchMode.hpp"
 
 namespace th08
 {
-
-enum MultiPlayerLaunchMode
-{
-    MULTI_LAUNCH_DISABLED = 0,
-    MULTI_LAUNCH_HOST = 1,
-    MULTI_LAUNCH_GUEST = 2,
-    MULTI_LAUNCH_LOCAL = 3,
-};
 
 struct MultiPlayerLaunchConfig
 {

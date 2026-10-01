@@ -1,4 +1,5 @@
 #include <windows.h>
+#include <shellapi.h>
 #include <string.h>
 
 #include "th_pch.h"
@@ -88,6 +89,10 @@ void MultiPlayerLaunchConfig::Load()
 {
     char modeText[16];
     i32 value;
+    MultiPlayerLaunchMode argumentMode;
+    int argumentCount = 0;
+    LPWSTR *arguments;
+    MultiLaunchArgumentStatus argumentStatus;
     GetPrivateProfileStringA("network", "mode", "disabled", modeText, sizeof(modeText), ".\\th08_multi.ini");
     if (lstrcmpiA(modeText, "host") == 0)
         mode = MULTI_LAUNCH_HOST;
@@ -97,6 +102,23 @@ void MultiPlayerLaunchConfig::Load()
         mode = MULTI_LAUNCH_LOCAL;
     else
         mode = MULTI_LAUNCH_DISABLED;
+
+    MultiPlayerLaunchMode storedMode = mode;
+    arguments = CommandLineToArgvW(GetCommandLineW(), &argumentCount);
+    argumentStatus = ReadMultiLaunchModeArgument(argumentCount, arguments, &argumentMode);
+    if (arguments != NULL)
+        LocalFree(arguments);
+    else
+        argumentStatus = MULTI_LAUNCH_ARGUMENT_INVALID;
+    mode = ResolveMultiLaunchMode(storedMode, argumentMode, argumentStatus);
+    g_GameErrorContext.Log("multi launch: mode=%s source=%s stored-mode=%s\n",
+                           GetMultiLaunchModeName(mode),
+                           argumentStatus == MULTI_LAUNCH_ARGUMENT_MISSING ? "config" : "command-line",
+                           GetMultiLaunchModeName(storedMode));
+    if (argumentStatus == MULTI_LAUNCH_ARGUMENT_INVALID)
+        g_GameErrorContext.Log("multi launch: invalid launch mode arguments; multiplayer disabled\n");
+    if (storedMode == MULTI_LAUNCH_LOCAL && argumentStatus == MULTI_LAUNCH_ARGUMENT_MISSING)
+        g_GameErrorContext.Log("multi launch: ignored stored local mode; start local play from launcher\n");
 
     value = GetPrivateProfileIntA("network", "local_port", mode == MULTI_LAUNCH_HOST ? 17708 : 0,
                                   ".\\th08_multi.ini");

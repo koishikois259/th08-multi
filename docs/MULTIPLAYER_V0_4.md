@@ -33,3 +33,25 @@ The repository-wide `scripts/ci.py` run reached shell-syntax validation but
 could not launch Bash in this Windows environment (`E_ACCESSDENIED`); it did
 not complete. Physical two-keyboard, keyboard/gamepad, two-gamepad, hot-plug,
 and long-stage tests remain manual release checks.
+
+## Post-v0.4 local-mode isolation fix (local build only)
+
+- Launcher-created game processes receive an explicit `--multi-mode` argument;
+  Host/Guest input routing cannot inherit a saved Local Play mode.
+- Local Play no longer stores `network.mode=local`. Saving local device choices
+  preserves Host/Guest configuration and migrates old local-mode residue to
+  `disabled`.
+- Direct game launches ignore legacy stored `local`; local device filtering
+  requires an explicit local launch. Legacy direct Host/Guest launches remain
+  supported. Startup logs record the resolved mode and its source.
+- The enum values, gameplay rules, network protocol/build fingerprint, and
+  DirectInput focus/acquisition behavior are unchanged.
+
+The VC7 game/launcher build and state, network, and new launch-mode tests pass.
+The launch-mode tests cover all stored/explicit mode combinations, quoted
+Windows executable paths, direct launches, and invalid/conflicting arguments.
+`scripts/ci.py` remains blocked at Bash startup with `E_ACCESSDENIED`.
+Physical-device local-to-online transition testing remains manual; see
+[the test checklist](MULTIPLAYER_TESTING.md#local-to-online-input-isolation-check).
+No replacement patch, origin installation, or GitHub upload is part of this
+checkpoint.

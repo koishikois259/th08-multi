@@ -22,6 +22,13 @@ frame. In the shared game window both player sprites and both white focus
 markers are visible. The local machine's `score.dat` and initial-lives setting
 apply to the run. Existing online Host/Guest mode remains separate.
 
+The launcher passes `--multi-mode=local`, `--multi-mode=host`, or
+`--multi-mode=guest` to each game process. Local play saves only the device
+choices and does not replace an existing online mode. Legacy `mode=local`
+residue is cleared when saving local choices and ignored by a direct game
+launch without an explicit mode argument. Always use the launcher to start
+local play; an online launch never uses the saved local device bindings.
+
 The launcher saves physical device identifiers to `th08_multi.ini` beside the
 executables. Do not publish that file without reviewing the identifiers. If a
 selected device is unplugged or its identifier changes, return to the launcher

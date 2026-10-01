@@ -6,6 +6,7 @@
 #include <string.h>
 
 #include "SecureRandom.hpp"
+#include "MultiLaunchMode.hpp"
 
 enum LauncherControlId
 {
@@ -574,12 +575,13 @@ static bool SaveSettings(HWND window)
     return true;
 }
 
-static bool LaunchGame(HWND window)
+static bool LaunchGame(HWND window, th08::MultiPlayerLaunchMode mode)
 {
     STARTUPINFOA startupInfo;
     PROCESS_INFORMATION processInfo;
     char errorText[192];
     DWORD error;
+    char commandLine[MAX_PATH + 64];
 
     if (GetFileAttributesA(g_gamePath) == INVALID_FILE_ATTRIBUTES)
     {
@@ -592,7 +594,10 @@ static bool LaunchGame(HWND window)
     ZeroMemory(&startupInfo, sizeof(startupInfo));
     ZeroMemory(&processInfo, sizeof(processInfo));
     startupInfo.cb = sizeof(startupInfo);
-    if (!CreateProcessA(g_gamePath, NULL, NULL, NULL, FALSE, 0, NULL,
+    // Explicit per-process mode wins over stale or concurrently edited INI mode.
+    wsprintfA(commandLine, "\"%s\" --multi-mode=%s", g_gamePath,
+              th08::GetMultiLaunchModeName(mode));
+    if (!CreateProcessA(g_gamePath, commandLine, NULL, NULL, FALSE, 0, NULL,
                         g_launcherDirectory, &startupInfo, &processInfo))
     {
         error = GetLastError();
@@ -614,6 +619,7 @@ static bool SaveLocalSelection(HWND window)
                                           CB_GETCURSEL, 0, 0));
     const LocalDevice *first;
     const LocalDevice *second;
+    char storedMode[16];
     if (p1 < 0 || p2 < 0 || p1 >= g_localDeviceCount || p2 >= g_localDeviceCount)
     {
         MessageBoxA(window, "Select two connected input devices.",
@@ -629,6 +635,8 @@ static bool SaveLocalSelection(HWND window)
                     "Local play input", MB_OK | MB_ICONWARNING);
         return false;
     }
+    GetPrivateProfileStringA("network", "mode", "disabled", storedMode,
+                             sizeof(storedMode), g_iniPath);
     if (!WritePrivateProfileStringA("local", "p1_type",
                                     first->type == LOCAL_DEVICE_KEYBOARD ? "keyboard" : "gamepad",
                                     g_iniPath) ||
@@ -637,7 +645,9 @@ static bool SaveLocalSelection(HWND window)
                                     second->type == LOCAL_DEVICE_KEYBOARD ? "keyboard" : "gamepad",
                                     g_iniPath) ||
         !WritePrivateProfileStringA("local", "p2_id", second->identifier, g_iniPath) ||
-        !WritePrivateProfileStringA("network", "mode", "local", g_iniPath))
+        // Migrate old local-mode residue; otherwise keep remote mode intact.
+        (lstrcmpiA(storedMode, "local") == 0 &&
+         !WritePrivateProfileStringA("network", "mode", "disabled", g_iniPath)))
     {
         MessageBoxA(window, "Could not save th08_multi.ini beside the launcher.",
                     "Local play setup failed", MB_OK | MB_ICONERROR);
@@ -697,7 +707,7 @@ static LRESULT CALLBACK LocalWindowProc(HWND window, UINT message,
             ShowWindow(g_mainWindow, SW_SHOW);
             return 0;
         case IDC_LOCAL_START:
-            if (SaveLocalSelection(window) && LaunchGame(window))
+            if (SaveLocalSelection(window) && LaunchGame(window, th08::MULTI_LAUNCH_LOCAL))
             {
                 DestroyWindow(window);
                 DestroyWindow(g_mainWindow);
@@ -1077,7 +1087,7 @@ static void PumpLauncherConnection(HWND window)
         g_launchAt != 0 && static_cast<long>(now - g_launchAt) >= 0)
     {
         CloseLauncherConnection(window);
-        if (LaunchGame(window))
+        if (LaunchGame(window, g_isHost ? th08::MULTI_LAUNCH_HOST : th08::MULTI_LAUNCH_GUEST))
             DestroyWindow(window);
     }
 }

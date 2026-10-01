@@ -498,11 +498,26 @@ def configure(build_type):
                 },
             )
             writer.build(
+                "$builddir/tests/MultiLaunchModeTests.obj",
+                "cc",
+                "tests/MultiLaunchModeTests.cpp",
+            )
+            writer.build(
+                "$builddir/multiplayer-launch-mode-tests.exe",
+                "link",
+                inputs=["$builddir/tests/MultiLaunchModeTests.obj"],
+                variables={
+                    "link_libs": "kernel32.lib shell32.lib",
+                    "link_flags": "/subsystem:console /machine:X86 /incremental:no",
+                },
+            )
+            writer.build(
                 "multiplayer-tests",
                 "phony",
                 [
                     "$builddir/multiplayer-state-tests.exe",
                     "$builddir/multiplayer-net-tests.exe",
+                    "$builddir/multiplayer-launch-mode-tests.exe",
                 ],
             )
 

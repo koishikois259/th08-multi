@@ -43,6 +43,20 @@ Host/P1 value; the Guest/P2 setting must not affect the run. On both screens,
 check that P1 and P2 LIFE/BOMB marks are visible and that the remote character
 does not show a white focus hitbox.
 
+## Local-to-online input isolation check
+
+1. Start local play with two physical devices, then exit the game normally.
+2. Reopen the launcher and connect as Host or Guest for a two-PC online run.
+3. Check `log.txt` for `multi launch: mode=host source=command-line` or
+   `mode=guest source=command-line`. There must be no
+   `multi local: two physical input devices ready` line in an online run.
+4. Verify team selection and gameplay input on both machines. P1 still
+   controls the shared title menu; Guest title-menu navigation is not expected.
+5. Repeat with an old `mode=local` configuration left in place before online
+   launch. The explicit online mode must win over that residue.
+6. Local play must still work when the stored network mode is Host or Guest,
+   and must preserve that network mode after exit.
+
 ## Security boundary
 
 The launcher and game listen on all local IPv4 interfaces. The protocol has no
