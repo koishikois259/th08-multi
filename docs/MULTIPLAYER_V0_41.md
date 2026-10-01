@@ -51,3 +51,17 @@ ZIP SHA-256:
 
 The local archive was regenerated after shortening tutorial section three to
 only the Local/Host/Guest startup instruction. Executables are unchanged.
+
+## Pending GitHub Release text
+
+Use the following user-requested text when the user completes testing and
+explicitly requests upload. Do not publish before that confirmation. The hash
+below is for the current local ZIP; recheck it if the archive changes.
+
+```text
+Local play 不再覆盖远程联机配置，本地双控需从启动器进入。
+切屏后再切回游戏重新获取键盘，成功后立即重读，不再直接返回空输入。
+
+SHA-256:
+77cb0cabb54146268cad32ca43d05f9670f62c21f2422494f250ec077b14cc18
+```
