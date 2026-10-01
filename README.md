@@ -1,4 +1,4 @@
-# th08-multi v0.4 Multiplayer Patch
+# th08-multi v0.41 Multiplayer Patch
 
 ## 1. Project Nature and Rights Notice
 
@@ -21,7 +21,7 @@ Only the Japanese original version 1.00d of *Touhou Eiyashou ~ Imperishable Nigh
 
 Translated versions, trial versions, other releases, or modified game data are not supported.
 
-For online play, both players must use exactly the same v0.4 patch and the same version of the original game data.
+For online play, both players must use exactly the same v0.41 patch and the same version of the original game data. Update both the launcher and game; v0.41 rejects mixed v0.4/older sessions.
 
 ## 3. Patch Contents and Distribution Boundaries
 
@@ -69,7 +69,7 @@ setting; the Guest/P2 setting is ignored. The unchanged default is two.
 GitHub source repository:
 https://github.com/koishikois259/th08-multi
 
-The local v0.4 patch has not yet been uploaded as a GitHub Release.
+The local v0.41 patch has not yet been uploaded as a GitHub Release.
 
 ## 5. Network and Security Limitations
 
@@ -92,7 +92,23 @@ When using a tunneling service, use only a temporary mapping, share the connecti
 - Diagnostic information is written to `log.txt` in the game directory.
 - This project is still in the testing stage. Please keep backups of your save data and test primarily in trusted environments.
 
-### Changes in v0.4
+### Changes in v0.41
+
+- Isolated local-device bindings from online launch mode. Each launcher-created
+  game receives an explicit Local, Host, or Guest mode. Local play preserves
+  online configuration; legacy stored local mode cannot enable device filtering
+  on an online launch.
+- Improved keyboard recovery after foreground activation and DirectInput read
+  failure. Acquisition succeeds before an immediate re-read; foreground-only
+  fallback polling remains available if DirectInput fails or is unavailable.
+  Recovery is bounded to one acquisition attempt per input sample.
+- Clears failed-read buffers and checks focus before publishing input. Local
+  play continues to use separate physical-device input, not merged fallback.
+- Startup logs identify the resolved mode and keyboard input-source changes.
+  Automated tests pass; real-device and cross-PC regression testing remains
+  necessary for reported hardware-specific failures.
+
+### Changes inherited from v0.4
 
 - Added experimental single-process local co-op with two distinct input devices.
   Physical keyboards are identified by their Confirm key; gamepads are
@@ -127,7 +143,7 @@ When using a tunneling service, use only a temporary mapping, share the connecti
 - Desync hash identifiers now use the monotonic connection timeline, avoiding
   stale-hash collisions when starting another run without reconnecting.
 
-v0.4 includes all defensive memory-safety checks introduced in v0.32. Long
+v0.41 includes all defensive memory-safety checks introduced in v0.32. Long
 two-PC runs through Stages 4, 5, 6, and Extra remain recommended.
 
 ## 7. Source Code, License, and Credits

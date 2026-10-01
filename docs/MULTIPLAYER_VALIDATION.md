@@ -1,5 +1,9 @@
 # th08-multi v0.34 validation ledger
 
+This gameplay ledger retains its original v0.34 observations. For the local
+v0.41 input-fix release and installation checks, see
+[the v0.41 checkpoint](MULTIPLAYER_V0_41.md).
+
 This ledger separates implemented code, automated rule checks, and observed
 two-process gameplay. An item is accepted only after the relevant observable
 result has been reproduced; compiling successfully is not gameplay acceptance.

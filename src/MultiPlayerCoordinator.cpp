@@ -13,7 +13,7 @@
 namespace th08
 {
 
-const u32 TH08_MULTI_BUILD_FINGERPRINT = 0x00040000;
+const u32 TH08_MULTI_BUILD_FINGERPRINT = 0x00040001;
 const u16 MULTI_INPUT_TITLE_READY = 0x8000;
 
 namespace
@@ -264,14 +264,14 @@ void MultiPlayerCoordinator::Pump(u32 nowMilliseconds)
         if (sessionState != displayedState && g_Supervisor.hwndGameWindow != NULL)
         {
             if (sessionState == MULTI_NET_STATE_LISTENING)
-                wsprintfA(title, "th08-multi v0.4 - HOST waiting on UDP %u", config.localPort);
+                wsprintfA(title, "th08-multi v0.41 - HOST waiting on UDP %u", config.localPort);
             else if (sessionState == MULTI_NET_STATE_CONNECTING)
-                wsprintfA(title, "th08-multi v0.4 - connecting to %s:%u", config.hostAddress, config.hostPort);
+                wsprintfA(title, "th08-multi v0.41 - connecting to %s:%u", config.hostAddress, config.hostPort);
             else if (sessionState == MULTI_NET_STATE_CONNECTED)
-                wsprintfA(title, "th08-multi v0.4 - connected (select teams in game / delay %u)",
+                wsprintfA(title, "th08-multi v0.41 - connected (select teams in game / delay %u)",
                           session.GetInputDelay());
             else
-                wsprintfA(title, "th08-multi v0.4 - network error %u", session.GetError());
+                wsprintfA(title, "th08-multi v0.41 - network error %u", session.GetError());
             SetWindowTextA(g_Supervisor.hwndGameWindow, title);
             displayedState = sessionState;
         }
@@ -443,10 +443,10 @@ void MultiPlayerCoordinator::BeginGameplay(bool newRun, i32 initialLives,
     if (g_Supervisor.hwndGameWindow != NULL)
     {
         if (IsLocalPlay())
-            wsprintfA(title, "th08-multi - local play (P1 team %u / P2 team %u)",
+            wsprintfA(title, "th08-multi v0.41 - local play (P1 team %u / P2 team %u)",
                       selectedTeams[0], selectedTeams[1]);
         else
-            wsprintfA(title, "th08-multi v0.4 - playing (P1 team %u / P2 team %u / delay %u)",
+            wsprintfA(title, "th08-multi v0.41 - playing (P1 team %u / P2 team %u / delay %u)",
                       selectedTeams[0], selectedTeams[1], session.GetInputDelay());
         SetWindowTextA(g_Supervisor.hwndGameWindow, title);
     }
