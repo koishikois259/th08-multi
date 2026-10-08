@@ -7,6 +7,7 @@
 
 #include "SecureRandom.hpp"
 #include "MultiLaunchMode.hpp"
+#include "MultiLocalKeyboardConfig.hpp"
 
 enum LauncherControlId
 {
@@ -26,6 +27,17 @@ enum LauncherControlId
     IDC_LOCAL_BACK,
     IDC_LOCAL_START,
     IDC_LOCAL_STATUS,
+    IDC_LOCAL_INPUT_MODE,
+    IDC_LOCAL_P1_LABEL,
+    IDC_LOCAL_P2_LABEL,
+    IDC_LOCAL_HINT,
+    IDC_LOCAL_SINGLE_HINT,
+    IDC_LOCAL_KEYS,
+    IDC_KEY_STATUS,
+    IDC_KEY_SAVE,
+    IDC_KEY_CANCEL,
+    IDC_KEY_DEFAULT,
+    IDC_KEY_FIRST = 1100,
 };
 
 enum LocalDeviceType
@@ -91,6 +103,10 @@ static DWORD g_startRequestTime = 0;
 static DWORD g_launchAt = 0;
 static HWND g_mainWindow = NULL;
 static HWND g_localWindow = NULL;
+static HWND g_keyWindow = NULL;
+static bool g_singleKeyboardLocal = false;
+static th08::MultiLocalKeyboardConfig g_keyDraft;
+static int g_keyCaptureAction = -1;
 static LocalDevice g_localDevices[64];
 static int g_localDeviceCount = 0;
 static LocalDevice g_keyboardCandidates[64];
@@ -611,6 +627,182 @@ static bool LaunchGame(HWND window, th08::MultiPlayerLaunchMode mode)
     return true;
 }
 
+static void StopLocalDeviceDetection(HWND window)
+{
+    RAWINPUTDEVICE keyboard;
+    KillTimer(window, LOCAL_INPUT_TIMER_ID);
+    ReleaseLocalGamepads();
+    keyboard.usUsagePage = 1;
+    keyboard.usUsage = 6;
+    keyboard.dwFlags = RIDEV_REMOVE;
+    keyboard.hwndTarget = NULL;
+    RegisterRawInputDevices(&keyboard, 1, sizeof(keyboard));
+}
+
+static void FormatLocalKeyName(unsigned int key, char *name)
+{
+    // MAPVK_VK_TO_VSC is 0; the original VC7 SDK predates the named constant.
+    LONG scan = static_cast<LONG>(MapVirtualKeyA(key, 0)) << 16;
+    if (key == VK_PRIOR || key == VK_NEXT || key == VK_END || key == VK_HOME ||
+        key == VK_INSERT || key == VK_DELETE || key == VK_DIVIDE)
+        scan |= 1L << 24;
+    if (GetKeyNameTextA(scan, name, 64) == 0)
+        wsprintfA(name, "Key %u", key);
+}
+
+static void RefreshLocalKeyButtons(HWND window)
+{
+    for (int i = 0; i < th08::LOCAL_KEY_COUNT; ++i)
+    {
+        char name[64];
+        FormatLocalKeyName(g_keyDraft.p2Keys[i], name);
+        SetDlgItemTextA(window, IDC_KEY_FIRST + i, name);
+    }
+}
+
+static LRESULT CALLBACK LocalKeyWindowProc(HWND window, UINT message,
+                                          WPARAM wParam, LPARAM lParam)
+{
+    switch (message)
+    {
+    case WM_CREATE:
+        {
+            const char *const labels[th08::LOCAL_KEY_COUNT] = {
+                "Up", "Down", "Left", "Right", "Focus (slow)", "Shoot / Confirm", "Bomb / Cancel"};
+            th08::LoadMultiLocalKeyboardConfig(g_iniPath, &g_keyDraft);
+            g_keyCaptureAction = -1;
+            CreateLauncherControl(window, "STATIC", "P2 keys - Single device only", 0,
+                                  20, 15, 365, 22, 0);
+            for (int i = 0; i < th08::LOCAL_KEY_COUNT; ++i)
+            {
+                CreateLauncherControl(window, "STATIC", labels[i], 0,
+                                      20, 51 + i * 34, 170, 22, 0);
+                CreateLauncherControl(window, "BUTTON", "", WS_TABSTOP,
+                                      200, 46 + i * 34, 175, 28, IDC_KEY_FIRST + i);
+            }
+            CreateLauncherControl(window, "STATIC",
+                                  "Click an action, then press a key. Esc cancels capture.", 0,
+                                  20, 292, 355, 42, IDC_KEY_STATUS);
+            CreateLauncherControl(window, "BUTTON", "Defaults", WS_TABSTOP,
+                                  20, 345, 100, 30, IDC_KEY_DEFAULT);
+            CreateLauncherControl(window, "BUTTON", "Cancel", WS_TABSTOP,
+                                  160, 345, 100, 30, IDC_KEY_CANCEL);
+            CreateLauncherControl(window, "BUTTON", "Save", WS_TABSTOP,
+                                  275, 345, 100, 30, IDC_KEY_SAVE);
+            RefreshLocalKeyButtons(window);
+        }
+        return 0;
+    case WM_COMMAND:
+        {
+            int id = LOWORD(wParam);
+            if (id >= IDC_KEY_FIRST && id < IDC_KEY_FIRST + th08::LOCAL_KEY_COUNT)
+            {
+                g_keyCaptureAction = id - IDC_KEY_FIRST;
+                SetDlgItemTextA(window, IDC_KEY_STATUS,
+                                "Press the new key. P1/menu keys and duplicates are forbidden.");
+                SetFocus(window);
+                return 0;
+            }
+            if (id == IDC_KEY_DEFAULT)
+            {
+                th08::DefaultMultiLocalKeyboardConfig(&g_keyDraft);
+                g_keyCaptureAction = -1;
+                RefreshLocalKeyButtons(window);
+                SetDlgItemTextA(window, IDC_KEY_STATUS, "Defaults restored. Click Save to apply.");
+                return 0;
+            }
+            if (id == IDC_KEY_CANCEL)
+            {
+                DestroyWindow(window);
+                return 0;
+            }
+            if (id == IDC_KEY_SAVE)
+            {
+                if (g_keyCaptureAction >= 0)
+                {
+                    SetDlgItemTextA(window, IDC_KEY_STATUS, "Finish key capture or press Esc before saving.");
+                    return 0;
+                }
+                if (!th08::SaveMultiLocalKeyboardConfig(g_iniPath, g_keyDraft))
+                {
+                    MessageBoxA(window, "Could not save P2 keys to th08_multi.ini.",
+                                "P2 keys", MB_OK | MB_ICONERROR);
+                    return 0;
+                }
+                DestroyWindow(window);
+                return 0;
+            }
+        }
+        break;
+    case WM_CLOSE:
+        DestroyWindow(window);
+        return 0;
+    case WM_DESTROY:
+        g_keyCaptureAction = -1;
+        g_keyWindow = NULL;
+        EnableWindow(g_localWindow, TRUE);
+        SetActiveWindow(g_localWindow);
+        return 0;
+    default:
+        break;
+    }
+    return DefWindowProcA(window, message, wParam, lParam);
+}
+
+static bool CaptureLocalKeyMessage(const MSG &message)
+{
+    if (g_keyWindow == NULL || g_keyCaptureAction < 0 ||
+        (message.hwnd != g_keyWindow && !IsChild(g_keyWindow, message.hwnd)) ||
+        (message.message != WM_KEYDOWN && message.message != WM_SYSKEYDOWN))
+        return false;
+    if ((message.lParam & (1L << 30)) != 0)
+        return true;
+    unsigned int key = static_cast<unsigned int>(message.wParam);
+    if (key == VK_ESCAPE)
+    {
+        g_keyCaptureAction = -1;
+        SetDlgItemTextA(g_keyWindow, IDC_KEY_STATUS, "Key capture cancelled. No change saved.");
+        return true;
+    }
+    th08::MultiLocalKeyboardConfig candidate = g_keyDraft;
+    candidate.p2Keys[g_keyCaptureAction] = key;
+    if (!th08::ValidateMultiLocalKeyboardConfig(candidate))
+    {
+        SetDlgItemTextA(g_keyWindow, IDC_KEY_STATUS,
+                        "Conflict or reserved key. Choose a different key, or Esc to cancel.");
+        return true;
+    }
+    g_keyDraft = candidate;
+    g_keyCaptureAction = -1;
+    RefreshLocalKeyButtons(g_keyWindow);
+    SetDlgItemTextA(g_keyWindow, IDC_KEY_STATUS, "Key changed. Click Save to apply, or Cancel to discard.");
+    return true;
+}
+
+static void UpdateLocalInputMode(HWND window)
+{
+    const int doubleControls[] = {IDC_LOCAL_P1, IDC_LOCAL_P2, IDC_LOCAL_P1_LABEL,
+                                 IDC_LOCAL_P2_LABEL, IDC_LOCAL_HINT, IDC_LOCAL_REFRESH};
+    StopLocalDeviceDetection(window);
+    SetDlgItemTextA(window, IDC_LOCAL_INPUT_MODE,
+                    g_singleKeyboardLocal ? "Single device" : "Double device");
+    for (int i = 0; i < static_cast<int>(sizeof(doubleControls) / sizeof(doubleControls[0])); ++i)
+        ShowWindow(GetDlgItem(window, doubleControls[i]), g_singleKeyboardLocal ? SW_HIDE : SW_SHOW);
+    ShowWindow(GetDlgItem(window, IDC_LOCAL_SINGLE_HINT), g_singleKeyboardLocal ? SW_SHOW : SW_HIDE);
+    ShowWindow(GetDlgItem(window, IDC_LOCAL_KEYS), g_singleKeyboardLocal ? SW_SHOW : SW_HIDE);
+    if (g_singleKeyboardLocal)
+    {
+        EnableWindow(GetDlgItem(window, IDC_LOCAL_START), TRUE);
+        SetDlgItemTextA(window, IDC_LOCAL_STATUS,
+                        "Shared keyboard. No device detection needed. Click the mode button to switch.");
+    }
+    else
+    {
+        RefreshLocalDeviceControls(window);
+        SetTimer(window, LOCAL_INPUT_TIMER_ID, LOCAL_INPUT_TIMER_INTERVAL_MS, NULL);
+    }
+}
+
 static bool SaveLocalSelection(HWND window)
 {
     int p1 = static_cast<int>(SendMessageA(GetDlgItem(window, IDC_LOCAL_P1),
@@ -620,6 +812,24 @@ static bool SaveLocalSelection(HWND window)
     const LocalDevice *first;
     const LocalDevice *second;
     char storedMode[16];
+    if (g_singleKeyboardLocal)
+    {
+        th08::MultiLocalKeyboardConfig config;
+        th08::LoadMultiLocalKeyboardConfig(g_iniPath, &config);
+        GetPrivateProfileStringA("network", "mode", "disabled", storedMode,
+                                 sizeof(storedMode), g_iniPath);
+        if (!th08::SaveMultiLocalKeyboardConfig(g_iniPath, config) ||
+            !WritePrivateProfileStringA("local", "input_mode", "single", g_iniPath) ||
+            (lstrcmpiA(storedMode, "local") == 0 &&
+             !WritePrivateProfileStringA("network", "mode", "disabled", g_iniPath)))
+        {
+            MessageBoxA(window, "Could not save local keyboard settings.",
+                        "Local play setup failed", MB_OK | MB_ICONERROR);
+            return false;
+        }
+        WritePrivateProfileStringA(NULL, NULL, NULL, g_iniPath);
+        return true;
+    }
     if (p1 < 0 || p2 < 0 || p1 >= g_localDeviceCount || p2 >= g_localDeviceCount)
     {
         MessageBoxA(window, "Select two connected input devices.",
@@ -645,6 +855,7 @@ static bool SaveLocalSelection(HWND window)
                                     second->type == LOCAL_DEVICE_KEYBOARD ? "keyboard" : "gamepad",
                                     g_iniPath) ||
         !WritePrivateProfileStringA("local", "p2_id", second->identifier, g_iniPath) ||
+        !WritePrivateProfileStringA("local", "input_mode", "double", g_iniPath) ||
         // Migrate old local-mode residue; otherwise keep remote mode intact.
         (lstrcmpiA(storedMode, "local") == 0 &&
          !WritePrivateProfileStringA("network", "mode", "disabled", g_iniPath)))
@@ -663,42 +874,75 @@ static LRESULT CALLBACK LocalWindowProc(HWND window, UINT message,
     switch (message)
     {
     case WM_INPUT:
-        IdentifyLocalKeyboard(window, reinterpret_cast<HRAWINPUT>(lParam));
+        if (!g_singleKeyboardLocal && g_keyWindow == NULL)
+            IdentifyLocalKeyboard(window, reinterpret_cast<HRAWINPUT>(lParam));
         break;
     case WM_CREATE:
-        CreateLauncherControl(window, "STATIC", "Local play - two input devices, one game window", 0,
+        g_singleKeyboardLocal = th08::IsSingleKeyboardLocalConfig(g_iniPath);
+        CreateLauncherControl(window, "STATIC", "Local play - two players, one game window", 0,
                               20, 17, 490, 22, 0);
+        CreateLauncherControl(window, "BUTTON", "Double device", WS_TABSTOP,
+                              20, 49, 180, 30, IDC_LOCAL_INPUT_MODE);
+        CreateLauncherControl(window, "STATIC", "Click to switch input mode", 0,
+                              215, 55, 280, 22, 0);
         CreateLauncherControl(window, "STATIC", "Player 1:", 0,
-                              20, 61, 105, 20, 0);
+                              20, 105, 105, 20, IDC_LOCAL_P1_LABEL);
         CreateLauncherControl(window, "COMBOBOX", "",
                               CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP,
-                              130, 55, 375, 250, IDC_LOCAL_P1);
+                              130, 99, 375, 250, IDC_LOCAL_P1);
         CreateLauncherControl(window, "STATIC", "Player 2:", 0,
-                              20, 105, 105, 20, 0);
+                              20, 149, 105, 20, IDC_LOCAL_P2_LABEL);
         CreateLauncherControl(window, "COMBOBOX", "",
                               CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP,
-                              130, 99, 375, 250, IDC_LOCAL_P2);
+                              130, 143, 375, 250, IDC_LOCAL_P2);
         CreateLauncherControl(window, "STATIC",
                               "Press Confirm on each input device, one device at a time.",
-                              0, 20, 147, 490, 20, 0);
+                              0, 20, 191, 490, 20, IDC_LOCAL_HINT);
+        CreateLauncherControl(window, "STATIC",
+                              "P1: Arrow keys | Focus: Shift | Shoot: Z | Bomb: X\r\n\r\n"
+                              "P2 defaults: I/K/J/L (Up/Down/Left/Right)\r\n"
+                              "Focus: D | Shoot: F | Bomb: G\r\n\r\n"
+                              "P1 selects first; P2 confirms with its Shoot key.",
+                              0, 20, 99, 490, 125, IDC_LOCAL_SINGLE_HINT);
+        CreateLauncherControl(window, "BUTTON", "Set P2 keys", WS_TABSTOP,
+                              20, 279, 135, 30, IDC_LOCAL_KEYS);
         CreateLauncherControl(window, "STATIC", "", SS_LEFT,
-                              20, 176, 490, 38, IDC_LOCAL_STATUS);
+                              20, 231, 490, 38, IDC_LOCAL_STATUS);
         CreateLauncherControl(window, "BUTTON", "Refresh devices", WS_TABSTOP,
-                              20, 235, 135, 30, IDC_LOCAL_REFRESH);
+                              20, 279, 135, 30, IDC_LOCAL_REFRESH);
         CreateLauncherControl(window, "BUTTON", "Back", WS_TABSTOP,
-                              260, 235, 90, 30, IDC_LOCAL_BACK);
+                              250, 279, 90, 30, IDC_LOCAL_BACK);
         CreateLauncherControl(window, "BUTTON", "Start local game", BS_DEFPUSHBUTTON | WS_TABSTOP,
-                              350, 235, 155, 30, IDC_LOCAL_START);
-        RefreshLocalDeviceControls(window);
-        SetTimer(window, LOCAL_INPUT_TIMER_ID, LOCAL_INPUT_TIMER_INTERVAL_MS, NULL);
+                              350, 279, 155, 30, IDC_LOCAL_START);
+        UpdateLocalInputMode(window);
         return 0;
     case WM_TIMER:
-        if (wParam == LOCAL_INPUT_TIMER_ID)
+        if (wParam == LOCAL_INPUT_TIMER_ID && !g_singleKeyboardLocal && g_keyWindow == NULL)
             IdentifyLocalGamepads(window);
         return 0;
     case WM_COMMAND:
         switch (LOWORD(wParam))
         {
+        case IDC_LOCAL_INPUT_MODE:
+            g_singleKeyboardLocal = !g_singleKeyboardLocal;
+            UpdateLocalInputMode(window);
+            return 0;
+        case IDC_LOCAL_KEYS:
+            if (g_singleKeyboardLocal && g_keyWindow == NULL)
+            {
+                g_keyWindow = CreateWindowExA(
+                    0, "Th08MultiLocalKeyWindow", "Single device - P2 keys",
+                    WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU,
+                    CW_USEDEFAULT, CW_USEDEFAULT, 415, 420,
+                    window, NULL, GetModuleHandleA(NULL), NULL);
+                if (g_keyWindow != NULL)
+                {
+                    EnableWindow(window, FALSE);
+                    ShowWindow(g_keyWindow, SW_SHOW);
+                    UpdateWindow(g_keyWindow);
+                }
+            }
+            return 0;
         case IDC_LOCAL_REFRESH:
             RefreshLocalDeviceControls(window);
             return 0;
@@ -722,16 +966,7 @@ static LRESULT CALLBACK LocalWindowProc(HWND window, UINT message,
         ShowWindow(g_mainWindow, SW_SHOW);
         return 0;
     case WM_DESTROY:
-        {
-            RAWINPUTDEVICE keyboard;
-            KillTimer(window, LOCAL_INPUT_TIMER_ID);
-            ReleaseLocalGamepads();
-            keyboard.usUsagePage = 1;
-            keyboard.usUsage = 6;
-            keyboard.dwFlags = RIDEV_REMOVE;
-            keyboard.hwndTarget = NULL;
-            RegisterRawInputDevices(&keyboard, 1, sizeof(keyboard));
-        }
+        StopLocalDeviceDetection(window);
         g_localWindow = NULL;
         return 0;
     default:
@@ -747,7 +982,7 @@ static void OpenLocalPage(HWND mainWindow)
     g_localWindow = CreateWindowExA(
         0, "Th08MultiLocalWindow", "th08-multi v0.41 Local play",
         WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
-        CW_USEDEFAULT, CW_USEDEFAULT, 540, 315,
+        CW_USEDEFAULT, CW_USEDEFAULT, 540, 365,
         NULL, NULL, GetModuleHandleA(NULL), NULL);
     if (g_localWindow != NULL)
     {
@@ -1192,7 +1427,7 @@ static LRESULT CALLBACK LauncherWindowProc(
                               370, 258, 135, 30, IDC_LAUNCH);
         CreateLauncherControl(window, "STATIC", "", SS_LEFT,
                               20, 264, 220, 40, IDC_STATUS);
-        CreateLauncherControl(window, "BUTTON", "Local play (multi input)",
+        CreateLauncherControl(window, "BUTTON", "Local play",
                               BS_PUSHBUTTON | WS_TABSTOP,
                               330, 309, 175, 30, IDC_LOCAL_PAGE);
         LoadSettings(window);
@@ -1297,6 +1532,10 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR, int showCommand)
     localClass.lpszClassName = "Th08MultiLocalWindow";
     if (!RegisterClassExA(&localClass))
         return 1;
+    localClass.lpfnWndProc = LocalKeyWindowProc;
+    localClass.lpszClassName = "Th08MultiLocalKeyWindow";
+    if (!RegisterClassExA(&localClass))
+        return 1;
 
     window = CreateWindowExA(
         0, windowClass.lpszClassName, "th08-multi v0.41 Network Launcher",
@@ -1311,7 +1550,11 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR, int showCommand)
     UpdateWindow(window);
     while (GetMessageA(&message, NULL, 0, 0) > 0)
     {
-        if (!IsDialogMessageA(g_localWindow != NULL ? g_localWindow : window, &message))
+        if (CaptureLocalKeyMessage(message))
+            continue;
+        HWND activePage = g_keyWindow != NULL ? g_keyWindow :
+                          (g_localWindow != NULL ? g_localWindow : window);
+        if (!IsDialogMessageA(activePage, &message))
         {
             TranslateMessage(&message);
             DispatchMessageA(&message);

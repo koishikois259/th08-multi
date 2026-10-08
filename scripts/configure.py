@@ -521,12 +521,42 @@ def configure(build_type):
                     "$builddir/multiplayer-net-tests.exe",
                     "$builddir/multiplayer-launch-mode-tests.exe",
                     "$builddir/multiplayer-keyboard-tests.exe",
+                    "$builddir/multiplayer-local-keyboard-tests.exe",
+                    "$builddir/multiplayer-local-launcher-tests.exe",
                 ],
             )
             writer.build(
                 "$builddir/tests/MultiKeyboardInputTests.obj",
                 "cc",
                 "tests/MultiKeyboardInputTests.cpp",
+            )
+            writer.build(
+                "$builddir/tests/MultiLocalKeyboardConfigTests.obj",
+                "cc",
+                "tests/MultiLocalKeyboardConfigTests.cpp",
+            )
+            writer.build(
+                "$builddir/multiplayer-local-keyboard-tests.exe",
+                "link",
+                inputs=["$builddir/tests/MultiLocalKeyboardConfigTests.obj"],
+                variables={
+                    "link_libs": "kernel32.lib user32.lib",
+                    "link_flags": "/subsystem:console /machine:X86 /incremental:no",
+                },
+            )
+            writer.build(
+                "$builddir/tests/MultiLocalLauncherTests.obj",
+                "cc",
+                "tests/MultiLocalLauncherTests.cpp",
+            )
+            writer.build(
+                "$builddir/multiplayer-local-launcher-tests.exe",
+                "link",
+                inputs=["$builddir/tests/MultiLocalLauncherTests.obj"],
+                variables={
+                    "link_libs": "dxguid.lib dinput8.lib kernel32.lib user32.lib gdi32.lib advapi32.lib wsock32.lib",
+                    "link_flags": "/subsystem:console /machine:X86 /incremental:no",
+                },
             )
             writer.build(
                 "$builddir/multiplayer-keyboard-tests.exe",

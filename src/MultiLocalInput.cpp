@@ -42,6 +42,9 @@ MultiLocalInput::MultiLocalInput()
     window = NULL;
     directInput = NULL;
     initialized = false;
+    singleKeyboard = false;
+    memset(singleKeyboardState, 0, sizeof(singleKeyboardState));
+    DefaultMultiLocalKeyboardConfig(&singleKeyboardConfig);
 }
 
 bool MultiLocalInput::ResolveKeyboard(DeviceSlot *slot)
@@ -137,6 +140,16 @@ bool MultiLocalInput::Initialize(HWND gameWindow)
     if (initialized)
         return true;
     window = gameWindow;
+    singleKeyboard = IsSingleKeyboardLocalConfig(LOCAL_CONFIG_PATH);
+    if (singleKeyboard)
+    {
+        if (!LoadMultiLocalKeyboardConfig(LOCAL_CONFIG_PATH, &singleKeyboardConfig))
+            g_GameErrorContext.Log("multi local: invalid P2 bindings, using defaults\n");
+        OnFocusLost();
+        initialized = true;
+        g_GameErrorContext.Log("multi local: shared keyboard ready (no device selection)\n");
+        return true;
+    }
     for (index = 0; index < 2; ++index)
     {
         char typeKey[16];
@@ -198,6 +211,12 @@ bool MultiLocalInput::RebindWindow(HWND gameWindow)
     RAWINPUTDEVICE keyboard;
     if (!initialized || gameWindow == NULL || gameWindow == window)
         return true;
+    if (singleKeyboard)
+    {
+        window = gameWindow;
+        OnFocusLost();
+        return true;
+    }
     for (index = 0; index < 2; ++index)
     {
         hasKeyboard |= slots[index].keyboard;
@@ -228,7 +247,7 @@ void MultiLocalInput::Shutdown()
 {
     int index;
     RAWINPUTDEVICE keyboard;
-    if (initialized && (slots[0].keyboard || slots[1].keyboard))
+    if (initialized && !singleKeyboard && (slots[0].keyboard || slots[1].keyboard))
     {
         keyboard.usUsagePage = 1;
         keyboard.usUsage = 6;
@@ -251,6 +270,8 @@ void MultiLocalInput::Shutdown()
         directInput = NULL;
     }
     initialized = false;
+    singleKeyboard = false;
+    OnFocusLost();
     window = NULL;
 }
 
@@ -260,7 +281,7 @@ void MultiLocalInput::OnRawInput(HRAWINPUT input)
     UINT size = sizeof(raw);
     int index;
     u16 scanCode;
-    if (!initialized || GetRawInputData(input, RID_INPUT, &raw, &size,
+    if (!initialized || singleKeyboard || GetRawInputData(input, RID_INPUT, &raw, &size,
                                         sizeof(RAWINPUTHEADER)) == (UINT)-1 ||
         raw.header.dwType != RIM_TYPEKEYBOARD)
         return;
@@ -284,6 +305,7 @@ void MultiLocalInput::OnFocusLost()
 {
     memset(slots[0].keys, 0, sizeof(slots[0].keys));
     memset(slots[1].keys, 0, sizeof(slots[1].keys));
+    memset(singleKeyboardState, 0, sizeof(singleKeyboardState));
 }
 
 u16 MultiLocalInput::GetKeyboardInput(const DeviceSlot &slot) const
@@ -372,6 +394,25 @@ u16 MultiLocalInput::GetInput(u8 slot)
 {
     if (!initialized || slot >= 2)
         return 0;
+    if (singleKeyboard)
+    {
+        if (window == NULL || GetForegroundWindow() != window || IsIconic(window))
+        {
+            OnFocusLost();
+            return 0;
+        }
+        // P1 is sampled first by the coordinator; P2 consumes that same
+        // snapshot so both players observe one set of physical key states.
+        if (slot == 0)
+            for (int key = 0; key < 256; ++key)
+                singleKeyboardState[key] = (GetAsyncKeyState(key) & 0x8000) ? 0x80 : 0;
+        if (GetForegroundWindow() != window || IsIconic(window))
+        {
+            OnFocusLost();
+            return 0;
+        }
+        return SingleKeyboardLocalButtons(slot, singleKeyboardState, singleKeyboardConfig);
+    }
     return slots[slot].keyboard ? GetKeyboardInput(slots[slot])
                                 : GetGamepadInput(&slots[slot]);
 }

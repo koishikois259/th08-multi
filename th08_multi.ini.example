@@ -12,3 +12,19 @@ host_port=17708
 ; Host uses 17708. Guest should change this to 0 (automatic local port).
 local_port=17708
 input_delay=3
+
+[local]
+; double: select two physical devices; single: shared keyboard, no discovery.
+; Read only for an explicit --multi-mode=local launch.
+input_mode=double
+
+[local_keyboard]
+; P2 virtual-key codes for single-device local play only.
+; Edit with the launcher's Set P2 keys page to avoid conflicts.
+p2_up=73
+p2_down=75
+p2_left=74
+p2_right=76
+p2_focus=68
+p2_shoot=70
+p2_bomb=71

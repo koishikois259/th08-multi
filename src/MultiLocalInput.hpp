@@ -6,6 +6,7 @@
 #include <dinput.h>
 
 #include "inttypes.hpp"
+#include "MultiLocalKeyboardConfig.hpp"
 
 namespace th08
 {
@@ -46,6 +47,9 @@ class MultiLocalInput
     LPDIRECTINPUT8A directInput;
     DeviceSlot slots[2];
     bool initialized;
+    bool singleKeyboard;
+    MultiLocalKeyboardConfig singleKeyboardConfig;
+    u8 singleKeyboardState[256];
 };
 
 extern MultiLocalInput g_MultiLocalInput;

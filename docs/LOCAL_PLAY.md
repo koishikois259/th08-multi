@@ -1,11 +1,38 @@
-# Local play (v0.4 experimental)
+# Local play (experimental)
 
 This mode runs two co-op players in one `th08-multi.exe` process and one game
 window. It does not create a UDP socket or wait for a peer. Gameplay, shared
 resources, stage routes, and team choices use the existing multiplayer rules.
 
-Open `th08-multi-launcher.exe`, choose **Local play (multi input device)**,
-then press **Confirm** once on each physical input device, one device at a time,
+Open `th08-multi-launcher.exe`, choose **Local play**,
+then click **Double device / Single device** on that page to switch modes.
+Older configuration files default to **Double device**.
+
+## Single device: shared keyboard
+
+No physical-device discovery or selection is needed. This mode supports a shared
+keyboard, not a shared gamepad. P1 uses arrow keys, Shift for focus, Z for
+shoot/confirm, and X for bomb/cancel. P2 defaults to I/K/J/L for
+up/down/left/right, D for focus, F for shoot/confirm, and G for bomb/cancel.
+Esc, Enter and Ctrl remain P1-owned menu/skip controls. Retail auxiliary and
+numpad P1 bindings are not merged into this mode, so D cannot operate P1.
+
+Click **Set P2 keys**, click an action and press its new key. P1 gameplay keys,
+shared menu/system keys and duplicate P2 bindings are rejected. Esc cancels
+capture; **Cancel** discards edits, **Defaults** restores the proposed default
+mapping, and **Save** applies it. Settings are stored separately under
+`[local_keyboard]` in `th08_multi.ini`. Invalid manually edited mappings fall
+back to the complete default set. These settings do not change online input,
+ordinary single-player bindings, or Double device bindings.
+
+Only the foreground, non-minimized game receives input; both players read the
+same keyboard snapshot. A keyboard's hardware rollover limits can prevent some
+simultaneous key combinations from registering. This mode uses the system
+keyboard without physical-device filtering: Windows merges attached keyboards.
+
+## Double device: separate physical devices
+
+Press **Confirm** once on each physical input device, one device at a time,
 to reveal it in the device list. On a keyboard, Confirm is **Z**; on a gamepad,
 use its confirm/shot button. The launcher accepts any gamepad button for this
 identification step to accommodate custom button mappings. This avoids counting
@@ -24,7 +51,8 @@ apply to the run. Existing online Host/Guest mode remains separate.
 
 The launcher passes `--multi-mode=local`, `--multi-mode=host`, or
 `--multi-mode=guest` to each game process. Local play saves only the device
-choices and does not replace an existing online mode. Legacy `mode=local`
+choices, local input mode and P2 shared-keyboard bindings; it does not replace
+an existing online mode. Legacy `mode=local`
 residue is cleared when saving local choices and ignored by a direct game
 launch without an explicit mode argument. Always use the launcher to start
 local play; an online launch never uses the saved local device bindings.
@@ -35,7 +63,8 @@ selected device is unplugged or its identifier changes, return to the launcher
 and refresh the list. Raw Input requires Windows; this mode is not available
 in the portable Linux build.
 
-Hardware validation still needed before marking this mode stable: two physical keyboards,
+Hardware validation still needed before marking this mode stable: shared-keyboard
+rollover/focus, custom P2 keys and sequential team selection, two physical keyboards,
 internal-plus-external keyboard, keyboard-plus-gamepad, two gamepads, hot-plug
 failure handling, team selection/cancel, stage transition, and returning to
 the title after a completed run. The current automated multiplayer state and
