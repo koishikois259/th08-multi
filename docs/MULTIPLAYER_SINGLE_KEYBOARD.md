@@ -1,14 +1,16 @@
 # Shared-keyboard local co-op checkpoint
 
 This local development checkpoint builds on v0.41. It is not a new release:
-existing release ZIPs, tags, GitHub, and the installed `th08-origin` patch have
-not been updated. `联机教程.txt` is intentionally unchanged pending the user's
+existing release ZIPs, tags and GitHub have not been updated. The development
+binaries are synchronized to `th08-origin`. `联机教程.txt` is intentionally unchanged pending the user's
 requested wording.
 
 ## Implementation
 
 - The existing Local play setup page switches between Single device and
-  Double device. Old configurations continue to default to Double device.
+  Double device using mutually exclusive radio options with green selected
+  circles. Old configurations continue to default to Double device. The
+  Double device page keeps only one device-identification instruction.
 - Single device hides device selectors and stops discovery/polling. It does
   not require saved physical keyboard/gamepad IDs to start. Windows supplies
   one shared system-keyboard snapshot; shared gamepads are not supported.
@@ -16,6 +18,11 @@ requested wording.
   I/K/J/L/D/F/G. Other retail P1 keyboard aliases are not merged into this path.
 - Set P2 keys opens a separate edit page. Capture is handled before dialog
   navigation; repeats, reserved keys and duplicate P2 assignments are rejected.
+  Only button clicks arm capture, not focus notifications. The focused action
+  button requests all keys and forwards key-down messages to capture. Foreground
+  raw keyboard input also captures physical keys independently of IMEs; legacy
+  `VK_PROCESSKEY` messages are resolved from their scan codes. Raw registration
+  is removed when the key editor closes and does not change online input.
   Escape cancels capture. Cancel discards the draft; Defaults changes the draft;
   Save writes the validated seven-key section.
 - Configurations use `[local].input_mode` and `[local_keyboard]`. Invalid
@@ -44,15 +51,21 @@ The new launcher integration tests create only their own hidden windows and a
 temporary configuration, without showing windows, discovering devices, launching
 games or altering the user's game files. They check selector visibility,
 device-free startup readiness, capture/repeat/conflict/cancel/save behavior,
-and configuration isolation. Pure mapping tests cover simultaneous P1/P2 input,
+and configuration isolation, exclusive radio selection, focus notifications,
+posted key messages through the child WndProc, IME scan-code conversion and
+raw physical-key capture/repeat/release. Pure mapping tests cover simultaneous P1/P2 input,
 default/custom actions, menu ownership and invalid-config fallback.
 
 `scripts/check-docs.py`, `scripts/check-semantic-protocols.py`, and
 `git diff --check` pass. Full `scripts/ci.py` remains blocked at Bash startup
-with `E_ACCESSDENIED`; its preceding Python/literal/protocol checks pass.
+because WSL cannot start `/bin/bash` in this environment; its preceding
+Python/literal/protocol checks pass.
 This is not an aggregate reconstruction matching claim.
 
 Physical shared-keyboard rollover, visible page layout, sequential team
 selection, gameplay/focus switching, Double device regression and online
 regression still require manual testing. No long-run crash fix is claimed by
-this input feature.
+this input feature. The desktop automation helper exited during initialization,
+so the reported visible key-remapping failure could not be reproduced through
+desktop automation; physical-key capture and focus/message routing are covered
+by the bounded launcher regression tests, with real-device confirmation pending.

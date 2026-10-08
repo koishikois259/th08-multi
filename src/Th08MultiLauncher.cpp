@@ -27,10 +27,10 @@ enum LauncherControlId
     IDC_LOCAL_BACK,
     IDC_LOCAL_START,
     IDC_LOCAL_STATUS,
-    IDC_LOCAL_INPUT_MODE,
+    IDC_LOCAL_MODE_SINGLE,
+    IDC_LOCAL_MODE_DOUBLE,
     IDC_LOCAL_P1_LABEL,
     IDC_LOCAL_P2_LABEL,
-    IDC_LOCAL_HINT,
     IDC_LOCAL_SINGLE_HINT,
     IDC_LOCAL_KEYS,
     IDC_KEY_STATUS,
@@ -107,6 +107,8 @@ static HWND g_keyWindow = NULL;
 static bool g_singleKeyboardLocal = false;
 static th08::MultiLocalKeyboardConfig g_keyDraft;
 static int g_keyCaptureAction = -1;
+static bool g_keyHeld[256];
+static WNDPROC g_keyButtonProc = NULL;
 static LocalDevice g_localDevices[64];
 static int g_localDeviceCount = 0;
 static LocalDevice g_keyboardCandidates[64];
@@ -660,6 +662,68 @@ static void RefreshLocalKeyButtons(HWND window)
     }
 }
 
+static bool CaptureLocalKey(unsigned int key, bool repeat)
+{
+    if (g_keyWindow == NULL || g_keyCaptureAction < 0)
+        return false;
+    if (repeat)
+        return true;
+    if (key == VK_ESCAPE)
+    {
+        g_keyCaptureAction = -1;
+        SetDlgItemTextA(g_keyWindow, IDC_KEY_STATUS, "Key capture cancelled. No change saved.");
+        return true;
+    }
+    th08::MultiLocalKeyboardConfig candidate = g_keyDraft;
+    candidate.p2Keys[g_keyCaptureAction] = key;
+    if (!th08::ValidateMultiLocalKeyboardConfig(candidate))
+    {
+        SetDlgItemTextA(g_keyWindow, IDC_KEY_STATUS,
+                        "Conflict or reserved key. Choose a different key, or Esc to cancel.");
+        return true;
+    }
+    g_keyDraft = candidate;
+    g_keyCaptureAction = -1;
+    RefreshLocalKeyButtons(g_keyWindow);
+    SetDlgItemTextA(g_keyWindow, IDC_KEY_STATUS, "Key changed. Click Save to apply, or Cancel to discard.");
+    return true;
+}
+
+static unsigned int LocalPhysicalKey(unsigned int key, unsigned int scan)
+{
+    // IMEs may replace WM_KEYDOWN's virtual key with VK_PROCESSKEY. Recover
+    // the physical key from its scan code, rather than storing an IME key.
+    return key == VK_PROCESSKEY ? MapVirtualKeyA(scan, 1) : key;
+}
+
+static void CaptureLocalRawKey(const RAWKEYBOARD &keyboard)
+{
+    unsigned int key = LocalPhysicalKey(keyboard.VKey, keyboard.MakeCode);
+    if (key == 0 || key >= 256)
+        return;
+    bool down = (keyboard.Flags & RI_KEY_BREAK) == 0;
+    bool repeat = g_keyHeld[key];
+    g_keyHeld[key] = down;
+    if (down)
+        CaptureLocalKey(key, repeat);
+}
+
+static LRESULT CALLBACK LocalKeyButtonProc(HWND window, UINT message,
+                                          WPARAM wParam, LPARAM lParam)
+{
+    if (g_keyCaptureAction >= 0)
+    {
+        if (message == WM_GETDLGCODE)
+            return DLGC_WANTALLKEYS;
+        if (message == WM_KEYDOWN || message == WM_SYSKEYDOWN)
+            if (CaptureLocalKey(LocalPhysicalKey(static_cast<unsigned int>(wParam),
+                                                (lParam >> 16) & 0xff),
+                                (lParam & (1L << 30)) != 0))
+                return 0;
+    }
+    return CallWindowProcA(g_keyButtonProc, window, message, wParam, lParam);
+}
+
 static LRESULT CALLBACK LocalKeyWindowProc(HWND window, UINT message,
                                           WPARAM wParam, LPARAM lParam)
 {
@@ -671,14 +735,28 @@ static LRESULT CALLBACK LocalKeyWindowProc(HWND window, UINT message,
                 "Up", "Down", "Left", "Right", "Focus (slow)", "Shoot / Confirm", "Bomb / Cancel"};
             th08::LoadMultiLocalKeyboardConfig(g_iniPath, &g_keyDraft);
             g_keyCaptureAction = -1;
+            for (int key = 0; key < 256; ++key)
+                g_keyHeld[key] = (GetAsyncKeyState(key) & 0x8000) != 0;
+            // Foreground-only raw input sees physical keys even when an IME
+            // consumes their legacy messages. No hooks or background capture.
+            RAWINPUTDEVICE keyboard;
+            keyboard.usUsagePage = 1;
+            keyboard.usUsage = 6;
+            keyboard.dwFlags = 0;
+            keyboard.hwndTarget = window;
+            bool rawRegistered = RegisterRawInputDevices(&keyboard, 1, sizeof(keyboard)) != FALSE;
             CreateLauncherControl(window, "STATIC", "P2 keys - Single device only", 0,
                                   20, 15, 365, 22, 0);
             for (int i = 0; i < th08::LOCAL_KEY_COUNT; ++i)
             {
                 CreateLauncherControl(window, "STATIC", labels[i], 0,
                                       20, 51 + i * 34, 170, 22, 0);
-                CreateLauncherControl(window, "BUTTON", "", WS_TABSTOP,
-                                      200, 46 + i * 34, 175, 28, IDC_KEY_FIRST + i);
+                HWND button = CreateLauncherControl(window, "BUTTON", "", WS_TABSTOP,
+                                                     200, 46 + i * 34, 175, 28, IDC_KEY_FIRST + i);
+                WNDPROC previous = reinterpret_cast<WNDPROC>(SetWindowLongA(
+                    button, GWL_WNDPROC, reinterpret_cast<LONG>(LocalKeyButtonProc)));
+                if (g_keyButtonProc == NULL)
+                    g_keyButtonProc = previous;
             }
             CreateLauncherControl(window, "STATIC",
                                   "Click an action, then press a key. Esc cancels capture.", 0,
@@ -690,17 +768,33 @@ static LRESULT CALLBACK LocalKeyWindowProc(HWND window, UINT message,
             CreateLauncherControl(window, "BUTTON", "Save", WS_TABSTOP,
                                   275, 345, 100, 30, IDC_KEY_SAVE);
             RefreshLocalKeyButtons(window);
+            if (!rawRegistered)
+                SetDlgItemTextA(window, IDC_KEY_STATUS,
+                                "Click an action, then press a key. Raw input unavailable; using scan codes.");
         }
         return 0;
+    case WM_INPUT:
+        if (GetForegroundWindow() == window)
+        {
+            RAWINPUT input;
+            UINT bytes = sizeof(input);
+            if (GetRawInputData(reinterpret_cast<HRAWINPUT>(lParam), RID_INPUT,
+                                &input, &bytes, sizeof(RAWINPUTHEADER)) != static_cast<UINT>(-1) &&
+                input.header.dwType == RIM_TYPEKEYBOARD)
+                CaptureLocalRawKey(input.data.keyboard);
+        }
+        break; // DefWindowProc performs foreground raw-input cleanup.
     case WM_COMMAND:
         {
             int id = LOWORD(wParam);
+            if (HIWORD(wParam) != BN_CLICKED)
+                return 0;
             if (id >= IDC_KEY_FIRST && id < IDC_KEY_FIRST + th08::LOCAL_KEY_COUNT)
             {
                 g_keyCaptureAction = id - IDC_KEY_FIRST;
                 SetDlgItemTextA(window, IDC_KEY_STATUS,
                                 "Press the new key. P1/menu keys and duplicates are forbidden.");
-                SetFocus(window);
+                SetFocus(GetDlgItem(window, id));
                 return 0;
             }
             if (id == IDC_KEY_DEFAULT)
@@ -738,6 +832,14 @@ static LRESULT CALLBACK LocalKeyWindowProc(HWND window, UINT message,
         DestroyWindow(window);
         return 0;
     case WM_DESTROY:
+        {
+            RAWINPUTDEVICE keyboard;
+            keyboard.usUsagePage = 1;
+            keyboard.usUsage = 6;
+            keyboard.dwFlags = RIDEV_REMOVE;
+            keyboard.hwndTarget = NULL;
+            RegisterRawInputDevices(&keyboard, 1, sizeof(keyboard));
+        }
         g_keyCaptureAction = -1;
         g_keyWindow = NULL;
         EnableWindow(g_localWindow, TRUE);
@@ -755,37 +857,69 @@ static bool CaptureLocalKeyMessage(const MSG &message)
         (message.hwnd != g_keyWindow && !IsChild(g_keyWindow, message.hwnd)) ||
         (message.message != WM_KEYDOWN && message.message != WM_SYSKEYDOWN))
         return false;
-    if ((message.lParam & (1L << 30)) != 0)
-        return true;
-    unsigned int key = static_cast<unsigned int>(message.wParam);
-    if (key == VK_ESCAPE)
+    return CaptureLocalKey(LocalPhysicalKey(static_cast<unsigned int>(message.wParam),
+                                           (message.lParam >> 16) & 0xff),
+                           (message.lParam & (1L << 30)) != 0);
+}
+
+static WNDPROC g_localModeButtonProc = NULL;
+
+static LRESULT CALLBACK LocalModeButtonProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam)
+{
+    if (message == WM_PAINT)
     {
-        g_keyCaptureAction = -1;
-        SetDlgItemTextA(g_keyWindow, IDC_KEY_STATUS, "Key capture cancelled. No change saved.");
-        return true;
+        PAINTSTRUCT paint;
+        HDC dc = BeginPaint(window, &paint);
+        RECT bounds;
+        GetClientRect(window, &bounds);
+        FillRect(dc, &bounds, GetSysColorBrush(COLOR_BTNFACE));
+        bool selected = SendMessageA(window, BM_GETCHECK, 0, 0) == BST_CHECKED;
+        HPEN border = CreatePen(PS_SOLID, 1, selected ? RGB(35, 145, 65) : RGB(110, 110, 110));
+        HGDIOBJ oldPen = SelectObject(dc, border);
+        HGDIOBJ oldBrush = SelectObject(dc, GetStockObject(WHITE_BRUSH));
+        int top = (bounds.bottom - 18) / 2;
+        Ellipse(dc, 4, top, 22, top + 18);
+        HBRUSH green = CreateSolidBrush(RGB(35, 165, 70));
+        if (selected)
+        {
+            SelectObject(dc, green);
+            Ellipse(dc, 8, top + 4, 18, top + 14);
+        }
+        SelectObject(dc, oldBrush);
+        SelectObject(dc, oldPen);
+        DeleteObject(green);
+        DeleteObject(border);
+        HGDIOBJ oldFont = SelectObject(dc, g_uiFont);
+        SetBkMode(dc, TRANSPARENT);
+        SetTextColor(dc, selected ? RGB(25, 110, 45) : GetSysColor(COLOR_BTNTEXT));
+        RECT text = bounds;
+        text.left = 30;
+        char label[32];
+        GetWindowTextA(window, label, sizeof(label));
+        DrawTextA(dc, label, -1, &text, DT_SINGLELINE | DT_VCENTER | DT_LEFT);
+        if (GetFocus() == window)
+            DrawFocusRect(dc, &text);
+        SelectObject(dc, oldFont);
+        EndPaint(window, &paint);
+        return 0;
     }
-    th08::MultiLocalKeyboardConfig candidate = g_keyDraft;
-    candidate.p2Keys[g_keyCaptureAction] = key;
-    if (!th08::ValidateMultiLocalKeyboardConfig(candidate))
-    {
-        SetDlgItemTextA(g_keyWindow, IDC_KEY_STATUS,
-                        "Conflict or reserved key. Choose a different key, or Esc to cancel.");
-        return true;
-    }
-    g_keyDraft = candidate;
-    g_keyCaptureAction = -1;
-    RefreshLocalKeyButtons(g_keyWindow);
-    SetDlgItemTextA(g_keyWindow, IDC_KEY_STATUS, "Key changed. Click Save to apply, or Cancel to discard.");
-    return true;
+    return CallWindowProcA(g_localModeButtonProc, window, message, wParam, lParam);
+}
+
+static void UpdateLocalModeOptions(HWND window)
+{
+    CheckRadioButton(window, IDC_LOCAL_MODE_SINGLE, IDC_LOCAL_MODE_DOUBLE,
+                     g_singleKeyboardLocal ? IDC_LOCAL_MODE_SINGLE : IDC_LOCAL_MODE_DOUBLE);
+    InvalidateRect(GetDlgItem(window, IDC_LOCAL_MODE_SINGLE), NULL, TRUE);
+    InvalidateRect(GetDlgItem(window, IDC_LOCAL_MODE_DOUBLE), NULL, TRUE);
 }
 
 static void UpdateLocalInputMode(HWND window)
 {
     const int doubleControls[] = {IDC_LOCAL_P1, IDC_LOCAL_P2, IDC_LOCAL_P1_LABEL,
-                                 IDC_LOCAL_P2_LABEL, IDC_LOCAL_HINT, IDC_LOCAL_REFRESH};
+                                 IDC_LOCAL_P2_LABEL, IDC_LOCAL_REFRESH};
     StopLocalDeviceDetection(window);
-    SetDlgItemTextA(window, IDC_LOCAL_INPUT_MODE,
-                    g_singleKeyboardLocal ? "Single device" : "Double device");
+    UpdateLocalModeOptions(window);
     for (int i = 0; i < static_cast<int>(sizeof(doubleControls) / sizeof(doubleControls[0])); ++i)
         ShowWindow(GetDlgItem(window, doubleControls[i]), g_singleKeyboardLocal ? SW_HIDE : SW_SHOW);
     ShowWindow(GetDlgItem(window, IDC_LOCAL_SINGLE_HINT), g_singleKeyboardLocal ? SW_SHOW : SW_HIDE);
@@ -794,7 +928,7 @@ static void UpdateLocalInputMode(HWND window)
     {
         EnableWindow(GetDlgItem(window, IDC_LOCAL_START), TRUE);
         SetDlgItemTextA(window, IDC_LOCAL_STATUS,
-                        "Shared keyboard. No device detection needed. Click the mode button to switch.");
+                        "Shared keyboard. No device detection needed. Set P2 keys below if needed.");
     }
     else
     {
@@ -881,10 +1015,17 @@ static LRESULT CALLBACK LocalWindowProc(HWND window, UINT message,
         g_singleKeyboardLocal = th08::IsSingleKeyboardLocalConfig(g_iniPath);
         CreateLauncherControl(window, "STATIC", "Local play - two players, one game window", 0,
                               20, 17, 490, 22, 0);
-        CreateLauncherControl(window, "BUTTON", "Double device", WS_TABSTOP,
-                              20, 49, 180, 30, IDC_LOCAL_INPUT_MODE);
-        CreateLauncherControl(window, "STATIC", "Click to switch input mode", 0,
-                              215, 55, 280, 22, 0);
+        {
+            HWND single = CreateLauncherControl(window, "BUTTON", "Single device",
+                                                 BS_AUTORADIOBUTTON | WS_TABSTOP | WS_GROUP,
+                                                 20, 49, 185, 30, IDC_LOCAL_MODE_SINGLE);
+            HWND doubleDevice = CreateLauncherControl(window, "BUTTON", "Double device",
+                                                       BS_AUTORADIOBUTTON | WS_TABSTOP,
+                                                       250, 49, 185, 30, IDC_LOCAL_MODE_DOUBLE);
+            g_localModeButtonProc = reinterpret_cast<WNDPROC>(SetWindowLongA(
+                single, GWL_WNDPROC, reinterpret_cast<LONG>(LocalModeButtonProc)));
+            SetWindowLongA(doubleDevice, GWL_WNDPROC, reinterpret_cast<LONG>(LocalModeButtonProc));
+        }
         CreateLauncherControl(window, "STATIC", "Player 1:", 0,
                               20, 105, 105, 20, IDC_LOCAL_P1_LABEL);
         CreateLauncherControl(window, "COMBOBOX", "",
@@ -895,9 +1036,6 @@ static LRESULT CALLBACK LocalWindowProc(HWND window, UINT message,
         CreateLauncherControl(window, "COMBOBOX", "",
                               CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP,
                               130, 143, 375, 250, IDC_LOCAL_P2);
-        CreateLauncherControl(window, "STATIC",
-                              "Press Confirm on each input device, one device at a time.",
-                              0, 20, 191, 490, 20, IDC_LOCAL_HINT);
         CreateLauncherControl(window, "STATIC",
                               "P1: Arrow keys | Focus: Shift | Shoot: Z | Bomb: X\r\n\r\n"
                               "P2 defaults: I/K/J/L (Up/Down/Left/Right)\r\n"
@@ -923,9 +1061,19 @@ static LRESULT CALLBACK LocalWindowProc(HWND window, UINT message,
     case WM_COMMAND:
         switch (LOWORD(wParam))
         {
-        case IDC_LOCAL_INPUT_MODE:
-            g_singleKeyboardLocal = !g_singleKeyboardLocal;
-            UpdateLocalInputMode(window);
+        case IDC_LOCAL_MODE_SINGLE:
+        case IDC_LOCAL_MODE_DOUBLE:
+            if (HIWORD(wParam) == BN_CLICKED)
+            {
+                bool single = LOWORD(wParam) == IDC_LOCAL_MODE_SINGLE;
+                if (single != g_singleKeyboardLocal)
+                {
+                    g_singleKeyboardLocal = single;
+                    UpdateLocalInputMode(window);
+                }
+                else
+                    UpdateLocalModeOptions(window);
+            }
             return 0;
         case IDC_LOCAL_KEYS:
             if (g_singleKeyboardLocal && g_keyWindow == NULL)

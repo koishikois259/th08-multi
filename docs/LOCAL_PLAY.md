@@ -5,7 +5,8 @@ window. It does not create a UDP socket or wait for a peer. Gameplay, shared
 resources, stage routes, and team choices use the existing multiplayer rules.
 
 Open `th08-multi-launcher.exe`, choose **Local play**,
-then click **Double device / Single device** on that page to switch modes.
+then select the **Single device** or **Double device** radio option on that page.
+The selected option has a green filled circle.
 Older configuration files default to **Double device**.
 
 ## Single device: shared keyboard

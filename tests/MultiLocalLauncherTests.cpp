@@ -44,6 +44,18 @@ int main()
     ExpectLauncher(g_localWindow != NULL, "local page created");
     if (g_localWindow == NULL) { DeleteFileA(g_iniPath); return 1; }
     ExpectLauncher(g_singleKeyboardLocal, "single mode selected from isolated local setting");
+    ExpectLauncher(IsDlgButtonChecked(g_localWindow, IDC_LOCAL_MODE_SINGLE) == BST_CHECKED &&
+                   IsDlgButtonChecked(g_localWindow, IDC_LOCAL_MODE_DOUBLE) == BST_UNCHECKED,
+                   "single radio selected exclusively");
+    g_singleKeyboardLocal = false;
+    UpdateLocalModeOptions(g_localWindow);
+    ExpectLauncher(IsDlgButtonChecked(g_localWindow, IDC_LOCAL_MODE_SINGLE) == BST_UNCHECKED &&
+                   IsDlgButtonChecked(g_localWindow, IDC_LOCAL_MODE_DOUBLE) == BST_CHECKED,
+                   "double radio selected exclusively without device discovery");
+    g_singleKeyboardLocal = true;
+    UpdateLocalModeOptions(g_localWindow);
+    SendMessageA(g_localWindow, WM_COMMAND, IDC_LOCAL_MODE_SINGLE, 0);
+    ExpectLauncher(g_singleKeyboardLocal, "clicking selected radio does not toggle mode");
     ExpectLauncher(g_localDeviceCount == 0 && g_gamepadCandidateCount == 0 &&
                    g_keyboardCandidateCount == 0, "single page does not discover devices");
     ExpectLauncher(IsWindowEnabled(GetDlgItem(g_localWindow, IDC_LOCAL_START)) != FALSE,
@@ -59,7 +71,11 @@ int main()
     ExpectLauncher(g_keyWindow != NULL, "key page created");
     if (g_keyWindow != NULL)
     {
+        SendMessageA(g_keyWindow, WM_COMMAND, MAKEWPARAM(IDC_KEY_FIRST, BN_SETFOCUS), 0);
+        ExpectLauncher(g_keyCaptureAction == -1, "focus notifications do not start key capture");
         SendMessageA(g_keyWindow, WM_COMMAND, IDC_KEY_FIRST, 0);
+        SendMessageA(g_keyWindow, WM_COMMAND, MAKEWPARAM(IDC_KEY_FIRST + 1, BN_KILLFOCUS), 0);
+        ExpectLauncher(g_keyCaptureAction == 0, "focus notifications do not replace capture action");
         PressCapturedKey('Z', false);
         ExpectLauncher(g_keyCaptureAction == 0 && g_keyDraft.p2Keys[0] == 'I', "P1 conflict stays in capture");
         PressCapturedKey('K', false);
@@ -71,6 +87,39 @@ int main()
         SendMessageA(g_keyWindow, WM_COMMAND, IDC_KEY_FIRST + 1, 0);
         PressCapturedKey(VK_ESCAPE, false);
         ExpectLauncher(g_keyCaptureAction == -1 && g_keyDraft.p2Keys[1] == 'K', "Esc cancels without remapping");
+        // Deliver through the real child WndProc, rather than only calling
+        // the top-level message filter. No desktop input injection is used.
+        SendMessageA(g_keyWindow, WM_COMMAND, IDC_KEY_FIRST, 0);
+        HWND upButton = GetDlgItem(g_keyWindow, IDC_KEY_FIRST);
+        ExpectLauncher((SendMessageA(upButton, WM_GETDLGCODE, 0, 0) & DLGC_WANTALLKEYS) != 0,
+                       "focused capture button bypasses dialog key navigation");
+        PostMessageA(upButton, WM_KEYDOWN, VK_PROCESSKEY,
+                     static_cast<LPARAM>(MapVirtualKeyA('H', 0)) << 16);
+        MSG posted;
+        if (PeekMessageA(&posted, upButton, WM_KEYDOWN, WM_KEYDOWN, PM_REMOVE))
+            DispatchMessageA(&posted);
+        else
+            ExpectLauncher(false, "posted key reaches child message queue");
+        ExpectLauncher(g_keyDraft.p2Keys[0] == 'H' && g_keyCaptureAction == -1,
+                       "IME process key maps to physical H through child WndProc");
+        RAWKEYBOARD raw;
+        ZeroMemory(&raw, sizeof(raw));
+        raw.VKey = 'W';
+        raw.MakeCode = static_cast<USHORT>(MapVirtualKeyA('W', 0));
+        raw.Flags = RI_KEY_BREAK;
+        CaptureLocalRawKey(raw);
+        SendMessageA(g_keyWindow, WM_COMMAND, IDC_KEY_FIRST, 0);
+        CaptureLocalRawKey(raw);
+        ExpectLauncher(g_keyCaptureAction == 0, "raw key release never binds a key");
+        raw.Flags = 0;
+        CaptureLocalRawKey(raw);
+        ExpectLauncher(g_keyDraft.p2Keys[0] == 'W' && g_keyCaptureAction == -1,
+                       "physical raw key accepts valid W independent of IME");
+        SendMessageA(g_keyWindow, WM_COMMAND, IDC_KEY_FIRST + 1, 0);
+        CaptureLocalRawKey(raw);
+        ExpectLauncher(g_keyCaptureAction == 1 && g_keyDraft.p2Keys[1] == 'K',
+                       "held raw key cannot bind next action");
+        PressCapturedKey(VK_ESCAPE, false);
         SendMessageA(g_keyWindow, WM_COMMAND, IDC_KEY_CANCEL, 0);
         th08::MultiLocalKeyboardConfig loaded;
         th08::LoadMultiLocalKeyboardConfig(g_iniPath, &loaded);
