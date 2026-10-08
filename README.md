@@ -1,4 +1,4 @@
-# th08-multi v0.41 Multiplayer Patch
+# th08-multi v0.42 Multiplayer Patch
 
 ## 1. Project Nature and Rights Notice
 
@@ -21,7 +21,7 @@ Only the Japanese original version 1.00d of *Touhou Eiyashou ~ Imperishable Nigh
 
 Translated versions, trial versions, other releases, or modified game data are not supported.
 
-For online play, both players must use exactly the same v0.41 patch and the same version of the original game data. Update both the launcher and game; v0.41 rejects mixed v0.4/older sessions.
+For online play, both players must use exactly the same v0.42 patch and the same version of the original game data. Update both the launcher and game; v0.42 rejects mixed v0.41/older sessions.
 
 ## 3. Patch Contents and Distribution Boundaries
 
@@ -51,8 +51,16 @@ Do not repackage any of the above original game files, extracted original assets
 6. Both players must configure the same **Input delay**, then click **Connect**.
 7. Once both sides show **Connected**, the Host should click **Start both games**. Both games will then launch from the same start command.
 
-For single-process local co-op, choose **Local play (multi input)** instead. Press
-the Confirm key once on each input device, one device at a time, then assign
+For single-process local co-op, choose **Local play** instead, then select the
+**Single device** or **Double device** radio option (green dot = selected).
+Single device shares one keyboard without device discovery. P1 defaults to
+arrows/Shift/Z/X; P2 defaults to I/K/J/L for up/down/left/right, D for focus,
+F for shoot/confirm and G for bomb/cancel. **Set keys** edits both players;
+duplicate bindings within or across players are forbidden. These bindings
+affect only Single device, not online, Double device or ordinary single-player
+input. Esc/Enter/Ctrl remain P1-owned menu/skip controls.
+
+In Double device, press the Confirm key once on each input device, one device at a time, then assign
 different devices to P1 and P2 and click **Start local game**. Keyboard Confirm
 is **Z**; on a gamepad, use its confirm/shot button. Device identification
 accepts any gamepad button to accommodate custom mappings. P1 chooses and
@@ -69,7 +77,7 @@ setting; the Guest/P2 setting is ignored. The unchanged default is two.
 GitHub source repository:
 https://github.com/koishikois259/th08-multi
 
-The local v0.41 patch has not yet been uploaded as a GitHub Release.
+The local v0.42 patch has not yet been uploaded as a GitHub Release.
 
 ## 5. Network and Security Limitations
 
@@ -92,7 +100,24 @@ When using a tunneling service, use only a temporary mapping, share the connecti
 - Diagnostic information is written to `log.txt` in the game directory.
 - This project is still in the testing stage. Please keep backups of your save data and test primarily in trusted environments.
 
-### Changes in v0.41
+### Changes in v0.42
+
+- Added Single device local co-op using a shared keyboard, with unchanged
+  default bindings and separate editable P1/P2 columns on the **Set keys** page.
+  Saved bindings apply only to this mode; old P2-only files retain their P2
+  mapping and load the original P1 defaults. Reserved keys and player/action
+  collisions are rejected, including generic/left/right Shift aliases.
+- Added green-dot radio selectors for Single/Double device and removed the
+  duplicate device-identification instruction. Key capture handles physical
+  keys independently of IMEs and ignores button focus notifications.
+- Removed device-number suffixes from local team selection and placed the
+  co-op team/status/help text inside the left playfield without right-edge
+  truncation. Existing gameplay and online packet layouts are unchanged.
+- Included the user's updated Chinese tutorial. Automated regression tests
+  pass; real-keyboard rollover, hardware combinations and long online runs
+  still require manual validation.
+
+### Changes inherited from v0.41
 
 - Isolated local-device bindings from online launch mode. Each launcher-created
   game receives an explicit Local, Host, or Guest mode. Local play preserves
@@ -143,7 +168,7 @@ When using a tunneling service, use only a temporary mapping, share the connecti
 - Desync hash identifiers now use the monotonic connection timeline, avoiding
   stale-hash collisions when starting another run without reconnecting.
 
-v0.41 includes all defensive memory-safety checks introduced in v0.32. Long
+v0.42 includes all defensive memory-safety checks introduced in v0.32. Long
 two-PC runs through Stages 4, 5, 6, and Extra remain recommended.
 
 ## 7. Source Code, License, and Credits

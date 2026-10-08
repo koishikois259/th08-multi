@@ -20,6 +20,17 @@ static void PressCapturedKey(unsigned int key, bool repeat)
 
 int main()
 {
+    unsigned char packet[LAUNCHER_PACKET_SIZE];
+    unsigned long packetType = 0, packetToken = 0;
+    ExpectLauncher(LAUNCHER_PROTOCOL_VERSION == 0x00040002, "launcher version identifies v0.42");
+    WriteLauncherPacket(packet, LAUNCHER_PACKET_HELLO, 123);
+    ExpectLauncher(ReadLauncherPacket(packet, sizeof(packet), &packetType, &packetToken) &&
+                   packetType == LAUNCHER_PACKET_HELLO && packetToken == 123,
+                   "same-version launcher packet accepted");
+    unsigned long oldVersion = htonl(0x00040001);
+    CopyMemory(packet + 4, &oldVersion, sizeof(oldVersion));
+    ExpectLauncher(!ReadLauncherPacket(packet, sizeof(packet), &packetType, &packetToken),
+                   "v0.41 launcher packet rejected by v0.42");
     char tempDirectory[MAX_PATH];
     GetTempPathA(sizeof(tempDirectory), tempDirectory);
     if (!GetTempFileNameA(tempDirectory, "t8u", 0, g_iniPath))

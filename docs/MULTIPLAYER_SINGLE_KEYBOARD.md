@@ -1,9 +1,9 @@
 # Shared-keyboard local co-op checkpoint
 
-This local development checkpoint builds on v0.41. It is not a new release:
-existing release ZIPs, tags and GitHub have not been updated. The development
-binaries are synchronized to `th08-origin`. `联机教程.txt` is intentionally unchanged pending the user's
-requested wording.
+This feature checkpoint builds on v0.41 and is included in the local v0.42
+patch. See [the v0.42 release checkpoint](MULTIPLAYER_V0_42.md) for packaging
+and installation validation. The user's updated `联机教程.txt` is included
+verbatim. No GitHub upload is requested.
 
 ## Implementation
 
@@ -44,7 +44,8 @@ requested wording.
   ordinary single-player launches never initialize local input.
 - Local keyboard input is foreground-only and clears on focus loss/rebind.
   Online/single-player input routes and the original engine layouts are not
-  modified. Gameplay rules and the online protocol/fingerprint are unchanged.
+  modified. Gameplay rules and packet layouts are unchanged. The v0.42 release
+  increments both launcher and game version gates to `0x00040002`.
 
 ## Validation
 

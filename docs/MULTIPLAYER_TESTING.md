@@ -1,11 +1,11 @@
-# th08-multi v0.41 manual multiplayer testing
+# th08-multi v0.42 manual multiplayer testing
 
 `th08-multi-launcher.exe` writes `th08_multi.ini`, establishes the pre-game
 connection, and starts `th08-multi.exe` on both peers after the Host issues the
 start command. Keep both executables in the same directory as the legally
 obtained TH08 1.00d data files.
 
-The distributable `th08-multi-v0.41-patch.zip` contains no original game data.
+The distributable `th08-multi-v0.42-patch.zip` contains no original game data.
 Extract all of its files directly into a Japanese TH08 1.00d directory, then
 start `th08-multi-launcher.exe`. The original `th08.exe` remains untouched.
 
@@ -34,7 +34,7 @@ On the Guest PC:
 The launcher reports waiting, connecting, connected, and synchronized-start
 states. After launch, the game window title reports listening, connecting,
 connected, team-select, playing, and network-error states. Both computers must
-use the same v0.41 build and the same Japanese TH08 1.00d game data. The title
+use the same v0.42 build and the same Japanese TH08 1.00d game data. The title
 menu remains input-locked until both game instances have finished loading it.
 
 For an initial-lives sync check, set different initial lives in the two local
@@ -56,6 +56,26 @@ does not show a white focus hitbox.
    launch. The explicit online mode must win over that residue.
 6. Local play must still work when the stored network mode is Host or Guest,
    and must preserve that network mode after exit.
+
+## Single device and key-editing check
+
+1. Open Local play and select Single device. The selected circle must be green;
+   device discovery/selectors must be absent and Start local game enabled.
+2. Open Set keys. Check unchanged defaults in both columns, then change one
+   P1 and one P2 gameplay action to unused keys. Verify conflicts within either
+   player and across players are rejected, including Shift aliases.
+3. Verify Save persists both columns, Cancel discards edits, and Defaults restores
+   both draft mappings without saving until Save is clicked. Old P2-only files
+   must retain their P2 mapping with unchanged P1 defaults.
+4. Start a shared-keyboard run: P1 selects first, then P2 confirms. Check both
+   custom bindings, simultaneous input and focus switching. Released P1 default
+   keys must not continue controlling P1. Team/status/help text must stay within
+   the left playfield without DEVICE-number suffixes.
+5. Exit and select Double device or Host/Guest. Single device bindings must not
+   affect those modes, and editing keys must not replace network settings or
+   physical-device assignments.
+6. Both online peers must use v0.42. Check that a v0.41 launcher or game cannot
+   join a v0.42 peer. Real-device and cross-PC checks require manual testing.
 
 ## Keyboard focus recovery check
 
