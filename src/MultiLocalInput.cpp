@@ -144,7 +144,7 @@ bool MultiLocalInput::Initialize(HWND gameWindow)
     if (singleKeyboard)
     {
         if (!LoadMultiLocalKeyboardConfig(LOCAL_CONFIG_PATH, &singleKeyboardConfig))
-            g_GameErrorContext.Log("multi local: invalid P2 bindings, using defaults\n");
+            g_GameErrorContext.Log("multi local: invalid single-device bindings, using defaults\n");
         OnFocusLost();
         initialized = true;
         g_GameErrorContext.Log("multi local: shared keyboard ready (no device selection)\n");

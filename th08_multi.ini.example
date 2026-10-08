@@ -19,8 +19,16 @@ input_delay=3
 input_mode=double
 
 [local_keyboard]
-; P2 virtual-key codes for single-device local play only.
-; Edit with the launcher's Set P2 keys page to avoid conflicts.
+; P1/P2 virtual-key codes for single-device local play only.
+; Edit with the launcher's Set keys page to avoid conflicts across both players.
+; Old P2-only files keep these P1 defaults until explicitly edited.
+p1_up=38
+p1_down=40
+p1_left=37
+p1_right=39
+p1_focus=16
+p1_shoot=90
+p1_bomb=88
 p2_up=73
 p2_down=75
 p2_left=74

@@ -22,18 +22,26 @@ requested wording.
   one shared system-keyboard snapshot; shared gamepads are not supported.
 - P1 uses arrows/Shift/Z/X, with Esc/Enter/Ctrl for menus/skip. P2 uses
   I/K/J/L/D/F/G. Other retail P1 keyboard aliases are not merged into this path.
-- Set P2 keys opens a separate edit page. Capture is handled before dialog
-  navigation; repeats, reserved keys and duplicate P2 assignments are rejected.
+- Set keys opens a separate edit page with P1/P2 columns. Capture is handled before dialog
+  navigation; repeats, reserved menu/system keys and duplicate assignments
+  within or across players are rejected. Both players' gameplay keys can be
+  changed; released P1 default keys can be assigned to P2. Shift aliases share
+  one conflict domain and apply only to the player/action currently bound to
+  Shift, rather than remaining a hidden P1 focus shortcut.
   Only button clicks arm capture, not focus notifications. The focused action
   button requests all keys and forwards key-down messages to capture. Foreground
   raw keyboard input also captures physical keys independently of IMEs; legacy
   `VK_PROCESSKEY` messages are resolved from their scan codes. Raw registration
   is removed when the key editor closes and does not change online input.
   Escape cancels capture. Cancel discards the draft; Defaults changes the draft;
-  Save writes the validated seven-key section.
+  Save writes the validated fourteen-key section. Existing P2-only files retain
+  their P2 mapping and use unchanged P1 defaults until explicitly edited.
 - Configurations use `[local].input_mode` and `[local_keyboard]`. Invalid
   manually edited bindings fall back to the entire default set. The online
   mode/address and Double device identifiers remain unchanged by key editing.
+  Both sets of custom bindings are read only inside explicit local Single
+  device initialization. Double device never loads this section; online and
+  ordinary single-player launches never initialize local input.
 - Local keyboard input is foreground-only and clears on focus loss/rebind.
   Online/single-player input routes and the original engine layouts are not
   modified. Gameplay rules and the online protocol/fingerprint are unchanged.
@@ -60,7 +68,12 @@ device-free startup readiness, capture/repeat/conflict/cancel/save behavior,
 and configuration isolation, exclusive radio selection, focus notifications,
 posted key messages through the child WndProc, IME scan-code conversion and
 raw physical-key capture/repeat/release. Pure mapping tests cover simultaneous P1/P2 input,
-default/custom actions, menu ownership and invalid-config fallback.
+default/custom actions for both players, menu ownership and invalid-config fallback.
+The two-column follow-up also covers P1 edits/save/cancel/defaults, fourteen-key
+round trips, legacy P2-only files, within-P1/cross-player collisions, generic
+versus side-Shift conflicts, remapped old P1 keys ceasing to act as aliases, and
+P2 reusing released P1 defaults. Remote settings, Double device IDs and the
+selected local input mode remain unchanged by a key-only save.
 
 `scripts/check-docs.py`, `scripts/check-semantic-protocols.py`, and
 `git diff --check` pass. Full `scripts/ci.py` remains blocked at Bash startup

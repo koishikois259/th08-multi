@@ -19,32 +19,52 @@ enum MultiLocalKeyboardAction
 
 struct MultiLocalKeyboardConfig
 {
+    unsigned int p1Keys[LOCAL_KEY_COUNT];
     unsigned int p2Keys[LOCAL_KEY_COUNT];
 };
 
-inline const char *MultiLocalKeySetting(int action)
+inline const unsigned int *MultiLocalKeys(const MultiLocalKeyboardConfig &config, unsigned int slot)
 {
-    static const char *const names[LOCAL_KEY_COUNT] = {
-        "p2_up", "p2_down", "p2_left", "p2_right",
-        "p2_focus", "p2_shoot", "p2_bomb"};
-    return names[action];
+    return slot == 0 ? config.p1Keys : config.p2Keys;
+}
+
+inline unsigned int *MultiLocalKeys(MultiLocalKeyboardConfig &config, unsigned int slot)
+{
+    return slot == 0 ? config.p1Keys : config.p2Keys;
+}
+
+inline const char *MultiLocalKeySetting(unsigned int slot, int action)
+{
+    static const char *const names[2][LOCAL_KEY_COUNT] = {
+        {"p1_up", "p1_down", "p1_left", "p1_right", "p1_focus", "p1_shoot", "p1_bomb"},
+        {"p2_up", "p2_down", "p2_left", "p2_right", "p2_focus", "p2_shoot", "p2_bomb"}};
+    return names[slot][action];
+}
+
+inline unsigned int CanonicalMultiLocalKey(unsigned int key)
+{
+    // Generic Shift reads both physical Shift keys, so they must be treated
+    // as one binding for conflict detection and persistence.
+    return key == VK_LSHIFT || key == VK_RSHIFT ? VK_SHIFT : key;
 }
 
 inline void DefaultMultiLocalKeyboardConfig(MultiLocalKeyboardConfig *config)
 {
     const unsigned int defaults[LOCAL_KEY_COUNT] = {'I', 'K', 'J', 'L', 'D', 'F', 'G'};
+    const unsigned int p1Defaults[LOCAL_KEY_COUNT] = {
+        VK_UP, VK_DOWN, VK_LEFT, VK_RIGHT, VK_SHIFT, 'Z', 'X'};
     for (int i = 0; i < LOCAL_KEY_COUNT; ++i)
+    {
+        config->p1Keys[i] = p1Defaults[i];
         config->p2Keys[i] = defaults[i];
+    }
 }
 
 inline bool IsReservedMultiLocalKey(unsigned int key)
 {
-    // Single-keyboard P1 has only the seven advertised gameplay bindings,
-    // plus shared menu/skip controls. In particular D belongs to P2 here;
-    // retail debug/cheat and numpad aliases are not merged into this mode.
-    return key == VK_UP || key == VK_DOWN || key == VK_LEFT || key == VK_RIGHT ||
-           key == 'Z' || key == 'X' || key == VK_SHIFT ||
-           key == VK_LSHIFT || key == VK_RSHIFT || key == VK_ESCAPE ||
+    // Shared menu/skip and system controls remain reserved. Gameplay keys
+    // belong only to their configured action, never to a fixed P1 alias.
+    return key == VK_ESCAPE ||
            key == VK_RETURN || key == VK_CONTROL || key == VK_LCONTROL ||
            key == VK_RCONTROL || key == VK_MENU || key == VK_LMENU ||
            key == VK_RMENU || key == VK_LWIN || key == VK_RWIN ||
@@ -60,18 +80,22 @@ inline bool IsAssignableMultiLocalKey(unsigned int key)
            (key >= VK_F1 && key <= VK_F12) || key == VK_SPACE ||
            key == VK_BACK || key == VK_PRIOR || key == VK_NEXT ||
            key == VK_END || key == VK_HOME || key == VK_INSERT ||
-           key == VK_DELETE || (key >= VK_OEM_1 && key <= VK_OEM_3) ||
+           key == VK_DELETE || key == VK_UP || key == VK_DOWN || key == VK_LEFT ||
+           key == VK_RIGHT || key == VK_SHIFT || key == VK_LSHIFT || key == VK_RSHIFT ||
+           (key >= VK_OEM_1 && key <= VK_OEM_3) ||
            (key >= VK_OEM_4 && key <= VK_OEM_8) || key == VK_OEM_102;
 }
 
 inline bool ValidateMultiLocalKeyboardConfig(const MultiLocalKeyboardConfig &config)
 {
-    for (int i = 0; i < LOCAL_KEY_COUNT; ++i)
+    for (int i = 0; i < 2 * LOCAL_KEY_COUNT; ++i)
     {
-        if (!IsAssignableMultiLocalKey(config.p2Keys[i]))
+        unsigned int key = MultiLocalKeys(config, i / LOCAL_KEY_COUNT)[i % LOCAL_KEY_COUNT];
+        if (!IsAssignableMultiLocalKey(key))
             return false;
         for (int j = 0; j < i; ++j)
-            if (config.p2Keys[i] == config.p2Keys[j])
+            if (CanonicalMultiLocalKey(key) == CanonicalMultiLocalKey(
+                    MultiLocalKeys(config, j / LOCAL_KEY_COUNT)[j % LOCAL_KEY_COUNT]))
                 return false;
     }
     return true;
@@ -80,13 +104,17 @@ inline bool ValidateMultiLocalKeyboardConfig(const MultiLocalKeyboardConfig &con
 inline bool LoadMultiLocalKeyboardConfig(const char *path, MultiLocalKeyboardConfig *config)
 {
     DefaultMultiLocalKeyboardConfig(config);
-    for (int i = 0; i < LOCAL_KEY_COUNT; ++i)
-        config->p2Keys[i] = GetPrivateProfileIntA(
-            "local_keyboard", MultiLocalKeySetting(i), config->p2Keys[i], path);
+    for (unsigned int slot = 0; slot < 2; ++slot)
+        for (int i = 0; i < LOCAL_KEY_COUNT; ++i)
+        {
+            unsigned int *keys = MultiLocalKeys(*config, slot);
+            keys[i] = CanonicalMultiLocalKey(GetPrivateProfileIntA(
+                "local_keyboard", MultiLocalKeySetting(slot, i), keys[i], path));
+        }
     if (ValidateMultiLocalKeyboardConfig(*config))
         return true;
     // A manually edited or partial invalid file must never bind both players
-    // to the same key. Fall back as a complete set, without modifying the file.
+    // to the same key. Fall back as a complete two-player set, without writing.
     DefaultMultiLocalKeyboardConfig(config);
     return false;
 }
@@ -97,10 +125,12 @@ inline bool SaveMultiLocalKeyboardConfig(const char *path, const MultiLocalKeybo
     char *next = section;
     if (!ValidateMultiLocalKeyboardConfig(config))
         return false;
-    for (int i = 0; i < LOCAL_KEY_COUNT; ++i)
-        next += wsprintfA(next, "%s=%u", MultiLocalKeySetting(i), config.p2Keys[i]) + 1;
+    for (unsigned int slot = 0; slot < 2; ++slot)
+        for (int i = 0; i < LOCAL_KEY_COUNT; ++i)
+            next += wsprintfA(next, "%s=%u", MultiLocalKeySetting(slot, i),
+                              CanonicalMultiLocalKey(MultiLocalKeys(config, slot)[i])) + 1;
     *next = '\0';
-    // One section write avoids storing a half-edited seven-key mapping.
+    // One section write avoids storing a half-edited two-player mapping.
     return WritePrivateProfileSectionA("local_keyboard", section, path) != FALSE;
 }
 
@@ -114,8 +144,6 @@ inline bool IsSingleKeyboardLocalConfig(const char *path)
 inline unsigned short SingleKeyboardLocalButtons(
     unsigned int slot, const unsigned char *state, const MultiLocalKeyboardConfig &config)
 {
-    const unsigned int p1Keys[LOCAL_KEY_COUNT] = {
-        VK_UP, VK_DOWN, VK_LEFT, VK_RIGHT, VK_SHIFT, 'Z', 'X'};
     // TH08 action bits; no retail headers or layouts are changed by this helper.
     const unsigned short buttons[LOCAL_KEY_COUNT] = {16, 32, 64, 128, 4, 1, 2};
     unsigned short result = 0;
@@ -123,14 +151,13 @@ inline unsigned short SingleKeyboardLocalButtons(
         return 0;
     for (int i = 0; i < LOCAL_KEY_COUNT; ++i)
     {
-        unsigned int key = slot == 0 ? p1Keys[i] : config.p2Keys[i];
-        if ((state[key] & 0x80) != 0)
+        unsigned int key = CanonicalMultiLocalKey(MultiLocalKeys(config, slot)[i]);
+        if ((state[key] & 0x80) != 0 ||
+            (key == VK_SHIFT && ((state[VK_LSHIFT] | state[VK_RSHIFT]) & 0x80) != 0))
             result |= buttons[i];
     }
     if (slot == 0)
     {
-        if ((state[VK_LSHIFT] | state[VK_RSHIFT]) & 0x80)
-            result |= 4;
         if (state[VK_ESCAPE] & 0x80)
             result |= 8;
         if (state[VK_RETURN] & 0x80)

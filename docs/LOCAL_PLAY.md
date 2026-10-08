@@ -18,12 +18,16 @@ up/down/left/right, D for focus, F for shoot/confirm, and G for bomb/cancel.
 Esc, Enter and Ctrl remain P1-owned menu/skip controls. Retail auxiliary and
 numpad P1 bindings are not merged into this mode, so D cannot operate P1.
 
-Click **Set P2 keys**, click an action and press its new key. P1 gameplay keys,
-shared menu/system keys and duplicate P2 bindings are rejected. Esc cancels
+Click **Set keys**, click an action in the **Player 1** or **Player 2** column
+and press its new key. Shared menu/system keys and duplicate bindings within
+either player or across both players are rejected. Esc cancels
 capture; **Cancel** discards edits, **Defaults** restores the proposed default
-mapping, and **Save** applies it. Settings are stored separately under
+mapping for both players, and **Save** applies both columns. Settings are stored separately under
 `[local_keyboard]` in `th08_multi.ini`. Invalid manually edited mappings fall
-back to the complete default set. These settings do not change online input,
+back to the complete two-player default set. Old P2-only settings retain their
+P2 bindings and load the original P1 defaults. Shift aliases are treated as one
+key for conflicts; once remapped, old P1 gameplay keys no longer control P1.
+These settings do not change online input,
 ordinary single-player bindings, or Double device bindings.
 
 Only the foreground, non-minimized game receives input; both players read the
@@ -52,7 +56,7 @@ apply to the run. Existing online Host/Guest mode remains separate.
 
 The launcher passes `--multi-mode=local`, `--multi-mode=host`, or
 `--multi-mode=guest` to each game process. Local play saves only the device
-choices, local input mode and P2 shared-keyboard bindings; it does not replace
+choices, local input mode and P1/P2 shared-keyboard bindings; it does not replace
 an existing online mode. Legacy `mode=local`
 residue is cleared when saving local choices and ignored by a direct game
 launch without an explicit mode argument. Always use the launcher to start
@@ -65,7 +69,7 @@ and refresh the list. Raw Input requires Windows; this mode is not available
 in the portable Linux build.
 
 Hardware validation still needed before marking this mode stable: shared-keyboard
-rollover/focus, custom P2 keys and sequential team selection, two physical keyboards,
+rollover/focus, custom P1/P2 keys and sequential team selection, two physical keyboards,
 internal-plus-external keyboard, keyboard-plus-gamepad, two gamepads, hot-plug
 failure handling, team selection/cancel, stage transition, and returning to
 the title after a completed run. The current automated multiplayer state and
