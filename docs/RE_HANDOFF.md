@@ -1,5 +1,15 @@
 # Current reconstruction handoff
 
+## Multiplayer local-development checkpoint after v0.42
+
+Remote gameplay now takes slow mode from P1, without overwriting the guest's
+saved config. Settings snapshots carry a bilateral revision acknowledgement
+and are retried until confirmed; stage readiness reapplies the agreed value.
+See `MULTIPLAYER_GAMEPLAY_SETTINGS.md` for the custom.exe/config audit and the
+validation boundary. The wire protocol is `0x00010003`, with launcher/game gate
+`0x00040003`. No new release/tag, ZIP, origin installation, or upload is part of
+this checkpoint. Reconstruction ledgers and original ABI are unchanged.
+
 This file records only the current durable state. Historical investigations
 belong in focused notes such as `RUNECL_FUNCTION_EXACT_NOTES.md`; live counts
 come from the ledgers, not this prose.

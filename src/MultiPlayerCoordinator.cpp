@@ -13,7 +13,7 @@
 namespace th08
 {
 
-const u32 TH08_MULTI_BUILD_FINGERPRINT = 0x00040002;
+const u32 TH08_MULTI_BUILD_FINGERPRINT = 0x00040003;
 const u16 MULTI_INPUT_TITLE_READY = 0x8000;
 
 namespace
@@ -200,17 +200,17 @@ bool MultiPlayerCoordinator::Initialize()
         GenerateSecureRandomNonZeroU32(&seed);
         CaptureCurrentSaveProgress(saveProgress);
         g_GameErrorContext.Log(
-            "multi save: host progress fingerprint=%08x team0-normal=%04x/%04x initial-lives=%u\n",
+            "multi save: host progress fingerprint=%08x team0-normal=%04x/%04x initial-lives=%u slow-mode=%u\n",
             FingerprintSaveProgress(saveProgress),
             saveProgress[SHOT_REIMU_YUKARI].clearedWithoutRetries[NORMAL],
             saveProgress[SHOT_REIMU_YUKARI].clearedWithRetries[NORMAL],
-            g_Supervisor.cfg.lifeCount);
+            g_Supervisor.cfg.lifeCount, g_Supervisor.cfg.slowMode);
     }
     if (config.mode == MULTI_LAUNCH_HOST)
         return session.OpenHost(config.localPort, config.bindAddress,
                                 config.selectedTeam, config.inputDelay,
                                 TH08_MULTI_BUILD_FINGERPRINT, nonce, seed,
-                                g_Supervisor.cfg.lifeCount, saveProgress);
+                                g_Supervisor.cfg.lifeCount, g_Supervisor.cfg.slowMode, saveProgress);
     return session.OpenGuest(config.localPort, config.bindAddress,
                              config.hostAddress, config.hostPort,
                              config.selectedTeam, config.inputDelay,
@@ -255,7 +255,8 @@ void MultiPlayerCoordinator::Pump(u32 nowMilliseconds)
     if (config.mode != MULTI_LAUNCH_DISABLED)
     {
         if (config.mode == MULTI_LAUNCH_HOST)
-            session.UpdateHostInitialLives(g_Supervisor.cfg.lifeCount);
+            session.UpdateHostGameplaySettings(g_Supervisor.cfg.lifeCount,
+                                              g_Supervisor.cfg.slowMode);
         session.Pump(nowMilliseconds);
         sessionState = session.GetState();
         if (config.mode == MULTI_LAUNCH_GUEST && sessionState == MULTI_NET_STATE_CONNECTED &&
@@ -361,11 +362,12 @@ bool MultiPlayerCoordinator::ApplyHostSaveProgress()
     appliedSaveRevision = saveRevision;
     g_GameErrorContext.Log(
         "multi save: applied host revision=%u fingerprint=%08x team0-normal=%04x/%04x "
-        "initial-lives=%u local-initial-lives-ignored=%u\n",
+        "initial-lives=%u local-initial-lives-ignored=%u slow-mode=%u local-slow-mode-ignored=%u\n",
         saveRevision, FingerprintSaveProgress(saveProgress),
         saveProgress[SHOT_REIMU_YUKARI].clearedWithoutRetries[NORMAL],
         saveProgress[SHOT_REIMU_YUKARI].clearedWithRetries[NORMAL],
-        session.GetInitialLives(), g_Supervisor.cfg.lifeCount);
+        session.GetInitialLives(), g_Supervisor.cfg.lifeCount,
+        session.GetSlowMode(), g_Supervisor.cfg.slowMode);
     return true;
 }
 
@@ -522,8 +524,17 @@ bool MultiPlayerCoordinator::AcquireGameplayInputs(u16 localButtons, u16 *p1Butt
     if (capturedSimulationFrame != frame)
     {
         if (gameplayActive && gameplaySetupStarted && gameplayReadyMask != 3 &&
-            g_GameManager.gameplaySetupState == GAMEPLAY_SETUP_COMPLETE)
+            g_GameManager.gameplaySetupState == GAMEPLAY_SETUP_COMPLETE &&
+            session.AreGameplaySettingsConfirmed())
+        {
+            // Settings can be retransmitted while the loading thread works.
+            // Apply the final acknowledged host value before advertising ready;
+            // never overwrite Supervisor::cfg or the guest's saved th08.cfg.
+            if (g_GameManager.difficulty < EXTRA && !g_GameManager.flags.isPracticeMode &&
+                !g_GameManager.flags.isSpellPractice)
+                g_GameManager.cfg->slowMode = session.GetSlowMode();
             localButtons |= TH_BUTTON_RESET;
+        }
         if (IsGameplaySimulationReady() &&
             g_MultiPlayerState.frameNumber % 30 == 0)
         {
@@ -541,7 +552,8 @@ bool MultiPlayerCoordinator::AcquireGameplayInputs(u16 localButtons, u16 *p1Butt
         if (synchronizeTitle)
         {
             if (!IsTitleInputReady())
-                localButtons = localTitleReady ? MULTI_INPUT_TITLE_READY : 0;
+                localButtons = localTitleReady && session.AreGameplaySettingsConfirmed()
+                                   ? MULTI_INPUT_TITLE_READY : 0;
             else if (!localTitleInputArmed)
             {
                 if (localButtons == 0)
@@ -618,6 +630,12 @@ u8 MultiPlayerCoordinator::GetInitialLives() const
 u32 MultiPlayerCoordinator::GetRandomSeed() const
 {
     return IsLocalPlay() ? localRandomSeed : session.GetRandomSeed();
+}
+u8 MultiPlayerCoordinator::GetSlowMode() const
+{
+    if (IsConfigured() && !IsLocalPlay())
+        return session.GetSlowMode();
+    return g_Supervisor.cfg.slowMode;
 }
 u32 MultiPlayerCoordinator::GetDesyncFrame() const { return session.GetDesyncFrame(); }
 u32 MultiPlayerCoordinator::GetLatestRemoteFrame() const { return session.GetLatestRemoteFrame(); }

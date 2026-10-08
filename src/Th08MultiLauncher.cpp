@@ -74,7 +74,7 @@ enum LauncherPacketType
 };
 
 static const unsigned long LAUNCHER_PACKET_MAGIC = 0x54384D4C;
-static const unsigned long LAUNCHER_PROTOCOL_VERSION = 0x00040002;
+static const unsigned long LAUNCHER_PROTOCOL_VERSION = 0x00040003;
 static const int LAUNCHER_PACKET_SIZE = 16;
 static const UINT_PTR LAUNCHER_TIMER_ID = 1;
 static const UINT_PTR LOCAL_INPUT_TIMER_ID = 2;

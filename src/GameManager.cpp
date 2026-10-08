@@ -766,7 +766,10 @@ void __fastcall GameManager::GameplaySetupThread(void *unused)
         *gameManager->cfg = g_Supervisor.cfg;
 #ifdef TH08_MULTI
         if (g_MultiPlayerCoordinator.IsConnected())
+        {
             gameManager->cfg->lifeCount = g_MultiPlayerCoordinator.GetInitialLives();
+            gameManager->cfg->slowMode = g_MultiPlayerCoordinator.GetSlowMode();
+        }
 #endif
         allocation = reinterpret_cast<void *>(gameManager->antiTamperHeapJitterAllocation);
         free(allocation);

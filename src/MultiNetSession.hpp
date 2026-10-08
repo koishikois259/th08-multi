@@ -46,7 +46,7 @@ class MultiNetSession
     bool OpenHost(u16 localPort, const char *bindAddress,
                   u8 selectedTeam, u16 requestedInputDelay,
                   u32 buildFingerprint, u32 hostNonce, u32 randomSeed,
-                  u8 initialLives,
+                  u8 initialLives, u8 slowMode,
                   const MultiNetWelcomePacket::SaveProgress
                       saveProgress[MULTI_NET_SAVE_SHOT_COUNT]);
     bool OpenGuest(u16 localPort, const char *bindAddress,
@@ -61,7 +61,7 @@ class MultiNetSession
     bool TryGetFrameInputs(u32 simulationFrame, u16 *p1Buttons, u16 *p2Buttons) const;
     void UpdateHostSaveProgress(
         const MultiNetWelcomePacket::SaveProgress saveProgress[MULTI_NET_SAVE_SHOT_COUNT]);
-    void UpdateHostInitialLives(u8 initialLives);
+    void UpdateHostGameplaySettings(u8 initialLives, u8 slowMode);
 
     MultiNetSessionState GetState() const;
     MultiNetSessionError GetError() const;
@@ -76,6 +76,8 @@ class MultiNetSession
     u32 GetLatestAcknowledgedFrame() const;
     u32 GetDesyncFrame() const;
     u8 GetInitialLives() const;
+    u8 GetSlowMode() const;
+    bool AreGameplaySettingsConfirmed() const;
     u32 GetSaveRevision() const;
     const MultiNetWelcomePacket::SaveProgress *GetSaveProgress() const;
 
@@ -120,6 +122,9 @@ class MultiNetSession
     u8 guestTeam;
     u8 localSlot;
     u8 initialLives;
+    u8 slowMode;
+    u32 peerSettingsRevision;
+    u32 lastWelcomeSendTime;
     u32 lastSendTime;
     u32 lastReceiveTime;
     u32 currentTime;

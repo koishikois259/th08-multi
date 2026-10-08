@@ -7,7 +7,7 @@ namespace th08
 
 enum MultiNetProtocolConstant
 {
-    MULTI_NET_PROTOCOL_VERSION = 0x00010002,
+    MULTI_NET_PROTOCOL_VERSION = 0x00010003,
     MULTI_NET_MIN_INPUT_DELAY = 1,
     MULTI_NET_MAX_INPUT_DELAY = 12,
     MULTI_NET_MAX_REDUNDANT_INPUTS = 15,
@@ -48,6 +48,7 @@ struct MultiNetWelcomePacket
     u8 guestTeam;
     u8 assignedSlot;
     u8 initialLives;
+    u8 slowMode;
     u32 saveRevision;
     struct SaveProgress
     {
@@ -85,6 +86,7 @@ struct MultiNetInputPacket
     u32 acknowledgedFrame;
     u32 stateHashFrame;
     u32 stateHash;
+    u32 settingsRevision;
     u8 senderSlot;
     u8 sampleCount;
     MultiNetInputSample samples[MULTI_NET_MAX_REDUNDANT_INPUTS];

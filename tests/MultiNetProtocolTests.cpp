@@ -25,6 +25,7 @@ MultiNetInputPacket CreatePacket()
     packet.acknowledgedFrame = 96;
     packet.stateHashFrame = 90;
     packet.stateHash = 0xAABBCCDD;
+    packet.settingsRevision = 7;
     packet.senderSlot = 1;
     packet.sampleCount = 3;
     packet.samples[0].frame = 100;
@@ -51,6 +52,7 @@ void TestRoundTrip()
     Expect(output.acknowledgedFrame == input.acknowledgedFrame, "ack frame round-trips");
     Expect(output.stateHashFrame == input.stateHashFrame, "hash frame round-trips");
     Expect(output.stateHash == input.stateHash, "state hash round-trips");
+    Expect(output.settingsRevision == input.settingsRevision, "settings revision round-trips");
     Expect(output.senderSlot == input.senderSlot, "sender slot round-trips");
     Expect(output.sampleCount == input.sampleCount, "sample count round-trips");
     Expect(output.samples[1].frame == 99, "sample frame round-trips");
@@ -82,6 +84,16 @@ void TestRejectsMalformedPackets()
     packet.sessionId = 0;
     Expect(!EncodeMultiNetInputPacket(packet, wire, sizeof(wire), &wireSize),
            "zero session id is rejected");
+    packet = CreatePacket();
+    packet.settingsRevision = 0;
+    Expect(!EncodeMultiNetInputPacket(packet, wire, sizeof(wire), &wireSize),
+           "zero settings revision is rejected");
+    packet = CreatePacket();
+    Expect(EncodeMultiNetInputPacket(packet, wire, sizeof(wire), &wireSize),
+           "input packet encodes for settings-revision mutation");
+    wire[32] = wire[33] = wire[34] = wire[35] = 0;
+    Expect(!DecodeMultiNetInputPacket(wire, wireSize, &decoded),
+           "zero settings revision does not decode");
     packet = CreatePacket();
     packet.samples[1].frame = packet.samples[0].frame;
     Expect(!EncodeMultiNetInputPacket(packet, wire, sizeof(wire), &wireSize),
@@ -123,6 +135,7 @@ void TestHandshakeAndDisconnectGuards()
     welcome.guestTeam = 2;
     welcome.assignedSlot = 1;
     welcome.initialLives = 5;
+    welcome.slowMode = 1;
     welcome.saveRevision = 7;
     welcome.saveProgress[0].clearedWithoutRetries[0] = 0x1234;
     welcome.saveProgress[0].clearedWithRetries[4] = 0x5678;
@@ -133,6 +146,7 @@ void TestHandshakeAndDisconnectGuards()
            "valid welcome decodes");
     Expect(decodedWelcome.saveRevision == 7, "save revision round-trips");
     Expect(decodedWelcome.initialLives == 5, "host initial lives round-trips");
+    Expect(decodedWelcome.slowMode == 1, "host slow mode round-trips");
     Expect(decodedWelcome.saveProgress[0].clearedWithoutRetries[0] == 0x1234,
            "save clear progress round-trips");
     Expect(decodedWelcome.saveProgress[0].clearedWithRetries[4] == 0x5678,
@@ -153,10 +167,26 @@ void TestHandshakeAndDisconnectGuards()
     Expect(!DecodeMultiNetWelcomePacket(wire, wireSize, &decodedWelcome),
            "invalid host initial lives are rejected");
     wire[40] = 5;
-    wire[41] = 1;
+    wire[41] = 2;
+    Expect(!DecodeMultiNetWelcomePacket(wire, wireSize, &decodedWelcome),
+           "invalid slow mode is rejected");
+    wire[41] = 0;
+    Expect(DecodeMultiNetWelcomePacket(wire, wireSize, &decodedWelcome) && decodedWelcome.slowMode == 0,
+           "disabled host slow mode decodes");
+    wire[42] = 1;
     Expect(!DecodeMultiNetWelcomePacket(wire, wireSize, &decodedWelcome),
            "nonzero welcome settings reserved byte is rejected");
-    wire[41] = 0;
+    wire[42] = 0;
+    welcome.slowMode = 2;
+    Expect(!EncodeMultiNetWelcomePacket(welcome, wire, sizeof(wire), &wireSize),
+           "invalid slow mode does not encode");
+    welcome.slowMode = 0;
+    Expect(EncodeMultiNetWelcomePacket(welcome, wire, sizeof(wire), &wireSize),
+           "disabled host slow mode encodes");
+    wire[7] ^= 1;
+    Expect(!DecodeMultiNetWelcomePacket(wire, wireSize, &decodedWelcome),
+           "old wire protocol is rejected");
+    wire[7] ^= 1;
     wire[64] = 2;
     Expect(!DecodeMultiNetWelcomePacket(wire, wireSize, &decodedWelcome),
            "invalid save ending flag is rejected");

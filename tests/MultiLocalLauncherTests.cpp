@@ -22,7 +22,8 @@ int main()
 {
     unsigned char packet[LAUNCHER_PACKET_SIZE];
     unsigned long packetType = 0, packetToken = 0;
-    ExpectLauncher(LAUNCHER_PROTOCOL_VERSION == 0x00040002, "launcher version identifies v0.42");
+    ExpectLauncher(LAUNCHER_PROTOCOL_VERSION == 0x00040003,
+                   "launcher version identifies the host-gameplay-settings build");
     WriteLauncherPacket(packet, LAUNCHER_PACKET_HELLO, 123);
     ExpectLauncher(ReadLauncherPacket(packet, sizeof(packet), &packetType, &packetToken) &&
                    packetType == LAUNCHER_PACKET_HELLO && packetToken == 123,

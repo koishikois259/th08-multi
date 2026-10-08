@@ -500,6 +500,24 @@ def configure(build_type):
                 },
             )
             writer.build(
+                "$builddir/tests/MultiNetSessionTests.obj",
+                "cc",
+                "tests/MultiNetSessionTests.cpp",
+            )
+            writer.build(
+                "$builddir/multiplayer-session-tests.exe",
+                "link",
+                inputs=[
+                    "$builddir/MultiNetProtocol.obj",
+                    "$builddir/MultiNetSession.obj",
+                    "$builddir/tests/MultiNetSessionTests.obj",
+                ],
+                variables={
+                    "link_libs": "kernel32.lib wsock32.lib",
+                    "link_flags": "/subsystem:console /machine:X86 /incremental:no",
+                },
+            )
+            writer.build(
                 "$builddir/tests/MultiLaunchModeTests.obj",
                 "cc",
                 "tests/MultiLaunchModeTests.cpp",
@@ -519,6 +537,7 @@ def configure(build_type):
                 [
                     "$builddir/multiplayer-state-tests.exe",
                     "$builddir/multiplayer-net-tests.exe",
+                    "$builddir/multiplayer-session-tests.exe",
                     "$builddir/multiplayer-launch-mode-tests.exe",
                     "$builddir/multiplayer-keyboard-tests.exe",
                     "$builddir/multiplayer-local-keyboard-tests.exe",
