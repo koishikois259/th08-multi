@@ -11,6 +11,12 @@ requested wording.
   Double device using mutually exclusive radio options with green selected
   circles. Old configurations continue to default to Double device. The
   Double device page keeps only one device-identification instruction.
+- The in-game co-op character-selection overlay starts at x=48, with horizontal
+  glyph scale 0.75 and 13-pixel base spacing. P1/P2 team/status rows and two
+  separate instruction rows stay within the left playfield. Both local modes
+  omit device-number suffixes; online mode retains its `(YOU)` marker. Text
+  rendering state is restored after queueing, and character-selection input
+  and gameplay rules are unchanged.
 - Single device hides device selectors and stops discovery/polling. It does
   not require saved physical keyboard/gamepad IDs to start. Windows supplies
   one shared system-keyboard snapshot; shared gamepads are not supported.
@@ -61,6 +67,15 @@ default/custom actions, menu ownership and invalid-config fallback.
 because WSL cannot start `/bin/bash` in this environment; its preceding
 Python/literal/protocol checks pass.
 This is not an aggregate reconstruction matching claim.
+
+For the character-selection overlay follow-up, the normal-build
+`TitleScreen::OnDraw @ 0x0047087F` still passes the focused exact comparison
+(`title-screen-roi-exact-0047087f`, 493/493 bytes). All four teams, both player
+labels, both READY/SELECT states and the online `(YOU)` variant were checked
+against the left-region text bound: the maximum right edge is 401.25, below
+416, allowing a conservative 16-pixel unscaled glyph width. Each queued row
+also stays below the ASCII renderer's 64-byte text buffer. Visible placement
+and readability still require in-game confirmation.
 
 Physical shared-keyboard rollover, visible page layout, sequential team
 selection, gameplay/focus switching, Double device regression and online

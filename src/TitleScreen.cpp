@@ -3840,17 +3840,31 @@ ChainCallbackResult TitleScreen::OnDraw(TitleScreen *titleScreen)
                 "Reimu / Yukari", "Marisa / Alice",
                 "Sakuya / Remilia", "Youmu / Yuyuko"};
             u8 localSlot = g_MultiPlayerCoordinator.GetLocalSlot();
-            position = Float3(344.0f, 354.0f, 0.0f);
+            float savedScaleX = g_AsciiManager.scaleX;
+            float savedScaleY = g_AsciiManager.scaleY;
+            i32 savedSpaceWidth = g_AsciiManager.spaceWidth;
+            ZunBool savedIsGui = g_AsciiManager.isGui;
+            ZunBool savedIsSelected = g_AsciiManager.isSelected;
+            D3DCOLOR savedColor = g_AsciiManager.color.d3dColor;
+            // Keep the complete overlay within the left playfield (x=32..416),
+            // including the longest online team row with its (YOU) suffix.
+            g_AsciiManager.scaleX = 0.75f;
+            g_AsciiManager.scaleY = 1.0f;
+            g_AsciiManager.spaceWidth = 13;
+            g_AsciiManager.isGui = FALSE;
+            g_AsciiManager.isSelected = FALSE;
+            g_AsciiManager.color.d3dColor = 0xffffffff;
+            position = Float3(48.0f, 354.0f, 0.0f);
             g_AsciiManager.AddFormatText(
                 &position, "P1%s: %s  [%s]",
-                g_MultiPlayerCoordinator.IsLocalPlay() ? " (DEVICE 1)" :
+                g_MultiPlayerCoordinator.IsLocalPlay() ? "" :
                     (localSlot == MULTI_PLAYER_P1 ? " (YOU)" : ""),
                 teamNames[titleScreen->cursor],
                 (titleScreen->multiTeamReadyMask & 1) != 0 ? "READY" : "SELECT");
             position.y += 18.0f;
             g_AsciiManager.AddFormatText(
                 &position, "P2%s: %s  [%s]",
-                g_MultiPlayerCoordinator.IsLocalPlay() ? " (DEVICE 2)" :
+                g_MultiPlayerCoordinator.IsLocalPlay() ? "" :
                     (localSlot == MULTI_PLAYER_P2 ? " (YOU)" : ""),
                 teamNames[titleScreen->cursor2],
                 (titleScreen->multiTeamReadyMask & 2) != 0 ? "READY" : "SELECT");
@@ -3858,8 +3872,16 @@ ChainCallbackResult TitleScreen::OnDraw(TitleScreen *titleScreen)
             g_AsciiManager.AddFormatText(
                 &position,
                 g_MultiPlayerCoordinator.IsLocalPlay()
-                    ? "P1 first, then P2. Confirm: shot  Unlock: bomb"
-                    : "Move: arrows  Confirm: shot  Unlock: bomb");
+                    ? "P1 first, then P2."
+                    : "Move: arrows");
+            position.y += 18.0f;
+            g_AsciiManager.AddFormatText(&position, "Confirm: shot  Unlock: bomb");
+            g_AsciiManager.scaleX = savedScaleX;
+            g_AsciiManager.scaleY = savedScaleY;
+            g_AsciiManager.spaceWidth = savedSpaceWidth;
+            g_AsciiManager.isGui = savedIsGui;
+            g_AsciiManager.isSelected = savedIsSelected;
+            g_AsciiManager.color.d3dColor = savedColor;
         }
         else
 #endif
