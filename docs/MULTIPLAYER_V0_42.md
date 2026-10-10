@@ -1,8 +1,9 @@
 # th08-multi v0.42 local release checkpoint
 
 v0.42 builds on v0.41 with the shared-keyboard and local UI commits
-`b4befee6`, `205ad6ff`, `3bf47758` and `d40b6a46`. This is a local patch only;
-no GitHub push or Release upload is authorized.
+`b4befee6`, `205ad6ff`, `3bf47758` and `d40b6a46`. The user approved GitHub
+publication on October 10 using the exact Release text below and only the
+patch ZIP as an uploaded attachment. The packaged tutorial remains unchanged.
 The October 10 refresh folds in host-authoritative gameplay settings from
 `4b1a4a23`, retaining the v0.42 release name and the existing tutorial.
 
@@ -108,21 +109,19 @@ Prior package SHA-256 (retained in the local backup):
 Unchanged tutorial SHA-256 (workspace, docs, ZIP and installed copy):
 `c3ca2f2d56e922c2744aac5edad88e5a0d369bb152f52d715f08ca4b84150992`
 
-## Pending GitHub Release text
+## Approved GitHub Release text
 
-No upload is requested yet. When explicitly authorized, retain the user's
-previously requested v0.41 wording along with the v0.42 additions and recheck
-the archive hash before uploading:
+The user edited and approved this text. Publish it verbatim without adding
+generated release notes, and verify the unchanged archive hash before upload:
 
 ```text
-Local play 不再覆盖远程联机配置，本地双控需从启动器进入。
-切屏后再切回游戏重新获取键盘，成功后立即重读，不再直接返回空输入。
-新增 Single device 共用键盘本地双控，Set keys 可分别设置 P1/P2 键位，且不影响其他模式。
-模式选择改为绿色圆点单选；修复改键输入法/焦点处理，调整选人文字以避免截断。
-缓慢模式统一以 P1 主机为准，仅影响本局运行配置，不改写客机设置。
-增加配置版本双方确认、丢包补发和旧快照拒绝；联机教程原样保留。
-双方须同时更新，不可与此前的 v0.42 包混用。
+- Local play不再覆盖远程联机配置，本地双控需从启动器进入。
+- 切屏后再切回游戏重新获取键盘，成功后立即重读，不再直接返回空输入。
+- 新增Single device共用键盘本地双控；Set keys 可分别设置 P1/P2 键位，禁止冲突，且不影响远程联机、Double device 或普通单人模式。
+- 远程联机缓慢模式统一以P1主机为准，仅影响本局运行配置，不改写客机设置。
+- 增加配置版本的双方确认、丢包补发和旧快照拒绝，减少配置不一致造成的不同步。
 
-SHA-256:
+补丁：th08-multi-v0.42-patch.zip
+SHA-256：
 0527391a7e704f3ac848b93f6e8d98d1a67c0f13956827ca6997ab8a4806ad98
 ```

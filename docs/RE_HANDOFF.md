@@ -12,8 +12,9 @@ v0.42 package and installed into `th08-origin`; the previous ZIP and installed
 patch are backed up under `build/v0.42-before-settings-refresh-*`. The Chinese
 tutorial remains byte-for-byte unchanged. Both peers must update: the earlier
 v0.42 package is incompatible despite the retained version name. See
-`MULTIPLAYER_V0_42.md` for package checks and hashes. No GitHub push or upload
-is authorized. Reconstruction ledgers and original ABI are unchanged.
+`MULTIPLAYER_V0_42.md` for package checks, hashes and the user-approved Release
+text. GitHub publication was approved on October 10 with only the patch ZIP
+as an uploaded attachment. Reconstruction ledgers and original ABI are unchanged.
 
 This file records only the current durable state. Historical investigations
 belong in focused notes such as `RUNECL_FUNCTION_EXACT_NOTES.md`; live counts

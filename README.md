@@ -83,7 +83,7 @@ settings are unchanged.
 GitHub source repository:
 https://github.com/koishikois259/th08-multi
 
-The local v0.42 patch has not yet been uploaded as a GitHub Release.
+For the v0.42 patch, see [the GitHub Release page](https://github.com/koishikois259/th08-multi/releases/tag/v0.42).
 
 ## 5. Network and Security Limitations
 

@@ -2,7 +2,8 @@
 
 The implementation checkpoint `4b1a4a23` is folded into the October 10 local
 v0.42 refresh, repackaged and installed into `th08-origin`. The existing
-Chinese tutorial is retained byte-for-byte. No GitHub upload is authorized.
+Chinese tutorial is retained byte-for-byte. GitHub publication was approved
+on October 10 with the user's edited Release text and ZIP-only attachment.
 See [the v0.42 checkpoint](MULTIPLAYER_V0_42.md) for packaging evidence.
 
 ## Slow-mode synchronization
