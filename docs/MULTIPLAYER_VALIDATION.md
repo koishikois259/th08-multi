@@ -3,7 +3,7 @@
 This gameplay ledger retains its original v0.34 observations. For the local
 v0.41 input-fix release and installation checks, see
 [the v0.41 checkpoint](MULTIPLAYER_V0_41.md).
-For the current local v0.42 shared-keyboard patch, see
+For the current local v0.42 shared-keyboard and host-settings refresh, see
 [the v0.42 checkpoint](MULTIPLAYER_V0_42.md).
 
 This ledger separates implemented code, automated rule checks, and observed

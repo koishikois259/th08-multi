@@ -22,6 +22,9 @@ Only the Japanese original version 1.00d of *Touhou Eiyashou ~ Imperishable Nigh
 Translated versions, trial versions, other releases, or modified game data are not supported.
 
 For online play, both players must use exactly the same v0.42 patch and the same version of the original game data. Update both the launcher and game; v0.42 rejects mixed v0.41/older sessions.
+The October 10 local refresh retains the v0.42 name but changes the protocol;
+it cannot be mixed with the earlier v0.42 package. Both players must install
+the same refreshed launcher and game.
 
 ## 3. Patch Contents and Distribution Boundaries
 
@@ -73,6 +76,9 @@ finished loading the main menu. P1 controls the shared mode and difficulty
 selection after the synchronized menu state is reached.
 At the start of a multiplayer run, both players use the Host/P1 initial-lives
 setting; the Guest/P2 setting is ignored. The unchanged default is two.
+Remote sessions also use P1's slow-mode setting for the current run, without
+overwriting P2's saved configuration. Local play and ordinary single-player
+settings are unchanged.
 
 GitHub source repository:
 https://github.com/koishikois259/th08-multi
@@ -112,10 +118,18 @@ When using a tunneling service, use only a temporary mapping, share the connecti
   keys independently of IMEs and ignores button focus notifications.
 - Removed device-number suffixes from local team selection and placed the
   co-op team/status/help text inside the left playfield without right-edge
-  truncation. Existing gameplay and online packet layouts are unchanged.
-- Included the user's updated Chinese tutorial. Automated regression tests
-  pass; real-keyboard rollover, hardware combinations and long online runs
-  still require manual validation.
+  truncation. Existing gameplay and resource rules are unchanged.
+- Made remote slow mode host-authoritative for the current run, preserving
+  guest disk configuration and the original forced-off rules for Extra,
+  Practice and Spell Practice. Bilateral snapshot-revision acknowledgement,
+  retransmission and stale-snapshot rejection protect menu/stage readiness.
+  See [the gameplay-settings audit](docs/MULTIPLAYER_GAMEPLAY_SETTINGS.md)
+  for the custom.exe review and validation limits.
+- Retained the user's Chinese tutorial unchanged in this refresh. All seven
+  native regression suites pass, including real UDP settings tests;
+  real-keyboard rollover, hardware combinations, heavy-bullet gameplay and
+  long online runs still require manual validation. This does not claim to
+  fix every crash.
 
 ### Changes inherited from v0.41
 

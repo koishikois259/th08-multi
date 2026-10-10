@@ -1,7 +1,9 @@
-# Host-authoritative gameplay settings (local development checkpoint)
+# Host-authoritative gameplay settings (v0.42 local refresh)
 
-This change is based on v0.42. It is not a new packaged release and has not
-been uploaded or installed into `th08-origin`.
+The implementation checkpoint `4b1a4a23` is folded into the October 10 local
+v0.42 refresh, repackaged and installed into `th08-origin`. The existing
+Chinese tutorial is retained byte-for-byte. No GitHub upload is authorized.
+See [the v0.42 checkpoint](MULTIPLAYER_V0_42.md) for packaging evidence.
 
 ## Slow-mode synchronization
 
@@ -24,9 +26,9 @@ revision are rejected. Snapshot equality compares named fields, not native
 structure padding.
 
 The wire protocol is now `0x00010003`; the game fingerprint and launcher gate
-are `0x00040003`. Both peers need this development build; it must not be mixed
-with the published v0.42 binaries. The displayed release version is unchanged
-until a new release is explicitly requested.
+are `0x00040003`. Both peers need this refreshed game and launcher; they must
+not be mixed with the earlier local v0.42 binaries (`0x00040002`) or v0.41 and
+older builds. The displayed release version remains v0.42 at the user's request.
 
 ## Configuration audit
 
