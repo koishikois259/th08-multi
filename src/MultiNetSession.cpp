@@ -546,7 +546,8 @@ void MultiNetSession::HandleInput(const u8 *data, u32 size, u32 address, u16 por
         return;
     for (i = 0; i < packet.sampleCount; ++i)
     {
-        if (!remoteInputs.Insert(packet.samples[i].frame, packet.samples[i].buttons))
+        if (!remoteInputs.Insert(packet.samples[i].frame, packet.samples[i].buttons,
+                                 packet.samples[i].control, packet.samples[i].gameplayEpoch))
         {
             error = MULTI_NET_ERROR_PROTOCOL;
             state = MULTI_NET_STATE_ERROR;
@@ -583,13 +584,13 @@ bool MultiNetSession::IsRemoteEndpoint(u32 address, u16 port) const
 }
 
 bool MultiNetSession::CaptureLocalInput(u32 simulationFrame, u16 buttons,
-                                        u32 hashFrame, u32 hash)
+                                        u32 hashFrame, u32 hash, u16 control, u32 gameplayEpoch)
 {
     u32 scheduledFrame;
     if (state != MULTI_NET_STATE_CONNECTED)
         return false;
     scheduledFrame = simulationFrame + inputDelay;
-    if (!localInputs.Insert(scheduledFrame, buttons))
+    if (!localInputs.Insert(scheduledFrame, buttons, control, gameplayEpoch))
         return false;
     latestLocalFrame = scheduledFrame;
     StoreLocalHash(hashFrame, hash);
@@ -602,26 +603,37 @@ bool MultiNetSession::CaptureLocalInput(u32 simulationFrame, u16 buttons,
 
 bool MultiNetSession::TryGetFrameInputs(u32 frame, u16 *p1Buttons, u16 *p2Buttons) const
 {
-    u16 localButtons;
-    u16 remoteButtons;
-    if (p1Buttons == NULL || p2Buttons == NULL || state != MULTI_NET_STATE_CONNECTED)
+    MultiNetInputSample p1;
+    MultiNetInputSample p2;
+    if (p1Buttons == NULL || p2Buttons == NULL || !TryGetFrameSamples(frame, &p1, &p2))
+        return false;
+    *p1Buttons = p1.buttons;
+    *p2Buttons = p2.buttons;
+    return true;
+}
+
+bool MultiNetSession::TryGetFrameSamples(u32 frame, MultiNetInputSample *p1,
+                                        MultiNetInputSample *p2) const
+{
+    MultiNetInputSample local = { 0 };
+    MultiNetInputSample remote = { 0 };
+    if (p1 == NULL || p2 == NULL || state != MULTI_NET_STATE_CONNECTED)
         return false;
     if (frame < inputDelay)
     {
-        localButtons = 0;
-        remoteButtons = 0;
+        local.frame = remote.frame = frame;
     }
-    else if (!localInputs.TryGet(frame, &localButtons) || !remoteInputs.TryGet(frame, &remoteButtons))
+    else if (!localInputs.TryGetSample(frame, &local) || !remoteInputs.TryGetSample(frame, &remote))
         return false;
     if (localSlot == 0)
     {
-        *p1Buttons = localButtons;
-        *p2Buttons = remoteButtons;
+        *p1 = local;
+        *p2 = remote;
     }
     else
     {
-        *p1Buttons = remoteButtons;
-        *p2Buttons = localButtons;
+        *p1 = remote;
+        *p2 = local;
     }
     return true;
 }

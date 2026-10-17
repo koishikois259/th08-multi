@@ -331,4 +331,23 @@ if(BUILD_TESTING AND TH08_ENABLE_MULTIPLAYER)
         )
     endif()
     add_test(NAME multiplayer-net COMMAND multiplayer-net-tests)
+
+    if(WIN32)
+        add_executable(multiplayer-coordinator-tests
+            tests/MultiPlayerCoordinatorTests.cpp
+            src/MultiPlayerCoordinator.cpp
+            src/MultiPlayerState.cpp
+            src/MultiNetSession.cpp
+            src/MultiNetProtocol.cpp
+        )
+        target_compile_features(multiplayer-coordinator-tests PRIVATE cxx_std_98)
+        target_compile_definitions(multiplayer-coordinator-tests PRIVATE
+            TH08_MULTI_STANDALONE_TEST WIN32_LEAN_AND_MEAN
+        )
+        target_include_directories(multiplayer-coordinator-tests PRIVATE
+            "${CMAKE_SOURCE_DIR}/src" "${CMAKE_SOURCE_DIR}/tests/support"
+        )
+        target_link_libraries(multiplayer-coordinator-tests PRIVATE wsock32 shell32 advapi32 user32)
+        add_test(NAME multiplayer-coordinator COMMAND multiplayer-coordinator-tests)
+    endif()
 endif()

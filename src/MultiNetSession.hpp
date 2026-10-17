@@ -57,8 +57,11 @@ class MultiNetSession
     void Pump(u32 nowMilliseconds);
 
     bool CaptureLocalInput(u32 simulationFrame, u16 buttons,
-                           u32 stateHashFrame, u32 stateHash);
+                           u32 stateHashFrame, u32 stateHash,
+                           u16 control = MULTI_NET_CONTROL_NONE, u32 gameplayEpoch = 0);
     bool TryGetFrameInputs(u32 simulationFrame, u16 *p1Buttons, u16 *p2Buttons) const;
+    bool TryGetFrameSamples(u32 simulationFrame, MultiNetInputSample *p1,
+                           MultiNetInputSample *p2) const;
     void UpdateHostSaveProgress(
         const MultiNetWelcomePacket::SaveProgress saveProgress[MULTI_NET_SAVE_SHOT_COUNT]);
     void UpdateHostGameplaySettings(u8 initialLives, u8 slowMode);
@@ -82,6 +85,9 @@ class MultiNetSession
     const MultiNetWelcomePacket::SaveProgress *GetSaveProgress() const;
 
   private:
+#ifdef TH08_MULTI_STANDALONE_TEST
+    friend class MultiPlayerCoordinatorTestAccess;
+#endif
     struct HashEntry
     {
         u32 frame;

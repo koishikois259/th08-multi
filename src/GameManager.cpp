@@ -680,6 +680,14 @@ ZunResult GameManager::AddedCallback(GameManager *gameManager)
     {
         gameManager->flags.stageTransitionState = 1;
     }
+#ifdef TH08_MULTI
+    // Enter the stage on the main thread, before the worker can publish any
+    // setup results. It must never reset an in-flight lockstep sample.
+    g_MultiPlayerCoordinator.BeginGameplay(
+        g_Supervisor.isInitialStageLoad || gameManager->flags.isSpellPractice ||
+            gameManager->flags.isPracticeMode || gameManager->difficulty >= EXTRA,
+        g_MultiPlayerCoordinator.GetInitialLives(), 3, 0);
+#endif
     g_Supervisor.ThreadStart((LPTHREAD_START_ROUTINE)GameManager::GameplaySetupThread, NULL);
     return ZUN_SUCCESS;
 }
@@ -721,8 +729,6 @@ void __fastcall GameManager::GameplaySetupThread(void *unused)
         gameManager->shotType = g_MultiPlayerCoordinator.GetHostTeam();
         *reinterpret_cast<u16 *>(&g_Rng) =
             static_cast<u16>(g_MultiPlayerCoordinator.GetRandomSeed());
-        g_MultiPlayerCoordinator.BeginGameplay(
-            multiNewRun, g_MultiPlayerCoordinator.GetInitialLives(), 3, 0);
     }
 #endif
     gameManager->gameplaySetupWaitFrames = 0;
@@ -1151,6 +1157,9 @@ void __fastcall GameManager::GameplaySetupThread(void *unused)
         ~GameManagerFlags::STAGE_CLEAR_SEQUENCE_ACTIVE_MASK;
     g_Supervisor.keepStageResources = 0;
     g_ScreenEffectCounter = 2;
+#ifdef TH08_MULTI
+    g_MultiPlayerCoordinator.NotifyGameplaySetupComplete();
+#endif
     goto thread_done;
 
 setup_error:

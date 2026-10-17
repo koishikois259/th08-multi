@@ -3,18 +3,21 @@
 #include <string.h>
 
 #include "th_pch.h"
+#ifdef TH08_MULTI_STANDALONE_TEST
+#include "MultiPlayerCoordinatorTestRuntime.hpp"
+#else
 #include "GameManager.hpp"
-#include "MultiPlayerCoordinator.hpp"
 #include "MultiPlayerRuntime.hpp"
-#include "MultiPlayerState.hpp"
 #include "MultiLocalInput.hpp"
 #include "SecureRandom.hpp"
+#endif
+#include "MultiPlayerCoordinator.hpp"
+#include "MultiPlayerState.hpp"
 
 namespace th08
 {
 
-const u32 TH08_MULTI_BUILD_FINGERPRINT = 0x00040003;
-const u16 MULTI_INPUT_TITLE_READY = 0x8000;
+const u32 TH08_MULTI_BUILD_FINGERPRINT = 0x00040004;
 
 namespace
 {
@@ -144,6 +147,11 @@ MultiPlayerCoordinator::MultiPlayerCoordinator()
     gameplayActive = false;
     gameplaySetupStarted = false;
     gameplayRngSynchronized = false;
+    gameplaySimulationReady = false;
+    capturedGameplaySimulationReady = false;
+    capturedGameplayEpoch = 0;
+    gameplaySetupComplete = 0;
+    gameplayEpoch = 0;
     gameplayReadyMask = 0;
     gameplayStartFrame = MULTI_NET_INVALID_FRAME;
     selectedTeams[0] = 0;
@@ -226,6 +234,11 @@ void MultiPlayerCoordinator::Shutdown()
     gameplayActive = false;
     gameplaySetupStarted = false;
     gameplayRngSynchronized = false;
+    gameplaySimulationReady = false;
+    capturedGameplaySimulationReady = false;
+    capturedGameplayEpoch = 0;
+    InterlockedExchange(reinterpret_cast<volatile LONG *>(&gameplaySetupComplete), 0);
+    gameplayEpoch = 0;
     gameplayReadyMask = 0;
     gameplayStartFrame = MULTI_NET_INVALID_FRAME;
     capturedSimulationFrame = MULTI_NET_INVALID_FRAME;
@@ -300,12 +313,9 @@ bool MultiPlayerCoordinator::IsGameplayActive() const { return gameplayActive; }
 
 bool MultiPlayerCoordinator::IsGameplaySimulationReady() const
 {
-    if (IsLocalPlay())
-        return gameplayActive && gameplaySetupStarted &&
-               g_GameManager.gameplaySetupState == GAMEPLAY_SETUP_COMPLETE;
-    return gameplayActive && gameplayReadyMask == 3 &&
-           gameplayStartFrame != MULTI_NET_INVALID_FRAME &&
-           networkFrame >= gameplayStartFrame;
+    // This describes the inputs just consumed, not the next network frame.
+    // Advancing networkFrame must never open the simulation gate by itself.
+    return gameplayActive && gameplaySimulationReady;
 }
 
 bool MultiPlayerCoordinator::IsSessionFailed() const
@@ -434,9 +444,14 @@ void MultiPlayerCoordinator::BeginGameplay(bool newRun, i32 initialLives,
     gameplayActive = true;
     gameplaySetupStarted = true;
     gameplayRngSynchronized = false;
+    gameplaySimulationReady = false;
+    InterlockedExchange(reinterpret_cast<volatile LONG *>(&gameplaySetupComplete), 0);
+    if (++gameplayEpoch == 0)
+        ++gameplayEpoch;
     gameplayReadyMask = 0;
     gameplayStartFrame = MULTI_NET_INVALID_FRAME;
-    capturedSimulationFrame = MULTI_NET_INVALID_FRAME;
+    // A pending sample is immutable until its network frame is consumed.
+    // Stage changes must not invalidate or recapture it.
     if (IsLocalPlay())
     {
         gameplayReadyMask = 3;
@@ -454,6 +469,11 @@ void MultiPlayerCoordinator::BeginGameplay(bool newRun, i32 initialLives,
     }
 }
 
+void MultiPlayerCoordinator::NotifyGameplaySetupComplete()
+{
+    InterlockedExchange(reinterpret_cast<volatile LONG *>(&gameplaySetupComplete), 1);
+}
+
 void MultiPlayerCoordinator::PrepareGameplay(i32 initialLives, i32 initialBombs,
                                               i32 initialPower)
 {
@@ -464,9 +484,9 @@ void MultiPlayerCoordinator::PrepareGameplay(i32 initialLives, i32 initialBombs,
     gameplayActive = true;
     gameplaySetupStarted = false;
     gameplayRngSynchronized = false;
+    gameplaySimulationReady = false;
     gameplayReadyMask = 0;
     gameplayStartFrame = MULTI_NET_INVALID_FRAME;
-    capturedSimulationFrame = MULTI_NET_INVALID_FRAME;
 }
 
 u16 MultiPlayerCoordinator::GetLocalInput()
@@ -499,10 +519,16 @@ bool MultiPlayerCoordinator::AcquireGameplayInputs(u16 localButtons, u16 *p1Butt
     u32 hashFrame;
     u32 hash;
     bool synchronizeTitle;
+    bool setupComplete;
+    MultiNetInputSample p1;
+    MultiNetInputSample p2;
     if (!IsConnected())
         return false;
+    setupComplete = InterlockedCompareExchange(
+        reinterpret_cast<volatile LONG *>(&gameplaySetupComplete), 0, 0) != 0;
     if (IsLocalPlay())
     {
+        gameplaySimulationReady = gameplayActive && gameplaySetupStarted && setupComplete;
         *p1Buttons = localButtons;
         *p2Buttons = g_MultiLocalInput.GetInput(MULTI_PLAYER_P2);
         g_MultiPlayerState.GetInput(MULTI_PLAYER_P1).Advance(*p1Buttons);
@@ -514,17 +540,23 @@ bool MultiPlayerCoordinator::AcquireGameplayInputs(u16 localButtons, u16 *p1Butt
     }
     frame = networkFrame;
     synchronizeTitle = titleSynchronizationActive && !gameplayActive;
-    if (IsGameplaySimulationReady() && !gameplayRngSynchronized)
-    {
-        u16 synchronizedSeed = static_cast<u16>(session.GetRandomSeed());
-        *reinterpret_cast<u16 *>(&g_Rng) = synchronizedSeed;
-        g_GameManager.stageRngSeed = synchronizedSeed;
-        gameplayRngSynchronized = true;
-    }
     if (capturedSimulationFrame != frame)
     {
+        u16 control = MULTI_NET_CONTROL_NONE;
+        u32 readyEpoch = 0;
+        bool simulateFrame = gameplayActive && gameplaySetupStarted && setupComplete &&
+                             gameplayReadyMask == 3 &&
+                             gameplayStartFrame != MULTI_NET_INVALID_FRAME &&
+                             frame >= gameplayStartFrame;
+        if (simulateFrame && !gameplayRngSynchronized)
+        {
+            u16 synchronizedSeed = static_cast<u16>(session.GetRandomSeed());
+            *reinterpret_cast<u16 *>(&g_Rng) = synchronizedSeed;
+            g_GameManager.stageRngSeed = synchronizedSeed;
+            gameplayRngSynchronized = true;
+        }
         if (gameplayActive && gameplaySetupStarted && gameplayReadyMask != 3 &&
-            g_GameManager.gameplaySetupState == GAMEPLAY_SETUP_COMPLETE &&
+            setupComplete &&
             session.AreGameplaySettingsConfirmed())
         {
             // Settings can be retransmitted while the loading thread works.
@@ -533,9 +565,10 @@ bool MultiPlayerCoordinator::AcquireGameplayInputs(u16 localButtons, u16 *p1Butt
             if (g_GameManager.difficulty < EXTRA && !g_GameManager.flags.isPracticeMode &&
                 !g_GameManager.flags.isSpellPractice)
                 g_GameManager.cfg->slowMode = session.GetSlowMode();
-            localButtons |= TH_BUTTON_RESET;
+            control = MULTI_NET_CONTROL_GAMEPLAY_READY;
+            readyEpoch = gameplayEpoch;
         }
-        if (IsGameplaySimulationReady() &&
+        if (simulateFrame &&
             g_MultiPlayerState.frameNumber % 30 == 0)
         {
             // networkFrame is monotonic for the whole connection.  The
@@ -552,8 +585,11 @@ bool MultiPlayerCoordinator::AcquireGameplayInputs(u16 localButtons, u16 *p1Butt
         if (synchronizeTitle)
         {
             if (!IsTitleInputReady())
-                localButtons = localTitleReady && session.AreGameplaySettingsConfirmed()
-                                   ? MULTI_INPUT_TITLE_READY : 0;
+            {
+                localButtons = 0;
+                control = localTitleReady && session.AreGameplaySettingsConfirmed()
+                              ? MULTI_NET_CONTROL_TITLE_READY : MULTI_NET_CONTROL_NONE;
+            }
             else if (!localTitleInputArmed)
             {
                 if (localButtons == 0)
@@ -561,20 +597,24 @@ bool MultiPlayerCoordinator::AcquireGameplayInputs(u16 localButtons, u16 *p1Butt
                 localButtons = 0;
             }
         }
-        if (!session.CaptureLocalInput(frame, localButtons, hashFrame, hash))
+        if (!session.CaptureLocalInput(frame, localButtons, hashFrame, hash, control, readyEpoch))
             return false;
         capturedSimulationFrame = frame;
+        capturedGameplaySimulationReady = simulateFrame;
+        capturedGameplayEpoch = gameplayEpoch;
     }
-    if (!session.TryGetFrameInputs(frame, p1Buttons, p2Buttons))
+    if (!session.TryGetFrameSamples(frame, &p1, &p2))
         return false;
+    *p1Buttons = p1.buttons;
+    *p2Buttons = p2.buttons;
+    gameplaySimulationReady = capturedGameplaySimulationReady && gameplayActive && gameplaySetupStarted &&
+                              capturedGameplayEpoch == gameplayEpoch;
     if (synchronizeTitle)
     {
-        if ((*p1Buttons & MULTI_INPUT_TITLE_READY) != 0)
+        if (p1.control == MULTI_NET_CONTROL_TITLE_READY)
             titleReadyMask |= 1;
-        if ((*p2Buttons & MULTI_INPUT_TITLE_READY) != 0)
+        if (p2.control == MULTI_NET_CONTROL_TITLE_READY)
             titleReadyMask |= 2;
-        *p1Buttons &= static_cast<u16>(~MULTI_INPUT_TITLE_READY);
-        *p2Buttons &= static_cast<u16>(~MULTI_INPUT_TITLE_READY);
         if (titleReadyMask == 3 && titleStartFrame == MULTI_NET_INVALID_FRAME)
             titleStartFrame = frame + session.GetInputDelay() + 2;
         if (titleStartFrame == MULTI_NET_INVALID_FRAME || frame < titleStartFrame)
@@ -585,12 +625,10 @@ bool MultiPlayerCoordinator::AcquireGameplayInputs(u16 localButtons, u16 *p1Butt
     }
     if (gameplayActive && gameplaySetupStarted && gameplayReadyMask != 3)
     {
-        if ((*p1Buttons & TH_BUTTON_RESET) != 0)
+        if (p1.control == MULTI_NET_CONTROL_GAMEPLAY_READY && p1.gameplayEpoch == gameplayEpoch)
             gameplayReadyMask |= 1;
-        if ((*p2Buttons & TH_BUTTON_RESET) != 0)
+        if (p2.control == MULTI_NET_CONTROL_GAMEPLAY_READY && p2.gameplayEpoch == gameplayEpoch)
             gameplayReadyMask |= 2;
-        *p1Buttons &= static_cast<u16>(~TH_BUTTON_RESET);
-        *p2Buttons &= static_cast<u16>(~TH_BUTTON_RESET);
         if (gameplayReadyMask == 3)
             gameplayStartFrame = frame + session.GetInputDelay() + 2;
     }
@@ -610,9 +648,9 @@ void MultiPlayerCoordinator::EndGameplay()
     gameplayActive = false;
     gameplaySetupStarted = false;
     gameplayRngSynchronized = false;
+    gameplaySimulationReady = false;
     gameplayReadyMask = 0;
     gameplayStartFrame = MULTI_NET_INVALID_FRAME;
-    capturedSimulationFrame = MULTI_NET_INVALID_FRAME;
 }
 
 u8 MultiPlayerCoordinator::GetHostTeam() const { return selectedTeams[0]; }

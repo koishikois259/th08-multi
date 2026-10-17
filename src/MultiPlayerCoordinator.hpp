@@ -46,6 +46,9 @@ class MultiPlayerCoordinator
 
     void PrepareGameplay(i32 initialLives, i32 initialBombs, i32 initialPower);
     void BeginGameplay(bool newRun, i32 initialLives, i32 initialBombs, i32 initialPower);
+    // The setup worker only publishes completion; lifecycle/input state belongs
+    // to the main thread. Call after its final gameplay-state write.
+    void NotifyGameplaySetupComplete();
     void SetInitialPlayerResources(i32 p1Bombs, i32 p2Bombs, i32 initialPower);
     void SetSelectedTeams(u8 p1Team, u8 p2Team);
     bool AcquireGameplayInputs(u16 localButtons, u16 *p1Buttons, u16 *p2Buttons);
@@ -63,6 +66,9 @@ class MultiPlayerCoordinator
     u32 GetLatestAcknowledgedFrame() const;
 
   private:
+#ifdef TH08_MULTI_STANDALONE_TEST
+    friend class MultiPlayerCoordinatorTestAccess;
+#endif
     MultiPlayerLaunchConfig config;
     MultiNetSession session;
     u32 capturedSimulationFrame;
@@ -71,6 +77,11 @@ class MultiPlayerCoordinator
     bool gameplayActive;
     bool gameplaySetupStarted;
     bool gameplayRngSynchronized;
+    bool gameplaySimulationReady;
+    bool capturedGameplaySimulationReady;
+    u32 capturedGameplayEpoch;
+    volatile i32 gameplaySetupComplete;
+    u32 gameplayEpoch;
     u8 gameplayReadyMask;
     u32 gameplayStartFrame;
     u8 selectedTeams[2];

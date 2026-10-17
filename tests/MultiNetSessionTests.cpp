@@ -164,12 +164,20 @@ void TestBothHostSlowModes()
         guest.Pump(1110);
         Expect(guest.GetSlowMode() == 1 - slowMode && !guest.AreGameplaySettingsConfirmed(),
                "guest applies the new host setting before confirming it");
-        host.CaptureLocalInput(1, 0, MULTI_NET_INVALID_FRAME, 0);
-        guest.CaptureLocalInput(1, 0, MULTI_NET_INVALID_FRAME, 0);
+        host.CaptureLocalInput(1, 1 << 14, MULTI_NET_INVALID_FRAME, 0,
+                               MULTI_NET_CONTROL_GAMEPLAY_READY, 5);
+        guest.CaptureLocalInput(1, 0, MULTI_NET_INVALID_FRAME, 0,
+                                MULTI_NET_CONTROL_GAMEPLAY_READY, 5);
         host.Pump(1120);
         guest.Pump(1120);
         Expect(host.AreGameplaySettingsConfirmed() && guest.AreGameplaySettingsConfirmed(),
                "changed setting is confirmed by both peers");
+        MultiNetInputSample p1, p2;
+        Expect(guest.TryGetFrameSamples(1 + guest.GetInputDelay(), &p1, &p2) &&
+                   p1.buttons == (1 << 14) && p2.buttons == 0 &&
+                   p1.control == MULTI_NET_CONTROL_GAMEPLAY_READY && p1.gameplayEpoch == 5 &&
+                   p2.control == MULTI_NET_CONTROL_GAMEPLAY_READY && p2.gameplayEpoch == 5,
+               "UDP carries readiness and epoch separately from R for both slots");
         oldRevision = host.GetSaveRevision();
         host.UpdateHostGameplaySettings(2, 2);
         Expect(host.GetSaveRevision() == oldRevision && host.GetSlowMode() == 1 - slowMode,

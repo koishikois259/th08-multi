@@ -7,7 +7,7 @@ namespace th08
 
 enum MultiNetProtocolConstant
 {
-    MULTI_NET_PROTOCOL_VERSION = 0x00010003,
+    MULTI_NET_PROTOCOL_VERSION = 0x00010004,
     MULTI_NET_MIN_INPUT_DELAY = 1,
     MULTI_NET_MAX_INPUT_DELAY = 12,
     MULTI_NET_MAX_REDUNDANT_INPUTS = 15,
@@ -73,10 +73,19 @@ enum MultiNetPacketType
     MULTI_NET_PACKET_DISCONNECT = 4,
 };
 
+enum MultiNetInputControl
+{
+    MULTI_NET_CONTROL_NONE = 0,
+    MULTI_NET_CONTROL_TITLE_READY = 1,
+    MULTI_NET_CONTROL_GAMEPLAY_READY = 2,
+};
+
 struct MultiNetInputSample
 {
     u32 frame;
     u16 buttons;
+    u16 control;
+    u32 gameplayEpoch;
 };
 
 struct MultiNetInputPacket
@@ -98,8 +107,10 @@ class MultiNetInputHistory
     MultiNetInputHistory();
 
     void Reset();
-    bool Insert(u32 frame, u16 buttons);
+    bool Insert(u32 frame, u16 buttons, u16 control = MULTI_NET_CONTROL_NONE,
+                u32 gameplayEpoch = 0);
     bool TryGet(u32 frame, u16 *buttons) const;
+    bool TryGetSample(u32 frame, MultiNetInputSample *sample) const;
     u32 BuildRedundantSamples(
         u32 latestFrame,
         MultiNetInputSample samples[MULTI_NET_MAX_REDUNDANT_INPUTS]) const;
@@ -107,8 +118,7 @@ class MultiNetInputHistory
   private:
     struct Entry
     {
-        u32 frame;
-        u16 buttons;
+        MultiNetInputSample sample;
         bool occupied;
     };
 

@@ -532,12 +532,40 @@ def configure(build_type):
                 },
             )
             writer.build(
+                "$builddir/tests/MultiPlayerCoordinatorTests.obj",
+                "cc",
+                "tests/MultiPlayerCoordinatorTests.cpp",
+                variables={"cl_flags": "$cl_flags /DTH08_MULTI_STANDALONE_TEST /I tests/support"},
+            )
+            writer.build(
+                "$builddir/tests/MultiPlayerCoordinatorRuntime.obj",
+                "cc",
+                "src/MultiPlayerCoordinator.cpp",
+                variables={"cl_flags": "$cl_flags /DTH08_MULTI_STANDALONE_TEST /I tests/support"},
+            )
+            writer.build(
+                "$builddir/multiplayer-coordinator-tests.exe",
+                "link",
+                inputs=[
+                    "$builddir/tests/MultiPlayerCoordinatorTests.obj",
+                    "$builddir/tests/MultiPlayerCoordinatorRuntime.obj",
+                    "$builddir/MultiPlayerState.obj",
+                    "$builddir/MultiNetProtocol.obj",
+                    "$builddir/MultiNetSession.obj",
+                ],
+                variables={
+                    "link_libs": "kernel32.lib wsock32.lib shell32.lib advapi32.lib user32.lib",
+                    "link_flags": "/subsystem:console /machine:X86 /incremental:no",
+                },
+            )
+            writer.build(
                 "multiplayer-tests",
                 "phony",
                 [
                     "$builddir/multiplayer-state-tests.exe",
                     "$builddir/multiplayer-net-tests.exe",
                     "$builddir/multiplayer-session-tests.exe",
+                    "$builddir/multiplayer-coordinator-tests.exe",
                     "$builddir/multiplayer-launch-mode-tests.exe",
                     "$builddir/multiplayer-keyboard-tests.exe",
                     "$builddir/multiplayer-local-keyboard-tests.exe",

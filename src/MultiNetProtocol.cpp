@@ -21,7 +21,7 @@ const u32 MULTI_NET_WELCOME_SIZE =
     MULTI_NET_WELCOME_PROGRESS_OFFSET +
     MULTI_NET_SAVE_SHOT_COUNT * MULTI_NET_SAVE_PROGRESS_SIZE;
 const u32 MULTI_NET_INPUT_HEADER_SIZE = 36;
-const u32 MULTI_NET_INPUT_SAMPLE_SIZE = 6;
+const u32 MULTI_NET_INPUT_SAMPLE_SIZE = 12;
 const u32 MULTI_NET_DISCONNECT_SIZE = 20;
 
 void WriteU16(u8 *output, u16 value)
@@ -67,6 +67,14 @@ void WriteHeader(u8 *output, MultiNetPacketType type, u8 senderSlot, u32 wireSiz
     output[8] = static_cast<u8>(type);
     output[9] = senderSlot;
     WriteU16(output + 10, static_cast<u16>(wireSize - MULTI_NET_COMMON_HEADER_SIZE));
+}
+
+bool IsValidInputControl(const MultiNetInputSample &sample)
+{
+    if (sample.control == MULTI_NET_CONTROL_GAMEPLAY_READY)
+        return sample.gameplayEpoch != 0;
+    return (sample.control == MULTI_NET_CONTROL_NONE ||
+            sample.control == MULTI_NET_CONTROL_TITLE_READY) && sample.gameplayEpoch == 0;
 }
 
 } // namespace
@@ -229,30 +237,40 @@ void MultiNetInputHistory::Reset()
     u32 i;
     for (i = 0; i < MULTI_NET_INPUT_HISTORY_SIZE; ++i)
     {
-        entries[i].frame = 0;
-        entries[i].buttons = 0;
         entries[i].occupied = false;
     }
 }
 
-bool MultiNetInputHistory::Insert(u32 frame, u16 buttons)
+bool MultiNetInputHistory::Insert(u32 frame, u16 buttons, u16 control, u32 gameplayEpoch)
 {
     Entry &entry = entries[frame % MULTI_NET_INPUT_HISTORY_SIZE];
-    if (entry.occupied && entry.frame == frame)
-        return entry.buttons == buttons;
-    entry.frame = frame;
-    entry.buttons = buttons;
+    if (entry.occupied && entry.sample.frame == frame)
+        return entry.sample.buttons == buttons && entry.sample.control == control &&
+               entry.sample.gameplayEpoch == gameplayEpoch;
+    entry.sample.frame = frame;
+    entry.sample.buttons = buttons;
+    entry.sample.control = control;
+    entry.sample.gameplayEpoch = gameplayEpoch;
     entry.occupied = true;
     return true;
 }
 
 bool MultiNetInputHistory::TryGet(u32 frame, u16 *buttons) const
 {
-    const Entry &entry = entries[frame % MULTI_NET_INPUT_HISTORY_SIZE];
-    if (!entry.occupied || entry.frame != frame)
+    MultiNetInputSample sample;
+    if (!TryGetSample(frame, &sample))
         return false;
     if (buttons != NULL)
-        *buttons = entry.buttons;
+        *buttons = sample.buttons;
+    return true;
+}
+
+bool MultiNetInputHistory::TryGetSample(u32 frame, MultiNetInputSample *sample) const
+{
+    const Entry &entry = entries[frame % MULTI_NET_INPUT_HISTORY_SIZE];
+    if (!entry.occupied || entry.sample.frame != frame || sample == NULL)
+        return false;
+    *sample = entry.sample;
     return true;
 }
 
@@ -262,7 +280,6 @@ u32 MultiNetInputHistory::BuildRedundantSamples(
 {
     u32 count = 0;
     u32 offset;
-    u16 buttons;
 
     for (offset = 0; offset < MULTI_NET_MAX_REDUNDANT_INPUTS; ++offset)
     {
@@ -270,10 +287,8 @@ u32 MultiNetInputHistory::BuildRedundantSamples(
         if (offset > latestFrame)
             break;
         frame = latestFrame - offset;
-        if (TryGet(frame, &buttons))
+        if (TryGetSample(frame, &samples[count]))
         {
-            samples[count].frame = frame;
-            samples[count].buttons = buttons;
             ++count;
         }
     }
@@ -301,9 +316,10 @@ bool EncodeMultiNetInputPacket(
         packet.sessionId == 0 || packet.settingsRevision == 0 || packet.senderSlot >= 2 ||
         packet.samples[0].frame != packet.latestFrame)
         return false;
-    for (i = 1; i < packet.sampleCount; ++i)
+    for (i = 0; i < packet.sampleCount; ++i)
     {
-        if (packet.samples[i].frame >= packet.samples[i - 1].frame)
+        if (!IsValidInputControl(packet.samples[i]) ||
+            (i > 0 && packet.samples[i].frame >= packet.samples[i - 1].frame))
             return false;
     }
 
@@ -320,6 +336,8 @@ bool EncodeMultiNetInputPacket(
     {
         WriteU32(output + cursor, packet.samples[i].frame);
         WriteU16(output + cursor + 4, packet.samples[i].buttons);
+        WriteU16(output + cursor + 6, packet.samples[i].control);
+        WriteU32(output + cursor + 8, packet.samples[i].gameplayEpoch);
         cursor += MULTI_NET_INPUT_SAMPLE_SIZE;
     }
     *outputSize = wireSize;
@@ -368,14 +386,17 @@ bool DecodeMultiNetInputPacket(
     {
         packet->samples[i].frame = ReadU32(data + cursor);
         packet->samples[i].buttons = ReadU16(data + cursor + 4);
+        packet->samples[i].control = ReadU16(data + cursor + 6);
+        packet->samples[i].gameplayEpoch = ReadU32(data + cursor + 8);
         cursor += MULTI_NET_INPUT_SAMPLE_SIZE;
     }
     if (packet->sessionId == 0 || packet->settingsRevision == 0 ||
         packet->samples[0].frame != packet->latestFrame)
         return false;
-    for (i = 1; i < sampleCount; ++i)
+    for (i = 0; i < sampleCount; ++i)
     {
-        if (packet->samples[i].frame >= packet->samples[i - 1].frame)
+        if (!IsValidInputControl(packet->samples[i]) ||
+            (i > 0 && packet->samples[i].frame >= packet->samples[i - 1].frame))
             return false;
     }
     return true;

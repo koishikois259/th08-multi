@@ -32,6 +32,8 @@ MultiNetInputPacket CreatePacket()
     packet.samples[0].buttons = 0x0001;
     packet.samples[1].frame = 99;
     packet.samples[1].buttons = 0x0050;
+    packet.samples[1].control = MULTI_NET_CONTROL_GAMEPLAY_READY;
+    packet.samples[1].gameplayEpoch = 42;
     packet.samples[2].frame = 98;
     packet.samples[2].buttons = 0x0000;
     return packet;
@@ -57,6 +59,10 @@ void TestRoundTrip()
     Expect(output.sampleCount == input.sampleCount, "sample count round-trips");
     Expect(output.samples[1].frame == 99, "sample frame round-trips");
     Expect(output.samples[1].buttons == 0x0050, "sample buttons round-trip");
+    Expect(output.samples[1].control == MULTI_NET_CONTROL_GAMEPLAY_READY &&
+               output.samples[1].gameplayEpoch == 42, "readiness control and epoch round-trip");
+    Expect(MultiNetInputPacketWireSize(MULTI_NET_MAX_REDUNDANT_INPUTS) <= sizeof(wire),
+           "maximum redundant packet fits the session wire buffer");
 }
 
 void TestRejectsMalformedPackets()
@@ -98,6 +104,28 @@ void TestRejectsMalformedPackets()
     packet.samples[1].frame = packet.samples[0].frame;
     Expect(!EncodeMultiNetInputPacket(packet, wire, sizeof(wire), &wireSize),
            "non-descending redundant frames are rejected");
+    packet = CreatePacket();
+    packet.samples[0].control = 4;
+    Expect(!EncodeMultiNetInputPacket(packet, wire, sizeof(wire), &wireSize),
+           "unknown control is rejected");
+    packet.samples[0].control = MULTI_NET_CONTROL_GAMEPLAY_READY;
+    Expect(!EncodeMultiNetInputPacket(packet, wire, sizeof(wire), &wireSize),
+           "gameplay readiness requires a nonzero epoch");
+    packet.samples[0].control = MULTI_NET_CONTROL_TITLE_READY;
+    packet.samples[0].gameplayEpoch = 1;
+    Expect(!EncodeMultiNetInputPacket(packet, wire, sizeof(wire), &wireSize),
+           "title readiness cannot carry a gameplay epoch");
+    packet = CreatePacket();
+    EncodeMultiNetInputPacket(packet, wire, sizeof(wire), &wireSize);
+    wire[42] = 0;
+    wire[43] = 4;
+    Expect(!DecodeMultiNetInputPacket(wire, wireSize, &decoded),
+           "unknown wire control does not decode");
+    packet = CreatePacket();
+    EncodeMultiNetInputPacket(packet, wire, sizeof(wire), &wireSize);
+    wire[7] ^= 1;
+    Expect(!DecodeMultiNetInputPacket(wire, wireSize, &decoded),
+           "older wire version is rejected");
 }
 
 void TestHandshakeAndDisconnectGuards()
@@ -269,6 +297,15 @@ void TestHistoryAndRedundancy()
 
     Expect(!history.Insert(100, 0x7777), "conflicting duplicate input is rejected");
     Expect(history.Insert(100, 100), "identical duplicate input is accepted");
+    Expect(!history.Insert(100, 100, MULTI_NET_CONTROL_TITLE_READY),
+           "changing only a committed control is rejected");
+    Expect(history.Insert(101, 0, MULTI_NET_CONTROL_GAMEPLAY_READY, 2),
+           "history accepts readiness with its epoch");
+    Expect(!history.Insert(101, 0, MULTI_NET_CONTROL_GAMEPLAY_READY, 3),
+           "changing only a committed epoch is rejected");
+    count = history.BuildRedundantSamples(101, samples);
+    Expect(count > 0 && samples[0].control == MULTI_NET_CONTROL_GAMEPLAY_READY &&
+               samples[0].gameplayEpoch == 2, "redundancy preserves readiness metadata");
     Expect(history.Insert(93 + MULTI_NET_INPUT_HISTORY_SIZE, 0x7777), "new ring generation is accepted");
     Expect(!history.TryGet(93, &buttons), "ring overwrite rejects a stale frame id");
     Expect(
@@ -287,17 +324,24 @@ void TestDroppedPacketRecovery()
     u16 buttons;
 
     for (frame = 0; frame < 20; ++frame)
-        Expect(sender.Insert(frame, static_cast<u16>(frame * 3)), "sender history accepts input");
+        Expect(sender.Insert(frame, static_cast<u16>(frame * 3),
+                             MULTI_NET_CONTROL_GAMEPLAY_READY, 9), "sender history accepts input");
 
     // Pretend packets for frames 5 through 9 were lost. The frame-10 packet
     // still contains all of them in its redundant history.
     count = sender.BuildRedundantSamples(10, samples);
     for (i = 0; i < count; ++i)
-        Expect(receiver.Insert(samples[i].frame, samples[i].buttons), "receiver accepts redundant input");
+        Expect(receiver.Insert(samples[i].frame, samples[i].buttons,
+                               samples[i].control, samples[i].gameplayEpoch),
+               "receiver accepts redundant input");
     for (frame = 5; frame <= 10; ++frame)
         Expect(
             receiver.TryGet(frame, &buttons) && buttons == static_cast<u16>(frame * 3),
             "redundancy recovers a dropped recent input");
+    MultiNetInputSample recovered;
+    Expect(receiver.TryGetSample(7, &recovered) &&
+               recovered.control == MULTI_NET_CONTROL_GAMEPLAY_READY && recovered.gameplayEpoch == 9,
+           "redundancy also recovers readiness from a lost packet");
 }
 
 } // namespace

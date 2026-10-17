@@ -1,5 +1,30 @@
 # Current reconstruction handoff
 
+## Multiplayer stage loading local fix (October 17)
+
+The three documented stage-loading defects are fixed locally: the first
+simulation tick shares one readiness/RNG/hash/count boundary; readiness is a
+separate per-sample control with a gameplay epoch; coordinator lifecycle
+transitions run on the main thread and cannot invalidate committed input.
+The worker publishes completion using Interlocked after its final state write.
+See `MULTIPLAYER_STAGE_LOAD_FIX_HANDOFF_20261017.md`, section 9, for the changes,
+reproduction commands and validation limits. Wire version is now `0x00010004`,
+with game/launcher gate `0x00040004`; both peers must update despite retaining
+the v0.42 display name. This change is for local Git only; no upload or install.
+
+VC7 multiplayer game/launcher build and all eight multiplayer test suites pass.
+The coordinator suite also passes paired real-UDP sessions through two loading
+cycles with swapped fast/slow peers, held R, and delays 1/3/12, checking the
+first simulation frame, per-tick RNG and gameplay counters with engine adapters.
+Real two-machine multi-stage play remains unverified. Normal full-image build
+hits the pre-existing unguarded `Enemy::ValidateTrailState` call; the affected
+GameManager comparison passes 41/42 units, with an existing generated-string
+relocation-manifest mismatch in InitializeScoreData. All 45 defined functions
+in the normal GameManager object have identical code and relocation symbols to
+a separately compiled HEAD baseline. Full CI cannot find WSL `/bin/bash`; all
+other CI checks pass with only that unavailable check skipped in private
+analysis. No reconstruction ledger or original ABI change is claimed.
+
 ## Multiplayer v0.42 local refresh (October 10)
 
 Remote gameplay now takes slow mode from P1, without overwriting the guest's
