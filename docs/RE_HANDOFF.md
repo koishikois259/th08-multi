@@ -8,8 +8,12 @@ READMEs identify v0.43. The user's `联机教程.txt` is unchanged byte-for-byte
 and the old v0.42 archive remains intact. Protocol `0x00010004` and gate
 `0x00040004` are unchanged from the implementation checkpoint `8d77cf45`.
 Both peers must update from published v0.42. See `MULTIPLAYER_V0_43.md` for
-build/package validation and archive checksums. This is a local package only;
-no upload or installation into the original game directory was requested.
+build/package validation and archive checksums. This remains local only, with
+no upload. Subsequently installed into `../th08-origin` at the user's request:
+all seven installed files match the release ZIP; ten protected files retain
+their hashes and modification times, including the tutorial, active config,
+save and original game assets. Previous patch files and the verification report
+are in `build/origin-backup-v0.43-20261017-195335-a104a038/`.
 
 ## Multiplayer stage loading local fix (October 17)
 

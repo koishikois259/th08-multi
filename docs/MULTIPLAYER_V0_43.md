@@ -1,8 +1,8 @@
 # th08-multi v0.43 local patch checkpoint
 
 Prepared on October 17, 2026, from the stage-loading fixes in `8d77cf45`.
-The patch is local only: no GitHub upload, tag, or installation into the
-original game directory is part of this packaging step.
+The patch is local only: no GitHub upload or tag. After packaging, it was
+installed into `../th08-origin` at the user's request, as recorded below.
 
 ## Changes
 
@@ -63,7 +63,24 @@ Packaging checks cover exact archive entry/order equality with v0.42, ZIP CRC,
 source-to-ZIP byte equality for all payload files, internal/external checksums,
 v0.43 executable title strings and unchanged tutorial bytes. The tutorial is
 compared with the old v0.42 archive and the workspace/docs/installed copies.
-No game is launched or installed by the packaging script.
+The packaging validation did not launch or install the game.
+
+## Local installation
+
+Installed into `../th08-origin` on October 17 at the user's request. All seven
+installed files were verified byte-for-byte against the release ZIP. Four
+files changed: the game, launcher, patch README and checksum manifest. The
+tutorial, license and example INI already matched and were left untouched.
+
+The previous seven patch files were backed up with their timestamps under
+`build/origin-backup-v0.43-20261017-195335-a104a038/`. Its
+`installation-verification.json` records the archive hash, installed file hashes
+and preservation checks. Original executable/data, saves, active INI/config,
+tutorial, custom/replay tools and log (ten files) retain their SHA-256 hashes
+and modification times. No game process was running, and no game was launched
+during installation.
+
+## Repository checks
 
 Documentation and whitespace checks pass. Full `scripts/ci.py` remains blocked
 by the local WSL installation lacking `/bin/bash`; all other original CI checks
