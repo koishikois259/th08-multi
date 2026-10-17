@@ -1140,7 +1140,7 @@ static void OpenLocalPage(HWND mainWindow)
     if (g_localWindow != NULL)
         return;
     g_localWindow = CreateWindowExA(
-        0, "Th08MultiLocalWindow", "th08-multi v0.42 Local play",
+        0, "Th08MultiLocalWindow", "th08-multi v0.43 Local play",
         WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
         CW_USEDEFAULT, CW_USEDEFAULT, 540, 365,
         NULL, NULL, GetModuleHandleA(NULL), NULL);
@@ -1698,7 +1698,7 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR, int showCommand)
         return 1;
 
     window = CreateWindowExA(
-        0, windowClass.lpszClassName, "th08-multi v0.42 Network Launcher",
+        0, windowClass.lpszClassName, "th08-multi v0.43 Network Launcher",
         WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
         CW_USEDEFAULT, CW_USEDEFAULT, 540, 400,
         NULL, NULL, instance, NULL);

@@ -28,10 +28,10 @@ int main()
     ExpectLauncher(ReadLauncherPacket(packet, sizeof(packet), &packetType, &packetToken) &&
                    packetType == LAUNCHER_PACKET_HELLO && packetToken == 123,
                    "same-version launcher packet accepted");
-    unsigned long oldVersion = htonl(0x00040001);
+    unsigned long oldVersion = htonl(0x00040003);
     CopyMemory(packet + 4, &oldVersion, sizeof(oldVersion));
     ExpectLauncher(!ReadLauncherPacket(packet, sizeof(packet), &packetType, &packetToken),
-                   "v0.41 launcher packet rejected by v0.42");
+                   "v0.42 launcher packet rejected by v0.43");
     char tempDirectory[MAX_PATH];
     GetTempPathA(sizeof(tempDirectory), tempDirectory);
     if (!GetTempFileNameA(tempDirectory, "t8u", 0, g_iniPath))

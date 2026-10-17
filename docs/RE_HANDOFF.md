@@ -1,5 +1,16 @@
 # Current reconstruction handoff
 
+## Multiplayer v0.43 local patch (October 17)
+
+The stage-loading fixes below are now packaged as v0.43, retaining exactly the
+seven root files from v0.42. Game/title/launcher version displays and release
+READMEs identify v0.43. The user's `联机教程.txt` is unchanged byte-for-byte,
+and the old v0.42 archive remains intact. Protocol `0x00010004` and gate
+`0x00040004` are unchanged from the implementation checkpoint `8d77cf45`.
+Both peers must update from published v0.42. See `MULTIPLAYER_V0_43.md` for
+build/package validation and archive checksums. This is a local package only;
+no upload or installation into the original game directory was requested.
+
 ## Multiplayer stage loading local fix (October 17)
 
 The three documented stage-loading defects are fixed locally: the first
@@ -9,8 +20,8 @@ transitions run on the main thread and cannot invalidate committed input.
 The worker publishes completion using Interlocked after its final state write.
 See `MULTIPLAYER_STAGE_LOAD_FIX_HANDOFF_20261017.md`, section 9, for the changes,
 reproduction commands and validation limits. Wire version is now `0x00010004`,
-with game/launcher gate `0x00040004`; both peers must update despite retaining
-the v0.42 display name. This change is for local Git only; no upload or install.
+with game/launcher gate `0x00040004`. The initial fix retained the v0.42 display
+name; subsequent local packaging names it v0.43 as described above.
 
 VC7 multiplayer game/launcher build and all eight multiplayer test suites pass.
 The coordinator suite also passes paired real-UDP sessions through two loading

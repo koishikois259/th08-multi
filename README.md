@@ -1,4 +1,4 @@
-# th08-multi v0.42 Multiplayer Patch
+# th08-multi v0.43 Multiplayer Patch
 
 ## 1. Project Nature and Rights Notice
 
@@ -21,10 +21,7 @@ Only the Japanese original version 1.00d of *Touhou Eiyashou ~ Imperishable Nigh
 
 Translated versions, trial versions, other releases, or modified game data are not supported.
 
-For online play, both players must use exactly the same v0.42 patch and the same version of the original game data. Update both the launcher and game; v0.42 rejects mixed v0.41/older sessions.
-The October 10 local refresh retains the v0.42 name but changes the protocol;
-it cannot be mixed with the earlier v0.42 package. Both players must install
-the same refreshed launcher and game.
+For online play, both players must use exactly the same v0.43 patch and the same version of the original game data. Update both the launcher and game; v0.43 cannot be mixed with v0.42 or older patches.
 
 ## 3. Patch Contents and Distribution Boundaries
 
@@ -83,7 +80,7 @@ settings are unchanged.
 GitHub source repository:
 https://github.com/koishikois259/th08-multi
 
-For the v0.42 patch, see [the GitHub Release page](https://github.com/koishikois259/th08-multi/releases/tag/v0.42).
+The v0.43 patch is prepared locally and has not been uploaded to GitHub Release.
 
 ## 5. Network and Security Limitations
 
@@ -106,7 +103,25 @@ When using a tunneling service, use only a temporary mapping, share the connecti
 - Diagnostic information is written to `log.txt` in the game directory.
 - This project is still in the testing stage. Please keep backups of your save data and test primarily in trusted environments.
 
-### Changes in v0.42
+### Changes in v0.43
+
+- Fixed the first simulation tick after loading: readiness, RNG reset, state
+  hashing and gameplay frame counting now use the same consumed input frame.
+- Separated title/stage readiness controls from physical buttons. Holding R
+  cannot impersonate finished loading or confirmed settings; late controls
+  cannot become a reset input. Stage epochs reject readiness from older loads.
+- Moved stage synchronization lifecycle changes to the main thread. The setup
+  worker publishes completion after its final state write, and an input sample
+  already committed to the network cannot be recaptured during a stage change.
+- Retained the v0.42 seven-file archive structure and the Chinese tutorial
+  byte-for-byte. Both peers must update to v0.43 together.
+- All eight native multiplayer suites pass, including paired real-UDP sessions
+  with fast/slow loading, held R and two loading cycles at delays 1/3/12. These
+  engine-adapter tests do not replace full two-PC gameplay and do not establish
+  that every reported loading crash is fixed. See
+  [the v0.43 checkpoint](docs/MULTIPLAYER_V0_43.md) for validation details.
+
+### Changes inherited from v0.42
 
 - Added Single device local co-op using a shared keyboard, with unchanged
   default bindings and separate editable P1/P2 columns on the **Set keys** page.
@@ -182,7 +197,7 @@ When using a tunneling service, use only a temporary mapping, share the connecti
 - Desync hash identifiers now use the monotonic connection timeline, avoiding
   stale-hash collisions when starting another run without reconnecting.
 
-v0.42 includes all defensive memory-safety checks introduced in v0.32. Long
+v0.43 includes all defensive memory-safety checks introduced in v0.32. Long
 two-PC runs through Stages 4, 5, 6, and Extra remain recommended.
 
 ## 7. Source Code, License, and Credits
