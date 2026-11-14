@@ -1,5 +1,26 @@
 # Current reconstruction handoff
 
+## Multiplayer v0.44 local patch (November 14)
+
+The v0.44 game and launcher include the co-op sidebar, shared Bomb immunity,
+and synchronized pause-menu fixes below. Both executables identify v0.44 and
+use gate `0x00040006` with wire format `0x00010004`. Both peers must update
+their game and launcher when moving from a v0.43 or older release.
+
+The local archive `../th08-multi-v0.44-patch.zip` has the same seven root
+entries as v0.43 and includes the unchanged `联机教程.txt`. The ZIP checksum
+is `36bae6fd7ae52bb7b41bfcdff7a0576e181d782401c186409ddc672762540c65`.
+The archive contains release binaries, installation documentation, the
+example INI, license and checksum manifest. This release is local only.
+
+The VC7 multiplayer game and launcher build, all eight native multiplayer
+suites, and target-independent CI passed. The installed files in
+`../th08-origin` match all seven ZIP entries. The game, launcher, patch
+README and checksum manifest were the only files replaced. The original
+game files, tutorial, save and active configuration kept their hashes and
+modification times. The previous patch files and installation report are in
+`build/origin-backup-v0.44-20261114-202104-ec7c71fb/`.
+
 ## Multiplayer pause-to-title synchronization (November 14)
 
 A local background capture conflict in PauseMenu::OnUpdate could reset
@@ -73,7 +94,7 @@ level. Boss name appearance still needs manual verification.
 The revised layout is staged in `build/manual-v044-retail-stats-20261114/`
 with the same local network settings. Its single-player draw object still
 matches the target. Visual verification of this latest layout is pending.
-The installed v0.43 and its ZIP are intact.
+The v0.43 ZIP remains intact.
 
 ## Multiplayer v0.43 local patch (October 17)
 

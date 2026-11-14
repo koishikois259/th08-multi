@@ -1,4 +1,4 @@
-# th08-multi v0.43 Multiplayer Patch
+# th08-multi v0.44 Multiplayer Patch
 
 ## 1. Project Nature and Rights Notice
 
@@ -21,7 +21,7 @@ Only the Japanese original version 1.00d of *Touhou Eiyashou ~ Imperishable Nigh
 
 Translated versions, trial versions, other releases, or modified game data are not supported.
 
-For online play, both players must use exactly the same v0.43 patch and the same version of the original game data. Update both the launcher and game; v0.43 cannot be mixed with v0.42 or older patches.
+For online play, both players must use the same v0.44 patch and original game data. Update both the launcher and game. v0.43 and older releases are incompatible with v0.44.
 
 ## 3. Patch Contents and Distribution Boundaries
 
@@ -80,7 +80,7 @@ settings are unchanged.
 GitHub source repository:
 https://github.com/koishikois259/th08-multi
 
-The v0.43 patch is prepared locally and has not been uploaded to GitHub Release.
+The v0.44 patch is prepared locally and has not been uploaded to GitHub Release.
 
 ## 5. Network and Security Limitations
 
@@ -103,7 +103,19 @@ When using a tunneling service, use only a temporary mapping, share the connecti
 - Diagnostic information is written to `log.txt` in the game directory.
 - This project is still in the testing stage. Please keep backups of your save data and test primarily in trusted environments.
 
-### Changes in v0.43
+### Changes in v0.44
+
+- The co-op sidebar uses the original textured frame, labels and red/blue
+  icons. Each player has their own Graze count in their resource panel;
+  Point and Time remain shared. The sidebar keeps the English logo.
+- A Bomb protects both active players until the caster's invulnerability
+  ends, including after the visual effect ends. Only the caster spends a
+  Bomb. Overlapping casts keep the shield until the later expiry.
+- Fixed a pause-menu desync: a busy background capture queue no longer
+  resets the pause or retry menu on one peer. Late desyncs report their
+  frame number in the log.
+
+### Changes inherited from v0.43
 
 - Fixed the first simulation tick after loading: readiness, RNG reset, state
   hashing and gameplay frame counting now use the same consumed input frame.
@@ -197,7 +209,7 @@ When using a tunneling service, use only a temporary mapping, share the connecti
 - Desync hash identifiers now use the monotonic connection timeline, avoiding
   stale-hash collisions when starting another run without reconnecting.
 
-v0.43 includes all defensive memory-safety checks introduced in v0.32. Long
+v0.44 includes all defensive memory-safety checks introduced in v0.32. Long
 two-PC runs through Stages 4, 5, 6, and Extra remain recommended.
 
 ## 7. Source Code, License, and Credits

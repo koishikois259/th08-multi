@@ -286,14 +286,14 @@ void MultiPlayerCoordinator::Pump(u32 nowMilliseconds)
                     session.GetDesyncFrame(), networkFrame, gameplayActive, gameplayEpoch);
             }
             if (sessionState == MULTI_NET_STATE_LISTENING)
-                wsprintfA(title, "th08-multi v0.44-dev - HOST waiting on UDP %u", config.localPort);
+                wsprintfA(title, "th08-multi v0.44 - HOST waiting on UDP %u", config.localPort);
             else if (sessionState == MULTI_NET_STATE_CONNECTING)
-                wsprintfA(title, "th08-multi v0.44-dev - connecting to %s:%u", config.hostAddress, config.hostPort);
+                wsprintfA(title, "th08-multi v0.44 - connecting to %s:%u", config.hostAddress, config.hostPort);
             else if (sessionState == MULTI_NET_STATE_CONNECTED)
-                wsprintfA(title, "th08-multi v0.44-dev - connected (select teams in game / delay %u)",
+                wsprintfA(title, "th08-multi v0.44 - connected (select teams in game / delay %u)",
                           session.GetInputDelay());
             else
-                wsprintfA(title, "th08-multi v0.44-dev - network error %u", session.GetError());
+                wsprintfA(title, "th08-multi v0.44 - network error %u", session.GetError());
             SetWindowTextA(g_Supervisor.hwndGameWindow, title);
             displayedState = sessionState;
         }
@@ -468,10 +468,10 @@ void MultiPlayerCoordinator::BeginGameplay(bool newRun, i32 initialLives,
     if (g_Supervisor.hwndGameWindow != NULL)
     {
         if (IsLocalPlay())
-            wsprintfA(title, "th08-multi v0.44-dev - local play (P1 team %u / P2 team %u)",
+            wsprintfA(title, "th08-multi v0.44 - local play (P1 team %u / P2 team %u)",
                       selectedTeams[0], selectedTeams[1]);
         else
-            wsprintfA(title, "th08-multi v0.44-dev - playing (P1 team %u / P2 team %u / delay %u)",
+            wsprintfA(title, "th08-multi v0.44 - playing (P1 team %u / P2 team %u / delay %u)",
                       selectedTeams[0], selectedTeams[1], session.GetInputDelay());
         SetWindowTextA(g_Supervisor.hwndGameWindow, title);
     }
