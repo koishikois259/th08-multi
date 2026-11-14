@@ -211,13 +211,13 @@ static i32 AbortInvalidDialoguePortrait(GuiMsgVm *message, const char *operation
 // Sprite IDs from the first texture in the original front.anm.
 enum MultiHudFrontSprite
 {
-    MULTI_HUD_TITLE = 0,
     MULTI_HUD_SUBTITLE = 1,
     MULTI_HUD_HIGH_SCORE = 2,
     MULTI_HUD_SCORE = 3,
     MULTI_HUD_LIFE = 4,
     MULTI_HUD_BOMB = 5,
     MULTI_HUD_POWER = 6,
+    MULTI_HUD_GRAZE = 7,
     MULTI_HUD_POINT = 8,
     MULTI_HUD_TIME = 9,
     MULTI_HUD_BOSS_NAME = 10,
@@ -278,15 +278,16 @@ static void DrawMultiPlayerResourceGroup(
     DrawMultiHudFrontSprite(front, MULTI_HUD_LIFE, 432.0f, y + rowStep, 0.88f);
     DrawMultiHudFrontSprite(front, MULTI_HUD_BOMB, 432.0f, y + 2 * rowStep, 0.88f);
     DrawMultiHudFrontSprite(front, MULTI_HUD_POWER, 432.0f, y + 3 * rowStep, 0.88f);
+    DrawMultiHudFrontSprite(front, MULTI_HUD_GRAZE, 432.0f, y + 4 * rowStep, 0.88f);
     DrawMultiHudStars(front, MULTI_HUD_LIFE_STAR, slot.lives, y + rowStep);
     DrawMultiHudStars(front, MULTI_HUD_BOMB_STAR, slot.bombs, y + 2 * rowStep);
 
     g_AsciiManager.SetColor(0xfff6edff);
     g_AsciiManager.SetScale(0.68f, 0.82f);
     g_AsciiManager.AddFormatText(&Float3(488.0f, y + 3 * rowStep, 0.0f), "%d/128", slot.power);
+    g_AsciiManager.AddFormatText(&Float3(488.0f, y + 4 * rowStep, 0.0f), "%d", slot.graze);
     g_AsciiManager.SetScale(0.50f, 0.80f);
-    g_AsciiManager.AddFormatText(&Float3(435.0f, y + 4 * rowStep, 0.0f), "GRAZE %d", slot.graze);
-    g_AsciiManager.AddFormatText(&Float3(543.0f, y + 4 * rowStep, 0.0f), "H/Y %d", slot.youkaiGauge);
+    g_AsciiManager.AddFormatText(&Float3(555.0f, y + 4 * rowStep, 0.0f), "H/Y %d", slot.youkaiGauge);
 }
 
 static void DrawMultiHudFrame(AnmVm &front)
@@ -312,16 +313,15 @@ static void DrawMultiHudFrame(AnmVm &front)
     }
 }
 
-// The full-size title begins at x=480. Fit the shared values to the left
-// column even when Point or Time grow to several digits.
-static void DrawMultiHudSharedText(f32 y, const char *text)
+static void DrawMultiHudValue(f32 y, const char *text)
 {
+    // Use the full value column, shrinking only if a long ratio needs it.
     const f32 glyphSpacing = 13.0f;
-    const f32 x = 424.0f;
-    const f32 width = 52.0f;
-    f32 fit = width / (glyphSpacing * strlen(text) + 3.0f);
-    g_AsciiManager.SetScale(fit < 0.53f ? fit : 0.53f, 0.80f);
-    g_AsciiManager.AddString(&Float3(x, y, 0.0f), text);
+    const f32 width = 140.0f;
+    const f32 scale = 0.90f;
+    const f32 fit = width / (glyphSpacing * strlen(text) + 3.0f);
+    g_AsciiManager.SetScale(fit < scale ? fit : scale, 0.90f);
+    g_AsciiManager.AddString(&Float3(488.0f, y, 0.0f), text);
 }
 
 static void DrawMultiPlayerSidebar(AnmLoaded *atlas)
@@ -342,9 +342,7 @@ static void DrawMultiPlayerSidebar(AnmLoaded *atlas)
     front.color1.d3dColor = COLOR_WHITE;
     DrawMultiHudFrame(front);
 
-    // Match the settled front.anm scripts: the title uses a top-left anchor
-    // at (480, 208) and the subtitle is centered at (512, 416).
-    DrawMultiHudFrontSprite(front, MULTI_HUD_TITLE, 480.0f, 208.0f);
+    // Keep just the original English logo at its settled front.anm position.
     front.anchor = 0;
     DrawMultiHudFrontSprite(front, MULTI_HUD_SUBTITLE, 512.0f, 416.0f);
     front.anchor = 3;
@@ -360,37 +358,40 @@ static void DrawMultiPlayerSidebar(AnmLoaded *atlas)
     DrawMultiPlayerResourceGroup(front, MULTI_PLAYER_P1, 57.0f, 0xffa0d8ff);
     DrawMultiPlayerResourceGroup(front, MULTI_PLAYER_P2, 133.0f, 0xffffb0d0);
 
+    const f32 pointY = 222.0f;
+    const f32 timeY = 241.0f;
+    DrawMultiHudFrontSprite(front, MULTI_HUD_POINT, 432.0f, pointY);
+    DrawMultiHudFrontSprite(front, MULTI_HUD_TIME, 432.0f, timeY);
+
     char value[32];
-    DrawMultiHudFrontSprite(front, MULTI_HUD_POINT, 423.0f, 216.0f, 0.88f);
-    DrawMultiHudFrontSprite(front, MULTI_HUD_TIME, 423.0f, 285.0f, 0.88f);
     g_AsciiManager.SetColor(0xfff6edff);
     sprintf(value, "%d/%d", g_GameManager.globals->pointItemsCollected,
             g_GameManager.globals->nextPointItemExtendThreshold);
-    DrawMultiHudSharedText(231.0f, value);
-    DrawMultiHudSharedText(249.0f, "MAX");
-    sprintf(value, "%d", g_GameManager.globals->pointItemValue);
-    DrawMultiHudSharedText(263.0f, value);
+    DrawMultiHudValue(pointY, value);
     if (g_GameManager.GetTimeOrbs() >= g_GameManager.GetLastSpellTimeOrbThreshold())
         g_AsciiManager.SetColor(0xfffff0c0);
     sprintf(value, "%d/%d", g_GameManager.GetTimeOrbs(), g_GameManager.GetLastSpellTimeOrbThreshold());
-    DrawMultiHudSharedText(300.0f, value);
+    DrawMultiHudValue(timeY, value);
+
+    g_AsciiManager.SetScale(0.58f, 0.80f);
     g_AsciiManager.SetColor(0xfff6edff);
-    DrawMultiHudSharedText(318.0f, "TOTAL");
-    sprintf(value, "%d", g_GameManager.globals->totalTimeOrbs);
-    DrawMultiHudSharedText(332.0f, value);
+    g_AsciiManager.AddFormatText(&Float3(432.0f, 269.0f, 0.0f), "MAX POINT");
+    g_AsciiManager.AddFormatText(&Float3(510.0f, 269.0f, 0.0f), "%d", g_GameManager.globals->pointItemValue);
+    g_AsciiManager.AddFormatText(&Float3(432.0f, 285.0f, 0.0f), "TOTAL TIME");
+    g_AsciiManager.AddFormatText(&Float3(510.0f, 285.0f, 0.0f), "%d", g_GameManager.globals->totalTimeOrbs);
     if (p1.presence == MULTI_PLAYER_SPIRIT || p2.presence == MULTI_PLAYER_SPIRIT)
     {
         bool p1Spirit = p1.presence == MULTI_PLAYER_SPIRIT;
         g_AsciiManager.SetColor(0xffffff80);
-        DrawMultiHudSharedText(351.0f, p1Spirit ? "P1 SPIRIT" : "P2 SPIRIT");
-        sprintf(value, "%d/90", p1Spirit ? p2.reviveProgressFrames : p1.reviveProgressFrames);
-        DrawMultiHudSharedText(365.0f, value);
+        g_AsciiManager.AddFormatText(&Float3(432.0f, 315.0f, 0.0f), "P%d SPIRIT  %d/90",
+                                     p1Spirit ? 1 : 2,
+                                     p1Spirit ? p2.reviveProgressFrames : p1.reviveProgressFrames);
     }
     if (g_MultiPlayerState.IsProtectedByBomb(MULTI_PLAYER_P1) ||
         g_MultiPlayerState.IsProtectedByBomb(MULTI_PLAYER_P2))
     {
         g_AsciiManager.SetColor(0xffa0d8ff);
-        DrawMultiHudSharedText(383.0f, "BOMB SHIELD");
+        g_AsciiManager.AddString(&Float3(432.0f, 333.0f, 0.0f), "BOMB SHIELD");
     }
     g_AsciiManager.SetScale(1.0f, 1.0f);
     g_AsciiManager.SetColor(0xffffffff);
