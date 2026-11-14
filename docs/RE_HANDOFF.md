@@ -4,8 +4,11 @@
 
 The local development build (`v0.44-dev`) uses the original `front.anm`
 border, title artwork, labels and red/blue icons with separate P1/P2 resource
-groups at 20-pixel intervals. Score, Point and Time remain shared. The HUD
-shows `BOMB SHIELD` while a bomb grants immunity to either physical player.
+groups at 15-pixel intervals and slightly smaller text. The title and subtitle
+use the original `front.anm` scripts' settled positions, anchors and full
+size. Point, Time and status are in a narrow column to the left of the logo.
+Score, Point and Time remain shared. The HUD shows `BOMB SHIELD` while a
+bomb grants immunity to either physical player.
 
 Both physical players are protected against bullet, enemy contact and laser
 damage through the caster's actual invulnerability timer, including after the
@@ -29,6 +32,9 @@ also use bounds-checked rectangles from that atlas; Stage 1's stage-text
 atlas has only six sprites and cannot provide those coordinates. The VC7
 multiplayer build, two focused original GUI comparisons, and CI pass.
 In-stage damage and boss name appearance still need manual verification.
+The compact layout is available in `build/manual-v044-compact-hud-20261114/`
+with the same local network settings; its single-player draw object still
+matches the target. Visual verification of this latest layout is pending.
 The installed v0.43 and its ZIP are intact.
 
 ## Multiplayer v0.43 local patch (October 17)
