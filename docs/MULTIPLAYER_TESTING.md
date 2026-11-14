@@ -118,6 +118,15 @@ arrive. Both peers should enter the same value.
 
 ## Manual gameplay results
 
+For shared Bomb immunity in the v0.44 development build, start with both
+players alive and past spawn immunity. Have P1 press X while P2 is near an
+incoming attack. Check that only P1 loses a bomb and both peers show
+`BOMB SHIELD`. While that message is present, P2 should survive a collision
+even after the bomb animation ends. After the message clears, a new collision
+can hit P2. Repeat with P2 casting, then stagger both casts and verify that
+the shield remains through the later expiry. Avoid using a respawning player
+to check the expiry, since respawn also grants independent immunity.
+
 Record each observed result in [the validation
 ledger](MULTIPLAYER_VALIDATION.md). For a failed item, record:
 

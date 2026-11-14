@@ -32,7 +32,18 @@ front atlas rather than inheriting entrance VM state. Co-op boss name copies
 also use bounds-checked rectangles from that atlas; Stage 1's stage-text
 atlas has only six sprites and cannot provide those coordinates. The VC7
 multiplayer build, two focused original GUI comparisons, and CI pass.
-In-stage damage and boss name appearance still need manual verification.
+In-stage shared Bomb protection was verified with two real game processes
+through the localhost impairment relay. The private diagnostic build injected
+only menu/Bomb inputs and synthetic collisions at the normal collision update
+point. It used the production player/bomb code. On both peers P1 cast at frame
+321 and P2 at 946; only the caster spent a bomb. With the bomb effect already
+off, bullet, contact, and laser checks left the partner in the alive state
+on frame 579 for P1's shield and 1204 for P2's. One frame later the partner
+entered the dying state on contact and laser respectively. The two traces in
+`build/manual-v044-bomb-acceptance/{host,guest}/bomb-acceptance.log` match.
+The earlier P1 cast also covered its partner immediately after the effect
+ended with 59 timer units left. Overlapping casts are covered at the state-test
+level. Boss name appearance still needs manual verification.
 The revised layout is staged in `build/manual-v044-retail-stats-20261114/`
 with the same local network settings. Its single-player draw object still
 matches the target. Visual verification of this latest layout is pending.
