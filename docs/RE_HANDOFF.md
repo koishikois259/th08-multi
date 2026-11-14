@@ -20,10 +20,16 @@ The VC7 multiplayer game/launcher and all eight multiplayer test suites pass.
 Focused original-object comparisons deliver 198/201 against the target;
 the three existing discrepancies are unchanged in a separate compile of
 pre-change `2105e055`. Target-independent CI passes. The local pair under
-`build/manual-v044-dev-netem-20261114/` uses 25–40 ms one-way jitter,
-5% packet loss, and input delay 5. Both instances reached synchronized menus;
-in-stage visual and damage checks are pending. The installed v0.43 and its
-ZIP are intact.
+`build/manual-v044-hud-fix-20261114/` uses 25–40 ms one-way jitter,
+5% packet loss, and input delay 5. Both instances entered Stage 1, and the
+paused Guest frame showed the original textured frame, title, labels, and
+both sets of stars. The co-op static sprites now draw directly from the loaded
+front atlas rather than inheriting entrance VM state. Co-op boss name copies
+also use bounds-checked rectangles from that atlas; Stage 1's stage-text
+atlas has only six sprites and cannot provide those coordinates. The VC7
+multiplayer build, two focused original GUI comparisons, and CI pass.
+In-stage damage and boss name appearance still need manual verification.
+The installed v0.43 and its ZIP are intact.
 
 ## Multiplayer v0.43 local patch (October 17)
 

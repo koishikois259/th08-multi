@@ -81,25 +81,6 @@ DIFFABLE_STATIC_ARRAY_ASSIGN(const char *, 12, g_GuiLoadingAnmPaths) = {
 static i32 g_MultiPendingEnemyNameSprite = -1;
 static bool g_MultiEnemyNameDeferLogged = false;
 
-static bool AreEnemyNameSpritesReady(i32 spriteIdx)
-{
-    AnmLoaded *stageTextAnm = g_Gui.stageTextAnm;
-    i32 highestSpriteIdx = spriteIdx > 10 ? spriteIdx : 10;
-
-    if (spriteIdx < 0 || highestSpriteIdx > 255 || stageTextAnm == NULL ||
-        stageTextAnm->rawData == NULL || stageTextAnm->sprites == NULL ||
-        stageTextAnm->numberEntriesToBeLoaded != 0)
-        return false;
-
-    // During a synchronized stage transition, the retained GUI can briefly
-    // still reference the released stage-text sprite allocation.  Retail does
-    // not copy a boss name in that interval, but either co-op peer can request
-    // one. Validate the entire span used by CopyEnemyNameTexture first.
-    return !IsBadReadPtr(
-        stageTextAnm->sprites,
-        static_cast<UINT_PTR>(highestSpriteIdx + 1) * sizeof(AnmLoadedSprite));
-}
-
 static i32 CountAnmItems(const AnmLoaded *anm, bool scripts)
 {
     const AnmRawEntry *entry;
@@ -239,7 +220,22 @@ enum MultiHudFrontSprite
     MULTI_HUD_POWER = 6,
     MULTI_HUD_POINT = 8,
     MULTI_HUD_TIME = 9,
+    MULTI_HUD_BOSS_NAME = 10,
+    MULTI_HUD_LIFE_STAR = 11,
+    MULTI_HUD_BOMB_STAR = 12,
+    MULTI_HUD_FRAME_TILE = 13,
+    MULTI_HUD_FRAME_EDGE = 14,
+    MULTI_HUD_FIRST_ENEMY_NAME = 16,
 };
+
+static bool IsMultiHudAtlasReady(const AnmLoaded *anm)
+{
+    return anm != NULL && anm->rawData != NULL &&
+           anm->numberEntriesToBeLoaded == 0 &&
+           anm->rawData->numSprites > MULTI_HUD_FRAME_EDGE &&
+           anm->sprites != NULL && anm->textures != NULL &&
+           anm->totalEntries > 0 && anm->textures[0].texture != NULL;
+}
 
 static void DrawMultiHudFrontSprite(AnmVm &vm, i32 sprite, f32 x, f32 y, f32 scale = 1.0f)
 {
@@ -250,15 +246,10 @@ static void DrawMultiHudFrontSprite(AnmVm &vm, i32 sprite, f32 x, f32 y, f32 sca
     g_AnmManager->DrawNoRotation(&vm);
 }
 
-static void DrawMultiHudStars(const AnmVm &source, i32 count, f32 y)
+static void DrawMultiHudStars(AnmVm &vm, i32 sprite, i32 count, f32 y)
 {
-    AnmVm star = source;
-    star.anchor = 3;
     for (i32 i = 0; i < count && i < 8; ++i)
-    {
-        star.pos = Float3(488.0f + 16.0f * i, y, 0.46f);
-        g_AnmManager->DrawNoRotation(&star);
-    }
+        DrawMultiHudFrontSprite(vm, sprite, 488.0f + 16.0f * i, y);
 }
 
 static const char *GetMultiPlayerHudTeamName(u32 team)
@@ -271,7 +262,7 @@ static const char *GetMultiPlayerHudTeamName(u32 team)
 }
 
 static void DrawMultiPlayerResourceGroup(
-    const GuiImpl &gui, AnmVm &front, MultiPlayerSlot playerSlot, f32 y, D3DCOLOR color)
+    AnmVm &front, MultiPlayerSlot playerSlot, f32 y, D3DCOLOR color)
 {
     const MultiPlayerSlotState &slot = g_MultiPlayerState.GetSlot(playerSlot);
     bool local = !g_MultiPlayerCoordinator.IsLocalPlay() &&
@@ -286,8 +277,8 @@ static void DrawMultiPlayerResourceGroup(
     DrawMultiHudFrontSprite(front, MULTI_HUD_LIFE, 432.0f, y + 20.0f);
     DrawMultiHudFrontSprite(front, MULTI_HUD_BOMB, 432.0f, y + 40.0f);
     DrawMultiHudFrontSprite(front, MULTI_HUD_POWER, 432.0f, y + 60.0f);
-    DrawMultiHudStars(gui.frontVms[10], slot.lives, y + 20.0f);
-    DrawMultiHudStars(gui.frontVms[11], slot.bombs, y + 40.0f);
+    DrawMultiHudStars(front, MULTI_HUD_LIFE_STAR, slot.lives, y + 20.0f);
+    DrawMultiHudStars(front, MULTI_HUD_BOMB_STAR, slot.bombs, y + 40.0f);
 
     g_AsciiManager.SetColor(0xfff6edff);
     g_AsciiManager.SetScale(0.75f, 0.9f);
@@ -297,17 +288,46 @@ static void DrawMultiPlayerResourceGroup(
     g_AsciiManager.AddFormatText(&Float3(543.0f, y + 80.0f, 0.0f), "H/Y %d", slot.youkaiGauge);
 }
 
-static void DrawMultiPlayerSidebar(const GuiImpl &gui)
+static void DrawMultiHudFrame(AnmVm &front)
+{
+    // The original 32px tile fills both sides of the playfield. Its 128x16
+    // companion covers the top and bottom, without covering the playfield.
+    if (front.anmFile->SetSprite(&front, MULTI_HUD_FRAME_TILE) != ZUN_SUCCESS)
+        return;
+    for (i32 y = 16; y < 464; y += 32)
+    {
+        front.pos = Float3(0.0f, static_cast<f32>(y), 0.49f);
+        g_AnmManager->DrawNoRotation(&front);
+        for (i32 x = 416; x < 640; x += 32)
+        {
+            front.pos.x = static_cast<f32>(x);
+            g_AnmManager->DrawNoRotation(&front);
+        }
+    }
+    for (i32 x = 0; x < 640; x += 128)
+    {
+        DrawMultiHudFrontSprite(front, MULTI_HUD_FRAME_EDGE, static_cast<f32>(x), 0.0f);
+        DrawMultiHudFrontSprite(front, MULTI_HUD_FRAME_EDGE, static_cast<f32>(x), 464.0f);
+    }
+}
+
+static void DrawMultiPlayerSidebar(AnmLoaded *atlas)
 {
     const MultiPlayerSlotState &p1 = g_MultiPlayerState.GetSlot(MULTI_PLAYER_P1);
     const MultiPlayerSlotState &p2 = g_MultiPlayerState.GetSlot(MULTI_PLAYER_P2);
-    // Use a draw-only copy of the static frame tile. The original VMs keep
-    // their animated layout and are not mutated by the co-op coordinates.
-    AnmVm front = gui.frontVms[13];
-    if (front.loadedSprite == NULL || front.anmFile == NULL)
+    if (!IsMultiHudAtlasReady(atlas))
         return;
+    // Static art should appear on the first frame, even when gameplay pauses
+    // before the original entrance animation can advance.
+    AnmVm front;
+    front.anmFile = atlas;
+    front.visible = true;
+    front.flag1 = true;
     front.anchor = 3;
     front.zWriteDisabled = true;
+    front.scale.x = front.scale.y = 1.0f;
+    front.color1.d3dColor = COLOR_WHITE;
+    DrawMultiHudFrame(front);
 
     DrawMultiHudFrontSprite(front, MULTI_HUD_TITLE, 543.0f, 270.0f, 0.72f);
     DrawMultiHudFrontSprite(front, MULTI_HUD_SUBTITLE, 429.0f, 428.0f, 0.79f);
@@ -320,8 +340,8 @@ static void DrawMultiPlayerSidebar(const GuiImpl &gui)
     g_AsciiManager.AddFormatText(&Float3(488.0f, 44.0f, 0.0f), "%.9d",
                                  g_GameManager.globals->displayScore);
 
-    DrawMultiPlayerResourceGroup(gui, front, MULTI_PLAYER_P1, 69.0f, 0xffa0d8ff);
-    DrawMultiPlayerResourceGroup(gui, front, MULTI_PLAYER_P2, 174.0f, 0xffffb0d0);
+    DrawMultiPlayerResourceGroup(front, MULTI_PLAYER_P1, 69.0f, 0xffa0d8ff);
+    DrawMultiPlayerResourceGroup(front, MULTI_PLAYER_P2, 174.0f, 0xffffb0d0);
 
     DrawMultiHudFrontSprite(front, MULTI_HUD_POINT, 432.0f, 280.0f);
     DrawMultiHudFrontSprite(front, MULTI_HUD_TIME, 432.0f, 324.0f);
@@ -1775,6 +1795,10 @@ void Gui::DrawGameScene()
 #endif
         g_Supervisor.IsHUDRedrawEnabled() || vm->currentInstruction != NULL || g_GuiFullPowerModeFrames != 0)
     {
+#ifdef TH08_MULTI
+        if (!g_MultiPlayerState.IsEnabled())
+        {
+#endif
         for (yPos = 0.0f; yPos < 464.0f; yPos += 32.0f)
         {
             vm->pos = Float3(0.0f, yPos, 0.49f);
@@ -1796,10 +1820,6 @@ void Gui::DrawGameScene()
             vm->pos = Float3(xPos, 464.0f, 0.49f);
             g_AnmManager->DrawNoRotation(vm);
         }
-#ifdef TH08_MULTI
-        if (!g_MultiPlayerState.IsEnabled())
-        {
-#endif
             g_AnmManager->DrawNoRotation(&this->impl->frontVms[0]);
             g_AnmManager->Draw2D(&this->impl->frontVms[1]);
             g_AnmManager->DrawNoRotation(&this->impl->frontVms[2]);
@@ -1863,16 +1883,23 @@ void Gui::DrawGameScene()
         g_AnmManager->DrawNoRotation(&this->impl->spellNullifyVm);
     }
 
+#ifdef TH08_MULTI
+    if (!g_MultiPlayerState.IsEnabled())
+    {
+#endif
     vm = &this->impl->frontVms[14];
     for (xPos = 32.0f; xPos < 368.0f; xPos += 128.0f)
     {
         vm->pos = Float3(xPos, 464.0f, 0.49f);
         g_AnmManager->DrawNoRotation(vm);
     }
+#ifdef TH08_MULTI
+    }
+#endif
 
 #ifdef TH08_MULTI
     if (g_MultiPlayerState.IsEnabled())
-        DrawMultiPlayerSidebar(*this->impl);
+        DrawMultiPlayerSidebar(this->frontAnm);
     else
 #endif
     {
@@ -2260,22 +2287,46 @@ void __fastcall Gui::CopyEnemyNameTexture(i32 spriteIdx)
     RECT srcRect;
 
 #ifdef TH08_MULTI
-    if (g_MultiPlayerState.IsEnabled() && !AreEnemyNameSpritesReady(spriteIdx))
-    {
-        g_MultiPendingEnemyNameSprite = spriteIdx;
-        if (!g_MultiEnemyNameDeferLogged)
-        {
-            g_GameErrorContext.Log(
-                "multi: deferred enemy-name copy until GUI sprites are ready (stage=%d sprite=%d)\n",
-                g_GameManager.currentStage, spriteIdx);
-            g_MultiEnemyNameDeferLogged = true;
-        }
-        return;
-    }
     if (g_MultiPlayerState.IsEnabled())
     {
+        AnmLoaded *front = g_Gui.frontAnm;
+        if (spriteIdx < MULTI_HUD_FIRST_ENEMY_NAME)
+            return;
+        if (!IsMultiHudAtlasReady(front) || front->totalEntries < 2 ||
+            front->textures[1].texture == NULL)
+        {
+            g_MultiPendingEnemyNameSprite = spriteIdx;
+            if (!g_MultiEnemyNameDeferLogged)
+            {
+                g_GameErrorContext.Log(
+                    "multi: deferred enemy name until front.anm is ready (stage=%d sprite=%d)\n",
+                    g_GameManager.currentStage, spriteIdx);
+                g_MultiEnemyNameDeferLogged = true;
+            }
+            return;
+        }
         g_MultiPendingEnemyNameSprite = -1;
         g_MultiEnemyNameDeferLogged = false;
+
+        // Both indices are from front.anm: slot 10 in front.png is the
+        // destination; the source is in ename.png. Stage text has its own
+        // (smaller) atlas and must never supply rectangles for this copy.
+        if (spriteIdx >= CountAnmItems(front, false))
+            return;
+        const AnmLoadedSprite *dest = front->GetSprite(MULTI_HUD_BOSS_NAME);
+        const AnmLoadedSprite *src = front->GetSprite(spriteIdx);
+        if (dest->texture != front->textures[0].texture || src->texture != front->textures[1].texture)
+            return;
+        destRect.left = (i32)dest->startPixelInclusive.x;
+        destRect.top = (i32)dest->startPixelInclusive.y;
+        destRect.right = (i32)dest->endPixelInclusive.x;
+        destRect.bottom = (i32)dest->endPixelInclusive.y;
+        srcRect.left = (i32)src->startPixelInclusive.x;
+        srcRect.top = (i32)src->startPixelInclusive.y;
+        srcRect.right = (i32)src->endPixelInclusive.x;
+        srcRect.bottom = (i32)src->endPixelInclusive.y;
+        g_AnmManager->CopyTextureRect(ANM_FILE_SLOT_GUI_FRONT, 0, ANM_FILE_SLOT_GUI_FRONT, 1, &destRect, &srcRect);
+        return;
     }
 #endif
 
