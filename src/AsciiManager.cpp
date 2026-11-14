@@ -865,10 +865,21 @@ i32 PauseMenu::OnUpdate()
                                                       this->menuBackground.loadedSprite->heightPx,
                                                       this->menuBackground.loadedSprite->widthPx) != ZUN_SUCCESS)
             {
-                // ZUN landmine: if the screen capture never works, the pause
-                // menu gets stuck and only the Escape, Q and R keys work.
-                this->curState = PAUSE_MENU_STATE_INIT;
-                return 0;
+#ifdef TH08_MULTI
+                if (g_MultiPlayerState.IsEnabled())
+                {
+                    // The capture queue is local rendering state. A busy
+                    // queue may hide the backdrop, but cannot delay input.
+                    this->menuBackground.SetInvisible();
+                    this->menuBackground.currentInstruction = NULL;
+                }
+                else
+#endif
+                {
+                    // Retail resets the menu when the capture queue is busy.
+                    this->curState = PAUSE_MENU_STATE_INIT;
+                    return 0;
+                }
             }
             else
             {
@@ -1299,10 +1310,19 @@ i32 RetryMenu::OnUpdate()
                                                           this->menuBackground.loadedSprite->heightPx,
                                                           this->menuBackground.loadedSprite->widthPx) != ZUN_SUCCESS)
                 {
-                    // ZUN landmine: if the screen capture never works, the pause
-                    // menu gets stuck and only the Escape, Q and R keys work.
-                    this->curState = PAUSE_MENU_STATE_INIT;
-                    return 0;
+#ifdef TH08_MULTI
+                    if (g_MultiPlayerState.IsEnabled())
+                    {
+                        this->menuBackground.SetInvisible();
+                        this->menuBackground.currentInstruction = NULL;
+                    }
+                    else
+#endif
+                    {
+                        // Retail resets the menu when the capture queue is busy.
+                        this->curState = PAUSE_MENU_STATE_INIT;
+                        return 0;
+                    }
                 }
                 else
                 {

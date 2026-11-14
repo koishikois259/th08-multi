@@ -1,5 +1,31 @@
 # Current reconstruction handoff
 
+## Multiplayer pause-to-title synchronization (November 14)
+
+A local background capture conflict in PauseMenu::OnUpdate could reset
+one peer's menu and cause it to miss a synchronized selection. The other
+peer could confirm Return to Title while the affected peer instead resumed
+the stage. The original user's logs did not retain error 7, but injecting
+the same capture failure on Guest reproduced error 7 on both game processes
+with the full Return to Title input sequence.
+
+Co-op pause and retry menus now keep advancing if the local capture queue
+is busy; only the backdrop is discarded. This leaves retail behavior intact.
+The coordinator also logs a hash mismatch when it is shown outside gameplay,
+so a late error at the title screen has a frame number in the log. Wire
+format remains `0x00010004`, but both game/launcher gates advance to
+`0x00040006` because the old menu behavior can diverge from the new behavior.
+
+Under 25–40 ms one-way jitter, 5% packet loss and input delay 5, the old
+build reproduced error 7 at network frame 642; the fixed build received the
+same synthetic capture failure and returned both peers to the synchronized
+title. All 67 logged pause-menu ticks matched. The ignored local reproducer
+is `.analysis/desync-audit-20261017/prepare-pause-return.py`, with traces in
+`build/manual-v044-pause-return-before-hash/` and
+`build/manual-v044-pause-return-after/`. The VC7 multiplayer build, eight
+multiplayer test suites, two focused retail menu comparisons, and
+target-independent CI pass.
+
 ## Multiplayer sidebar and shared Bomb protection (November 14)
 
 The local development build (`v0.44-dev`) uses the original `front.anm`
@@ -17,8 +43,8 @@ bomb effect ends. Bomb costs remain individual, overlapping shields last
 until the last caster's immunity ends, and the shared rule does not revive
 spirits or cancel a hit that occurred before the bomb. The remaining timers
 are included in the lockstep hash and cleared on stage setup/continue. The
-wire format remains `0x00010004`; the game and launcher compatibility gates
-are `0x00040005`, so both peers must use the new binaries.
+wire format remains `0x00010004`; that checkpoint used compatibility gate
+`0x00040005`, superseded by the pause-menu fix above.
 
 The VC7 multiplayer game/launcher and all eight multiplayer test suites pass.
 Focused original-object comparisons deliver 198/201 against the target;

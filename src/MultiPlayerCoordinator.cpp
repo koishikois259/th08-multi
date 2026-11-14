@@ -17,7 +17,7 @@
 namespace th08
 {
 
-const u32 TH08_MULTI_BUILD_FINGERPRINT = 0x00040005;
+const u32 TH08_MULTI_BUILD_FINGERPRINT = 0x00040006;
 
 namespace
 {
@@ -277,6 +277,14 @@ void MultiPlayerCoordinator::Pump(u32 nowMilliseconds)
             ApplyHostSaveProgress();
         if (sessionState != displayedState && g_Supervisor.hwndGameWindow != NULL)
         {
+            if (session.GetError() == MULTI_NET_ERROR_DESYNC)
+            {
+                // A late hash may arrive after EndGameplay, when the
+                // supervisor no longer reports gameplay session failures.
+                g_GameErrorContext.Log(
+                    "multi desync: frame=%u networkFrame=%u gameplay=%d epoch=%u\n",
+                    session.GetDesyncFrame(), networkFrame, gameplayActive, gameplayEpoch);
+            }
             if (sessionState == MULTI_NET_STATE_LISTENING)
                 wsprintfA(title, "th08-multi v0.44-dev - HOST waiting on UDP %u", config.localPort);
             else if (sessionState == MULTI_NET_STATE_CONNECTING)
