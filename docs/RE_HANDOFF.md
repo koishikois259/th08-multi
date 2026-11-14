@@ -1,5 +1,30 @@
 # Current reconstruction handoff
 
+## Multiplayer sidebar and shared Bomb protection (November 14)
+
+The local development build (`v0.44-dev`) uses the original `front.anm`
+border, title artwork, labels and red/blue icons with separate P1/P2 resource
+groups at 20-pixel intervals. Score, Point and Time remain shared. The HUD
+shows `BOMB SHIELD` while a bomb grants immunity to either physical player.
+
+Both physical players are protected against bullet, enemy contact and laser
+damage through the caster's actual invulnerability timer, including after the
+bomb effect ends. Bomb costs remain individual, overlapping shields last
+until the last caster's immunity ends, and the shared rule does not revive
+spirits or cancel a hit that occurred before the bomb. The remaining timers
+are included in the lockstep hash and cleared on stage setup/continue. The
+wire format remains `0x00010004`; the game and launcher compatibility gates
+are `0x00040005`, so both peers must use the new binaries.
+
+The VC7 multiplayer game/launcher and all eight multiplayer test suites pass.
+Focused original-object comparisons deliver 198/201 against the target;
+the three existing discrepancies are unchanged in a separate compile of
+pre-change `2105e055`. Target-independent CI passes. The local pair under
+`build/manual-v044-dev-netem-20261114/` uses 25–40 ms one-way jitter,
+5% packet loss, and input delay 5. Both instances reached synchronized menus;
+in-stage visual and damage checks are pending. The installed v0.43 and its
+ZIP are intact.
+
 ## Multiplayer v0.43 local patch (October 17)
 
 The stage-loading fixes below are now packaged as v0.43, retaining exactly the

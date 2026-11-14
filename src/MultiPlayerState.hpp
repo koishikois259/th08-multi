@@ -55,6 +55,7 @@ struct MultiPlayerSlotState
     i32 grazeInStage;
     i32 deaths;
     i32 bombsUsed;
+    i32 bombInvulnerabilityFrames;
     i32 reviveProgressFrames;
     MultiPlayerPosition spiritVelocity;
     u32 team;
@@ -97,6 +98,7 @@ class MultiPlayerState
     const MultiPlayerInputFrame &GetInput(MultiPlayerSlot slot) const;
     bool IsPhysical(MultiPlayerSlot slot) const;
     bool IsSpirit(MultiPlayerSlot slot) const;
+    bool IsProtectedByBomb(MultiPlayerSlot slot) const;
     bool CanReceiveSharedLifeExtend(MultiPlayerSlot slot, i32 maximumLives) const;
     bool BothPlayersUnableToContinue() const;
     void ResetStageCounters();

@@ -74,7 +74,7 @@ enum LauncherPacketType
 };
 
 static const unsigned long LAUNCHER_PACKET_MAGIC = 0x54384D4C;
-static const unsigned long LAUNCHER_PROTOCOL_VERSION = 0x00040004;
+static const unsigned long LAUNCHER_PROTOCOL_VERSION = 0x00040005;
 static const int LAUNCHER_PACKET_SIZE = 16;
 static const UINT_PTR LAUNCHER_TIMER_ID = 1;
 static const UINT_PTR LOCAL_INPUT_TIMER_ID = 2;
@@ -1140,7 +1140,7 @@ static void OpenLocalPage(HWND mainWindow)
     if (g_localWindow != NULL)
         return;
     g_localWindow = CreateWindowExA(
-        0, "Th08MultiLocalWindow", "th08-multi v0.43 Local play",
+        0, "Th08MultiLocalWindow", "th08-multi v0.44-dev Local play",
         WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
         CW_USEDEFAULT, CW_USEDEFAULT, 540, 365,
         NULL, NULL, GetModuleHandleA(NULL), NULL);
@@ -1698,7 +1698,7 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR, int showCommand)
         return 1;
 
     window = CreateWindowExA(
-        0, windowClass.lpszClassName, "th08-multi v0.43 Network Launcher",
+        0, windowClass.lpszClassName, "th08-multi v0.44-dev Network Launcher",
         WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
         CW_USEDEFAULT, CW_USEDEFAULT, 540, 400,
         NULL, NULL, instance, NULL);

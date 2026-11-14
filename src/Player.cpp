@@ -575,6 +575,10 @@ i32 Player::CheckBulletCollision(Float3 *position, Float3 *size)
     g_ReplayManager->frameEventFlags |= REPLAY_FRAME_EVENT_PLAYER_HIT;
     if (this->playerState != PLAYER_STATE_ALIVE)
         return 1;
+#ifdef TH08_MULTI
+    if (g_MultiPlayerState.IsProtectedByBomb(GetMultiPlayerSlot(this)))
+        return 1;
+#endif
     g_GameManager.RandomizeAntiTamper();
     this->Die();
     return 1;
@@ -602,6 +606,10 @@ i32 Player::CheckLethalCollision(Float3 *position, Float3 *size)
     g_ReplayManager->frameEventFlags |= REPLAY_FRAME_EVENT_PLAYER_HIT;
     if (this->playerState != PLAYER_STATE_ALIVE)
         return 1;
+#ifdef TH08_MULTI
+    if (g_MultiPlayerState.IsProtectedByBomb(GetMultiPlayerSlot(this)))
+        return 1;
+#endif
     g_GameManager.RandomizeAntiTamper();
     this->Die();
     return 1;
@@ -712,6 +720,10 @@ lethalPath:
     g_ReplayManager->frameEventFlags |= REPLAY_FRAME_EVENT_PLAYER_HIT;
     if (this->playerState != PLAYER_STATE_ALIVE)
         return 0;
+#ifdef TH08_MULTI
+    if (g_MultiPlayerState.IsProtectedByBomb(GetMultiPlayerSlot(this)))
+        return 0;
+#endif
     g_GameManager.RandomizeAntiTamper();
     this->Die();
     return 1;
@@ -1872,6 +1884,16 @@ void Player::UpdateInvulnerability()
     {
         this->timer++;
     }
+#ifdef TH08_MULTI
+    if (g_MultiPlayerState.IsEnabled())
+    {
+        // Mirror only bomb-granted immunity. The player's own timer remains
+        // authoritative and can outlast the active bomb effect.
+        i32 &remaining = g_MultiPlayerState.GetSlot(GetMultiPlayerSlot(this)).bombInvulnerabilityFrames;
+        if (remaining > 0)
+            remaining = this->playerState == PLAYER_STATE_INVULNERABLE ? (i32)this->timer : 0;
+    }
+#endif
 }
 
 // FUNCTION: th08 0x44d420

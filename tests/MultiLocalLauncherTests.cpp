@@ -22,16 +22,16 @@ int main()
 {
     unsigned char packet[LAUNCHER_PACKET_SIZE];
     unsigned long packetType = 0, packetToken = 0;
-    ExpectLauncher(LAUNCHER_PROTOCOL_VERSION == 0x00040004,
-                   "launcher version identifies the stage-synchronization build");
+    ExpectLauncher(LAUNCHER_PROTOCOL_VERSION == 0x00040005,
+                   "launcher version identifies the shared bomb immunity build");
     WriteLauncherPacket(packet, LAUNCHER_PACKET_HELLO, 123);
     ExpectLauncher(ReadLauncherPacket(packet, sizeof(packet), &packetType, &packetToken) &&
                    packetType == LAUNCHER_PACKET_HELLO && packetToken == 123,
                    "same-version launcher packet accepted");
-    unsigned long oldVersion = htonl(0x00040003);
+    unsigned long oldVersion = htonl(0x00040004);
     CopyMemory(packet + 4, &oldVersion, sizeof(oldVersion));
     ExpectLauncher(!ReadLauncherPacket(packet, sizeof(packet), &packetType, &packetToken),
-                   "v0.42 launcher packet rejected by v0.43");
+                   "v0.43 launcher packet rejected by the new gameplay build");
     char tempDirectory[MAX_PATH];
     GetTempPathA(sizeof(tempDirectory), tempDirectory);
     if (!GetTempFileNameA(tempDirectory, "t8u", 0, g_iniPath))

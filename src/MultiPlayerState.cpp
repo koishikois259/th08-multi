@@ -99,6 +99,7 @@ void MultiPlayerSlotState::Reset(u32 selectedTeam, i32 initialLives, i32 initial
     grazeInStage = 0;
     deaths = 0;
     bombsUsed = 0;
+    bombInvulnerabilityFrames = 0;
     reviveProgressFrames = 0;
     spiritVelocity.x = 0.0f;
     spiritVelocity.y = 0.0f;
@@ -178,6 +179,13 @@ bool MultiPlayerState::IsSpirit(MultiPlayerSlot slot) const
     return slots[slot].presence == MULTI_PLAYER_SPIRIT;
 }
 
+bool MultiPlayerState::IsProtectedByBomb(MultiPlayerSlot slot) const
+{
+    return enabled && IsPhysical(slot) &&
+           ((IsPhysical(MULTI_PLAYER_P1) && slots[MULTI_PLAYER_P1].bombInvulnerabilityFrames > 0) ||
+            (IsPhysical(MULTI_PLAYER_P2) && slots[MULTI_PLAYER_P2].bombInvulnerabilityFrames > 0));
+}
+
 bool MultiPlayerState::CanReceiveSharedLifeExtend(
     MultiPlayerSlot slot, i32 maximumLives) const
 {
@@ -193,6 +201,8 @@ void MultiPlayerState::ResetStageCounters()
 {
     slots[MULTI_PLAYER_P1].grazeInStage = 0;
     slots[MULTI_PLAYER_P2].grazeInStage = 0;
+    slots[MULTI_PLAYER_P1].bombInvulnerabilityFrames = 0;
+    slots[MULTI_PLAYER_P2].bombInvulnerabilityFrames = 0;
 }
 
 i32 MultiPlayerState::GetCombinedGrazeInStage() const
@@ -226,6 +236,7 @@ void MultiPlayerState::EnterSpirit(MultiPlayerSlot slot)
     f32 speed;
 
     slots[slot].presence = MULTI_PLAYER_SPIRIT;
+    slots[slot].bombInvulnerabilityFrames = 0;
     slots[slot].reviveProgressFrames = 0;
     randomValue = frameNumber ^
                   (0x9e3779b9u * (static_cast<u32>(slot) + 1u)) ^
@@ -341,6 +352,7 @@ u32 MultiPlayerState::ComputeStateHash(
         hash = MixHash(hash, static_cast<u32>(slot.grazeInStage));
         hash = MixHash(hash, static_cast<u32>(slot.deaths));
         hash = MixHash(hash, static_cast<u32>(slot.bombsUsed));
+        hash = MixHash(hash, static_cast<u32>(slot.bombInvulnerabilityFrames));
         hash = MixHash(hash, static_cast<u32>(slot.reviveProgressFrames));
         hash = MixHash(hash, FloatBits(slot.spiritVelocity.x));
         hash = MixHash(hash, FloatBits(slot.spiritVelocity.y));

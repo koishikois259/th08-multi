@@ -30,7 +30,7 @@ class MultiPlayerCoordinatorTestAccess
         c.config.mode = MULTI_LAUNCH_HOST;
         c.initialized = true;
         MultiNetSession &s = c.session;
-        if (!s.OpenHost(0, "127.0.0.1", 0, delay, 0x40004, 1, 0x1234, 2, 1, progress))
+        if (!s.OpenHost(0, "127.0.0.1", 0, delay, 0x40005, 1, 0x1234, 2, 1, progress))
             return false;
         sockaddr_in address;
         int size = sizeof(address);
@@ -88,7 +88,7 @@ class MultiPlayerCoordinatorTestAccess
         host.config.mode = MULTI_LAUNCH_HOST;
         guest.config.mode = MULTI_LAUNCH_GUEST;
         host.initialized = guest.initialized = true;
-        if (!host.session.OpenHost(0, "127.0.0.1", 0, delay, 0x40004, 1, 0x1234, 2, 1, progress))
+        if (!host.session.OpenHost(0, "127.0.0.1", 0, delay, 0x40005, 1, 0x1234, 2, 1, progress))
             return false;
         sockaddr_in address;
         int size = sizeof(address);
@@ -96,7 +96,7 @@ class MultiPlayerCoordinatorTestAccess
                         reinterpret_cast<sockaddr *>(&address), &size) != 0)
             return false;
         if (!guest.session.OpenGuest(0, "127.0.0.1", "127.0.0.1", ntohs(address.sin_port),
-                                    1, delay, 0x40004, 2))
+                                    1, delay, 0x40005, 2))
             return false;
         for (u32 tick = 1000; tick < 2000; ++tick)
         {

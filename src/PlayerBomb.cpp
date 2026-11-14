@@ -204,6 +204,10 @@ void __fastcall BeginBombSpell(Player *player, i32 cutInType, const char *cutInT
     bomb->duration = duration;
     player->timer = timer;
     player->playerState = PLAYER_STATE_INVULNERABLE;
+#ifdef TH08_MULTI
+    if (g_MultiPlayerState.IsEnabled())
+        g_MultiPlayerState.GetSlot(GetMultiPlayerSlot(player)).bombInvulnerabilityFrames = timer;
+#endif
     player->SpawnBombStateEffect();
     i = 0;
     workItem = bomb->workItems;

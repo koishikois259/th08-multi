@@ -301,6 +301,45 @@ void TestSpiritDriftIsDeterministicAndBounces()
            "spirit reflects from the playfield edge");
 }
 
+void TestSharedBombInvulnerability()
+{
+    MultiPlayerState state;
+    state.Reset(true, 0, 1, 2, 3, 0);
+    MultiPlayerSlotState &p1 = state.GetSlot(MULTI_PLAYER_P1);
+    MultiPlayerSlotState &p2 = state.GetSlot(MULTI_PLAYER_P2);
+    Expect(!state.IsProtectedByBomb(MULTI_PLAYER_P1) && !state.IsProtectedByBomb(MULTI_PLAYER_P2),
+           "both are vulnerable before a bomb");
+    p1.bombInvulnerabilityFrames = 260;
+    Expect(state.IsProtectedByBomb(MULTI_PLAYER_P1) && state.IsProtectedByBomb(MULTI_PLAYER_P2),
+           "P1's bomb covers both players");
+    p1.bombInvulnerabilityFrames = 1;
+    Expect(state.IsProtectedByBomb(MULTI_PLAYER_P2), "last frame of P1's immunity protects P2");
+    p2.bombInvulnerabilityFrames = 380;
+    p1.bombInvulnerabilityFrames = 0;
+    Expect(state.IsProtectedByBomb(MULTI_PLAYER_P1) && state.IsProtectedByBomb(MULTI_PLAYER_P2),
+           "P2's later bomb outlasts P1's immunity");
+    p2.bombInvulnerabilityFrames = 0;
+    Expect(!state.IsProtectedByBomb(MULTI_PLAYER_P1) && !state.IsProtectedByBomb(MULTI_PLAYER_P2),
+           "both lose shared protection when the last immunity expires");
+    p2.bombInvulnerabilityFrames = 25;
+    state.EnterSpirit(MULTI_PLAYER_P1);
+    Expect(!state.IsProtectedByBomb(MULTI_PLAYER_P1) && state.IsProtectedByBomb(MULTI_PLAYER_P2),
+           "only physical players receive the shield");
+    state.EnterSpirit(MULTI_PLAYER_P2);
+    Expect(p2.bombInvulnerabilityFrames == 0 && !state.IsProtectedByBomb(MULTI_PLAYER_P2),
+           "a spirit does not retain bomb immunity");
+    state.ResetForContinue(2, 3, 3, 128);
+    p1.bombInvulnerabilityFrames = 12;
+    state.ResetStageCounters();
+    Expect(!state.IsProtectedByBomb(MULTI_PLAYER_P2), "stage reset discards old bomb protection");
+    p2.bombInvulnerabilityFrames = 15;
+    state.ResetForContinue(2, 3, 3, 128);
+    Expect(!state.IsProtectedByBomb(MULTI_PLAYER_P1), "continue discards old bomb protection");
+    state.Reset(false, 0, 1, 2, 3, 0);
+    p1.bombInvulnerabilityFrames = 5;
+    Expect(!state.IsProtectedByBomb(MULTI_PLAYER_P1), "single player has no co-op shield");
+}
+
 void TestStateHash()
 {
     MultiPlayerState state;
@@ -320,6 +359,9 @@ void TestStateHash()
     ++shared.timeOrbs;
     Expect(original != state.ComputeStateHash(positions, shared), "shared Time changes the hash");
     --shared.timeOrbs;
+    ++state.GetSlot(MULTI_PLAYER_P1).bombInvulnerabilityFrames;
+    Expect(original != state.ComputeStateHash(positions, shared), "bomb shield changes the hash");
+    --state.GetSlot(MULTI_PLAYER_P1).bombInvulnerabilityFrames;
     ++state.GetSlot(MULTI_PLAYER_P2).graze;
     Expect(original != state.ComputeStateHash(positions, shared), "P2 state changes the hash");
 }
@@ -364,6 +406,7 @@ int main()
     TestContinueRestoresBothPlayersWithFullPower();
     TestCombinedStageGrazeAndReset();
     TestSpiritDriftIsDeterministicAndBounces();
+    TestSharedBombInvulnerability();
     TestStateHash();
     TestEverySharedHudResourceAffectsStateHash();
 
