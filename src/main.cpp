@@ -23,6 +23,7 @@
 #include "MultiLocalInput.hpp"
 #ifndef TH08_MODERN_LINUX
 #include "MultiKeyboardInput.hpp"
+#include "MultiPlayerRuntime.hpp"
 #endif
 #endif
 #ifdef TH08_MODERN_PORT
@@ -89,6 +90,27 @@ C_ASSERT(sizeof(GameWindow) == 0x44);
 
 DIFFABLE_STATIC(HANDLE, g_ExclusiveMutex);
 DIFFABLE_STATIC(GameWindow, g_GameWindow);
+
+#if defined(TH08_MULTI) && !defined(TH08_MODERN_LINUX)
+static f64 previousFrameWorkSeconds = 1.0;
+
+u32 GetMultiInputRetryBudgetUs()
+{
+    if (!g_GameWindow.pcFrequency.LowPart)
+        return 0;
+    const f64 now = g_GameWindow.GetTimestamp();
+    const f64 remaining = g_GameWindow.lastFrameTime - now;
+    if (now < g_GameWindow.lastTimestamp || remaining <= 0.0 || remaining > 1.0 / 60)
+        return 0;
+    // Leave at least 8 ms for simulation/drawing, and more after an
+    // expensive frame. Never spend more than 2 ms on an input deadline.
+    const f64 reserve = previousFrameWorkSeconds > 0.007 ? previousFrameWorkSeconds + 0.001 : 0.008;
+    const f64 spare = remaining - reserve;
+    if (spare <= 0.0)
+        return 0;
+    return spare >= 0.002 ? 2000 : static_cast<u32>(spare * 1000000.0);
+}
+#endif
 }; // namespace th08
 
 using namespace th08;
@@ -373,6 +395,10 @@ RenderResult GameWindow::Render()
         }
 
         this->curTimestamp = this->GetTimestamp();
+#if defined(TH08_MULTI) && !defined(TH08_MODERN_LINUX)
+        previousFrameWorkSeconds = this->curTimestamp >= this->lastTimestamp
+            ? this->curTimestamp - this->lastTimestamp : 1.0;
+#endif
         Present();
     }
     else

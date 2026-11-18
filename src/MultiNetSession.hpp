@@ -62,6 +62,8 @@ class MultiNetSession
     bool TryGetFrameInputs(u32 simulationFrame, u16 *p1Buttons, u16 *p2Buttons) const;
     bool TryGetFrameSamples(u32 simulationFrame, MultiNetInputSample *p1,
                            MultiNetInputSample *p2) const;
+    bool RetryLateFrameSamples(u32 frame, u32 budgetUs, MultiNetInputSample *p1,
+                               MultiNetInputSample *p2);
     void UpdateHostSaveProgress(
         const MultiNetWelcomePacket::SaveProgress saveProgress[MULTI_NET_SAVE_SHOT_COUNT]);
     void UpdateHostGameplaySettings(u8 initialLives, u8 slowMode);
@@ -101,7 +103,7 @@ class MultiNetSession
     void SendWelcome();
     void SendInput(u32 latestFrame, u32 stateHashFrame, u32 stateHash);
     void SendDisconnect(u16 reason);
-    void ReceivePackets(u32 nowMilliseconds);
+    void ReceivePackets(u32 nowMilliseconds, u32 packetLimit);
     void HandleHello(const u8 *data, u32 size, u32 address, u16 port, u32 nowMilliseconds);
     void HandleWelcome(const u8 *data, u32 size, u32 address, u16 port, u32 nowMilliseconds);
     void HandleInput(const u8 *data, u32 size, u32 address, u16 port, u32 nowMilliseconds);

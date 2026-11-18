@@ -158,6 +158,7 @@ MultiPlayerCoordinator::MultiPlayerCoordinator()
     selectedTeams[1] = 0;
     capturedSimulationFrame = MULTI_NET_INVALID_FRAME;
     networkFrame = 0;
+    stageInputMisses = stageInputRecoveries = consecutiveInputStalls = longestInputStall = 0;
     displayedState = MULTI_NET_STATE_CLOSED;
     appliedSaveRevision = 0;
     titleSynchronizationActive = false;
@@ -456,6 +457,7 @@ void MultiPlayerCoordinator::BeginGameplay(bool newRun, i32 initialLives,
     InterlockedExchange(reinterpret_cast<volatile LONG *>(&gameplaySetupComplete), 0);
     if (++gameplayEpoch == 0)
         ++gameplayEpoch;
+    stageInputMisses = stageInputRecoveries = consecutiveInputStalls = longestInputStall = 0;
     gameplayReadyMask = 0;
     gameplayStartFrame = MULTI_NET_INVALID_FRAME;
     // A pending sample is immutable until its network frame is consumed.
@@ -548,7 +550,8 @@ bool MultiPlayerCoordinator::AcquireGameplayInputs(u16 localButtons, u16 *p1Butt
     }
     frame = networkFrame;
     synchronizeTitle = titleSynchronizationActive && !gameplayActive;
-    if (capturedSimulationFrame != frame)
+    const bool firstAttempt = capturedSimulationFrame != frame;
+    if (firstAttempt)
     {
         u16 control = MULTI_NET_CONTROL_NONE;
         u32 readyEpoch = 0;
@@ -612,7 +615,21 @@ bool MultiPlayerCoordinator::AcquireGameplayInputs(u16 localButtons, u16 *p1Butt
         capturedGameplayEpoch = gameplayEpoch;
     }
     if (!session.TryGetFrameSamples(frame, &p1, &p2))
-        return false;
+    {
+        if (!capturedGameplaySimulationReady || !gameplayActive || capturedGameplayEpoch != gameplayEpoch)
+            return false;
+        ++stageInputMisses;
+        // Only the first attempt may borrow spare time. The sample, hash and
+        // epoch were already committed above and are never recaptured here.
+        if (!firstAttempt || !session.RetryLateFrameSamples(frame, GetMultiInputRetryBudgetUs(), &p1, &p2))
+        {
+            if (++consecutiveInputStalls > longestInputStall)
+                longestInputStall = consecutiveInputStalls;
+            return false;
+        }
+        ++stageInputRecoveries;
+    }
+    consecutiveInputStalls = 0;
     *p1Buttons = p1.buttons;
     *p2Buttons = p2.buttons;
     gameplaySimulationReady = capturedGameplaySimulationReady && gameplayActive && gameplaySetupStarted &&
@@ -653,6 +670,10 @@ bool MultiPlayerCoordinator::AcquireGameplayInputs(u16 localButtons, u16 *p1Butt
 
 void MultiPlayerCoordinator::EndGameplay()
 {
+    if (gameplayActive && gameplaySetupStarted && !IsLocalPlay())
+        g_GameErrorContext.Log("multi input: epoch=%u delay=%u missed-ticks=%u recovered=%u longest-stall-ticks=%u\n",
+                               gameplayEpoch, session.GetInputDelay(), stageInputMisses,
+                               stageInputRecoveries, longestInputStall);
     gameplayActive = false;
     gameplaySetupStarted = false;
     gameplayRngSynchronized = false;

@@ -58,4 +58,5 @@ extern CoordinatorTestRng g_Rng;
 extern CoordinatorTestLog g_GameErrorContext;
 extern CoordinatorTestLocalInput g_MultiLocalInput;
 u32 ComputeCurrentMultiPlayerStateHash();
+u32 GetMultiInputRetryBudgetUs();
 } // namespace th08

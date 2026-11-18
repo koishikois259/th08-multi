@@ -13,6 +13,8 @@ CoordinatorTestRng g_Rng;
 CoordinatorTestLog g_GameErrorContext;
 CoordinatorTestLocalInput g_MultiLocalInput;
 u32 hashCalls, hashSeed, hashGameplayFrame;
+u32 retryBudgetUs, retryBudgetQueries;
+u32 GetMultiInputRetryBudgetUs() { ++retryBudgetQueries; return retryBudgetUs; }
 u32 ComputeCurrentMultiPlayerStateHash()
 {
     ++hashCalls;
@@ -109,6 +111,8 @@ class MultiPlayerCoordinatorTestAccess
         return false;
     }
     static void PumpSession(MultiPlayerCoordinator &c, u32 tick) { c.session.Pump(tick); }
+    static bool SendSample(MultiPlayerCoordinator &c, u32 frame, u16 buttons)
+    { return c.session.CaptureLocalInput(frame, buttons, MULTI_NET_INVALID_FRAME, 0); }
 };
 } // namespace th08
 
@@ -120,6 +124,48 @@ int failures = 0;
 void Expect(bool value, const char *message)
 {
     if (!value) { ++failures; printf("FAIL: %s\n", message); }
+}
+
+void TestLateInput(u16 delay, bool allowRetry)
+{
+    MultiPlayerCoordinator host, guest;
+    if (!Access::OpenPair(host, guest, delay)) { Expect(false, "late-input pair connects"); return; }
+    host.BeginGameplay(true, 2, 3, 0);
+    Access::Boundary(host, delay, delay);
+    Access::PumpSession(host, 1100);
+    // Both packets are sent after the normal host pump.
+    Expect(Access::SendSample(host, 0, 4) && Access::SendSample(guest, 0, 8), "queue real UDP samples");
+    retryBudgetUs = allowRetry ? 2000 : 0;
+    u16 p1 = 0, p2 = 0;
+    bool consumed = host.AcquireGameplayInputs(16, &p1, &p2);
+    Expect(consumed == allowRetry, "only a budgeted retry consumes the late packet this tick");
+    if (!consumed)
+    {
+        Expect(Access::Frame(host) == delay, "missing input leaves current frame pending");
+        Access::PumpSession(host, 1117);
+        consumed = host.AcquireGameplayInputs(32, &p1, &p2);
+    }
+    Expect(consumed && p1 == 4 && p2 == 8 && Access::Frame(host) == delay + 1u &&
+               Access::Sample(host, 2u * delay).buttons == 16,
+           "consume both exact samples once and preserve the originally captured future input");
+    retryBudgetUs = 0;
+}
+
+void TestRetryWithoutRemoteInput()
+{
+    MultiPlayerCoordinator host, guest;
+    if (!Access::OpenPair(host, guest, 3)) { Expect(false, "missing-input pair connects"); return; }
+    host.BeginGameplay(true, 2, 3, 0);
+    Access::Boundary(host, 3, 3);
+    Expect(Access::SendSample(host, 0, 4), "host has its own scheduled sample");
+    retryBudgetUs = 2000;
+    retryBudgetQueries = 0;
+    u16 p1, p2;
+    Expect(!host.AcquireGameplayInputs(16, &p1, &p2) && !host.AcquireGameplayInputs(32, &p1, &p2),
+           "repeated attempts cannot advance without a remote sample");
+    Expect(retryBudgetQueries == 1 && Access::Frame(host) == 3 && Access::Sample(host, 6).buttons == 16,
+           "only the first miss spends a retry window or captures future input");
+    retryBudgetUs = 0;
 }
 
 void TestFirstSimulationFrame(u16 delay, u8 slot)
@@ -391,6 +437,10 @@ int main()
         TestPairedLoading(delays[i]);
     }
     TestLocalCompletionGate();
+    TestLateInput(3, false);
+    TestLateInput(3, true);
+    TestLateInput(5, true);
+    TestRetryWithoutRemoteInput();
     if (failures) { printf("%d coordinator test(s) failed\n", failures); return 1; }
     printf("Multiplayer coordinator tests passed\n");
     return 0;

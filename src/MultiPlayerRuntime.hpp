@@ -50,6 +50,7 @@ void ResetMultiPlayersAfterContinue(i32 initialLives, i32 initialPower);
 void RestoreMultiPlayerPresenceForStage();
 void UpdateMultiPlayerSpiritMotion(Player *player);
 u32 ComputeCurrentMultiPlayerStateHash();
+u32 GetMultiInputRetryBudgetUs();
 MultiPlayerReviveResult UpdateMultiPlayerRevival(Player *rescuer);
 
 } // namespace th08

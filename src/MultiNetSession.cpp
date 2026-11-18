@@ -370,7 +370,7 @@ void MultiNetSession::Pump(u32 nowMilliseconds)
     currentTime = nowMilliseconds;
     if (state == MULTI_NET_STATE_CONNECTING && lastReceiveTime == 0)
         lastReceiveTime = nowMilliseconds;
-    ReceivePackets(nowMilliseconds);
+    ReceivePackets(nowMilliseconds, MULTI_NET_MAX_PACKETS_PER_PUMP);
     if (role == MULTI_NET_ROLE_GUEST && state == MULTI_NET_STATE_CONNECTING &&
         nowMilliseconds - lastSendTime >= MULTI_NET_RESEND_INTERVAL_MS)
     {
@@ -403,7 +403,7 @@ void MultiNetSession::Pump(u32 nowMilliseconds)
     }
 }
 
-void MultiNetSession::ReceivePackets(u32 nowMilliseconds)
+void MultiNetSession::ReceivePackets(u32 nowMilliseconds, u32 packetLimit)
 {
     u8 data[MULTI_NET_WIRE_BUFFER_SIZE];
     sockaddr_in sender;
@@ -411,7 +411,7 @@ void MultiNetSession::ReceivePackets(u32 nowMilliseconds)
     int received;
     MultiNetPacketType type;
     u32 packetCount;
-    for (packetCount = 0; packetCount < MULTI_NET_MAX_PACKETS_PER_PUMP; ++packetCount)
+    for (packetCount = 0; packetCount < packetLimit; ++packetCount)
     {
         senderSize = sizeof(sender);
         received = recvfrom(static_cast<SOCKET>(socketHandle), reinterpret_cast<char *>(data),
@@ -636,6 +636,33 @@ bool MultiNetSession::TryGetFrameSamples(u32 frame, MultiNetInputSample *p1,
         *p2 = local;
     }
     return true;
+}
+
+bool MultiNetSession::RetryLateFrameSamples(u32 frame, u32 budgetUs, MultiNetInputSample *p1,
+                                            MultiNetInputSample *p2)
+{
+    LARGE_INTEGER frequency, start, now;
+    if (!budgetUs || state != MULTI_NET_STATE_CONNECTED ||
+        !QueryPerformanceFrequency(&frequency) || !QueryPerformanceCounter(&start))
+        return false;
+    const LONGLONG deadline = start.QuadPart + frequency.QuadPart * budgetUs / 1000000;
+    const LONGLONG interval = frequency.QuadPart / 4000; // 0.25 ms between nonblocking reads
+    LONGLONG nextRead = start.QuadPart;
+    while (QueryPerformanceCounter(&now) && now.QuadPart >= start.QuadPart && now.QuadPart < deadline)
+    {
+        if (now.QuadPart >= nextRead)
+        {
+            ReceivePackets(currentTime, 1);
+            if (TryGetFrameSamples(frame, p1, p2))
+                return true;
+            if (state != MULTI_NET_STATE_CONNECTED)
+                break;
+            nextRead = now.QuadPart + interval;
+        }
+        // A millisecond socket timeout can round up to an entire Windows tick.
+        Sleep(0);
+    }
+    return false;
 }
 
 void MultiNetSession::StoreLocalHash(u32 frame, u32 hash)

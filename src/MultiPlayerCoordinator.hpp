@@ -73,6 +73,10 @@ class MultiPlayerCoordinator
     MultiNetSession session;
     u32 capturedSimulationFrame;
     u32 networkFrame;
+    u32 stageInputMisses;
+    u32 stageInputRecoveries;
+    u32 consecutiveInputStalls;
+    u32 longestInputStall;
     bool initialized;
     bool gameplayActive;
     bool gameplaySetupStarted;

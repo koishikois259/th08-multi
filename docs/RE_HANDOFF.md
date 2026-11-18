@@ -1,5 +1,41 @@
 # Current reconstruction handoff
 
+## Online gameplay input timing preview (November 18)
+
+The Windows preview gives a newly captured gameplay frame one additional
+receive window when a peer input misses the normal pump. The limit is 2 ms.
+The render deadline and the preceding frame's work determine the available
+time, with at least 8 ms reserved for the rest of the frame. Reads use the
+existing nonblocking socket and packet validation. A continuing stall yields
+to the normal next tick. Stage teardown records missed ticks, same-tick
+recoveries and the longest consecutive stall in `log.txt`.
+
+Two isolated game processes ran Stage 1 through a loopback relay with
+25–40 ms added one-way delay and 5% independent packet loss. The private
+probe controls menu/game input and records presentation times. Baseline mode
+sets the retry budget to zero. Each run covers 900 gameplay frame advances.
+In two runs with the order reversed, delay 3 produced 85/84 and 88/88
+repeated frames (host/guest) with zero budget, and 40/40 and 43/43 with
+the retry enabled. At delay 5 both variants recorded 2/2 and 1/1. A clean
+loopback run at delay 3 had zero repeats for either variant. The clean
+control starts synthetic menu presses after network frame 300. Earlier
+zero-budget attempts pressed through startup and timed out before both
+processes entered gameplay. Those attempts supplied no frame-time samples.
+The peers' frame-900 state hashes agreed in every measured run. The 99th
+percentile presentation interval was 20 ms in every sample. Individual
+intervals above 25 ms occurred with both variants. Cross-machine play and
+long sessions remain unmeasured.
+
+The delay-5 pause capture-conflict regression also returned both peers to the
+synchronized title with all 67 recorded pause ticks in agreement. The eight
+native multiplayer suites pass. Regression cases cover receipt
+after the regular pump, zero budget, missing data on successive attempts,
+and preservation of the committed future input. In the non-multiplayer
+build all 36 checked functions in the main object match the pre-change code
+and relocation symbols. The preview ZIP contains only the gameplay executable
+for an existing v0.44 installation. Private probe files are under
+`build/input-retry-lab/`.
+
 ## Multiplayer v0.44 local patch (November 14)
 
 The v0.44 game and launcher include the co-op sidebar, shared Bomb immunity,
